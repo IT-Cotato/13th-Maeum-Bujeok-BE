@@ -1,0 +1,21 @@
+spring.application.name=backend
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul
+    username: root
+    password: 비밀번호입력
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 500
+
+# JWT 암호화 키
+jwt:
+  secret: vVsd8e3r2fefvsvVsd8e3r2fefvsvVsd8e3r2fefvs1234567890

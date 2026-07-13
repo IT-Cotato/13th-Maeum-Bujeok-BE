@@ -1,0 +1,22 @@
+// src/main/java/com/maumbujeok/backend/global/error/ErrorCode.java
+package com.maumbujeok.backend.global.error;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@AllArgsConstructor
+public enum ErrorCode {
+    
+    // Auth
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_001", "존재하지 않는 사용자입니다."),
+    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "AUTH_002", "비밀번호가 일치하지 않습니다."),
+    
+    // Common
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 에러가 발생했습니다.");
+
+    private final HttpStatus httpStatus;
+    private final String code;
+    private final String message;
+}
