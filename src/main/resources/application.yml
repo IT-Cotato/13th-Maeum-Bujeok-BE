@@ -1,11 +1,13 @@
-spring.application.name=backend
-
 spring:
+  application:
+    name: backend
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul
+    # 3307 포트와 allowPublicKeyRetrieval=true 확인!
+    url: jdbc:mysql://localhost:3307/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
     username: root
-    password: 비밀번호입력
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
@@ -18,4 +20,4 @@ spring:
 
 # JWT 암호화 키
 jwt:
-  secret: vVsd8e3r2fefvsvVsd8e3r2fefvsvVsd8e3r2fefvs1234567890
+  secret: ${JWT_SECRET}
