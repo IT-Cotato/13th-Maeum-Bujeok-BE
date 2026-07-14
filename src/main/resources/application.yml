@@ -5,7 +5,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # 3307 포트와 allowPublicKeyRetrieval=true 확인!
-    url: jdbc:mysql://localhost:3307/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:${DB_PORT:3306}/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
     username: root
     password: ${DB_PASSWORD}
 
