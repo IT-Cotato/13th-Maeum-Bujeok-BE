@@ -18,6 +18,9 @@ spring:
         format_sql: true
         default_batch_fetch_size: 500
 
-# JWT 암호화 키
+# JWT 설정
 jwt:
   secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
+  issuer: ${JWT_ISSUER:maumbujeok}
