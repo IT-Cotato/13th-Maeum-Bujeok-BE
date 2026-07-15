@@ -25,6 +25,6 @@ public class TestController {
         if (userDetails == null) {
             return ApiResponse.onFailure("401", "인증 정보가 없습니다.", null);
         }
-        return ApiResponse.onSuccess("인증이 완료되었습니다. 현재 로그인 이메일: " + userDetails.getUsername());
+        return ApiResponse.onSuccess("인증이 완료되었습니다. 현재 로그인 전화번호: " + userDetails.getUsername());
     }
 }

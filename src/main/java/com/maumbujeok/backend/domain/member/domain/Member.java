@@ -15,23 +15,24 @@ public class Member extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "member_id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @Column(name = "phone_number", nullable = false, unique = true)
+    private String phoneNumber;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
 
     @Builder
-    public Member(String email, String password, Role role) {
-        this.email = email;
-        this.password = password;
-        this.role = role;
+    public Member(String phoneNumber, String passwordHash, Role role) {
+        this.phoneNumber = phoneNumber;
+        this.passwordHash = passwordHash;
+        this.role = role != null ? role : Role.ROLE_USER;
     }
 
     public enum Role {
