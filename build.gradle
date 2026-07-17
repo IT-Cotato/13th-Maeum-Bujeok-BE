@@ -25,7 +25,11 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+	testImplementation 'org.testcontainers:testcontainers-mysql'
 	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	
@@ -42,5 +46,32 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'integration'
+	}
+	systemProperty 'spring.profiles.active', 'test'
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs tests tagged as integration against real service containers.'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	systemProperty 'spring.profiles.active', 'integration'
+	shouldRunAfter tasks.named('test')
+}
+
+tasks.register('verifyFast') {
+	description = 'Runs the deterministic, Docker-free feedback gate.'
+	group = 'verification'
+	dependsOn tasks.named('test')
+}
+
+tasks.register('verifyFull') {
+	description = 'Runs the fast gate and MySQL integration tests.'
+	group = 'verification'
+	dependsOn tasks.named('check'), tasks.named('integrationTest')
 }

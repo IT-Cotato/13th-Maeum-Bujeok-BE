@@ -39,3 +39,6 @@ out/
 # AI Reference Docs (Do not push to GitHub)
 requirements.md
 erd.md
+
+# Harness runtime state (templates under harness/ remain tracked)
+.harness/
