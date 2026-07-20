@@ -40,8 +40,8 @@ class DiaryControllerSecurityTest {
 
     @Test
     void authenticatedMemberCreatesDiaryWithPendingAnalysis() throws Exception {
-        Member member = saveMember("owner@example.com");
-        String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
+        Member member = saveMember("owner", "01000000001");
+        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
 
         mockMvc.perform(post("/api/diaries")
                         .header("Authorization", "Bearer " + token)
@@ -53,10 +53,10 @@ class DiaryControllerSecurityTest {
 
     @Test
     void hidesAnotherMembersAnalysis() throws Exception {
-        Member owner = saveMember("owner2@example.com");
-        Member stranger = saveMember("stranger@example.com");
+        Member owner = saveMember("owner2", "01000000002");
+        Member stranger = saveMember("stranger", "01000000003");
         CreateDiaryResponse created = diaryService.create(owner.getId(), new CreateDiaryRequest("나만의 일기", "슬픔"));
-        String strangerToken = jwtTokenProvider.createToken(stranger.getEmail(), stranger.getRole().name());
+        String strangerToken = jwtTokenProvider.createToken(stranger.getLoginId(), stranger.getRole().name());
 
         mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
                         .header("Authorization", "Bearer " + strangerToken))
@@ -66,12 +66,12 @@ class DiaryControllerSecurityTest {
 
     @Test
     void returnsTemporaryAmuletGenerationFieldsWithAnalysis() throws Exception {
-        Member member = saveMember("amulet@example.com");
+        Member member = saveMember("amulet", "01000000004");
         CreateDiaryResponse created = diaryService.create(
                 member.getId(),
                 new CreateDiaryRequest("친구와 즐거운 하루를 보냈다", "기쁨")
         );
-        String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
 
         mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
                         .header("Authorization", "Bearer " + token))
@@ -83,7 +83,12 @@ class DiaryControllerSecurityTest {
                 .andExpect(jsonPath("$.data.createdAt").isNotEmpty());
     }
 
-    private Member saveMember(String email) {
-        return memberRepository.save(new Member(email, "encoded-password", Member.Role.ROLE_USER));
+    private Member saveMember(String loginId, String phoneNumber) {
+        return memberRepository.save(Member.builder()
+                .loginId(loginId)
+                .phoneNumber(phoneNumber)
+                .passwordHash("encoded-password")
+                .role(Member.Role.ROLE_USER)
+                .build());
     }
 }

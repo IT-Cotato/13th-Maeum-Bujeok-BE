@@ -30,7 +30,7 @@ class JwtTokenProviderTest {
         String token = provider.createToken("user@example.com", "ROLE_USER");
 
         assertTrue(provider.validateToken(token));
-        assertEquals("user@example.com", provider.getUserEmail(token));
+        assertEquals("user@example.com", provider.getUserLoginId(token));
 
         Claims claims = parseClaims(token, TEST_SECRET, ISSUER);
         assertEquals("ROLE_USER", claims.get("role", String.class));

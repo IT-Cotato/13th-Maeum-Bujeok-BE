@@ -37,7 +37,12 @@ class DiaryAnalysisRepositoryIntegrationTest {
 
     @Test
     void storesOnePendingAnalysisPerDiaryOnMySql() {
-        Member member = memberRepository.save(new Member("diary@example.com", "encoded", Member.Role.ROLE_USER));
+        Member member = memberRepository.save(Member.builder()
+                .loginId("diary")
+                .phoneNumber("01000000005")
+                .passwordHash("encoded")
+                .role(Member.Role.ROLE_USER)
+                .build());
         Diary diary = diaryRepository.save(new Diary(member, "오늘의 일기", "불안"));
         DiaryAnalysis first = analysisRepository.saveAndFlush(new DiaryAnalysis(diary, "diary-v1", "policy-v1"));
 
