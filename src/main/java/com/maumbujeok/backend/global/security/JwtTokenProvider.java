@@ -47,8 +47,8 @@ public class JwtTokenProvider {
     }
 
     // 토큰 생성
-    public String createToken(String phoneNumber, String role) {
-        Claims claims = Jwts.claims().setSubject(phoneNumber);
+    public String createToken(String loginId, String role) {
+        Claims claims = Jwts.claims().setSubject(loginId);
         claims.put("role", role);
 
         Date now = new Date();
@@ -78,8 +78,8 @@ public class JwtTokenProvider {
         return getAuthentication(claims);
     }
 
-    // 토큰에서 회원 전화번호 추출
-    public String getUserPhoneNumber(String token) {
+    // 토큰에서 회원 로그인 아이디 추출
+    public String getUserLoginId(String token) {
         Claims claims = parseClaims(token);
         return claims != null ? claims.getSubject() : null;
     }
