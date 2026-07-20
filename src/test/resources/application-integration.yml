@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    password: test-only-placeholder
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+jwt:
+  secret: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+  access-token-expiration: 30m
+  refresh-token-expiration: 14d
+  issuer: maumbujeok-integration
+

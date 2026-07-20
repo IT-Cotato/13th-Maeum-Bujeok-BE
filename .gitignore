@@ -39,3 +39,9 @@ out/
 # AI Reference Docs (Do not push to GitHub)
 requirements.md
 erd.md
+
+# Local secrets
+.env
+
+# Harness runtime state (templates under harness/ remain tracked)
+.harness/
