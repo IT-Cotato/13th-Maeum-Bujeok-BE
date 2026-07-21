@@ -14,6 +14,10 @@ public enum ErrorCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "AUTH_002", "비밀번호가 일치하지 않습니다."),
     DUPLICATE_LOGIN_ID(HttpStatus.BAD_REQUEST, "AUTH_003", "이미 존재하는 아이디입니다."),
     DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "AUTH_004", "이미 가입된 전화번호입니다."),
+
+    // Member
+    INVALID_NOTIFICATION_SETTINGS(HttpStatus.BAD_REQUEST, "MEMBER_001", "알림 설정 값이 올바르지 않습니다."),
+    INVALID_NOTIFICATION_DAYS(HttpStatus.BAD_REQUEST, "MEMBER_002", "요일별 알림 설정 값이 올바르지 않습니다."),
     
     // SMS Auth
     SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "인증번호가 존재하지 않거나 일치하지 않습니다."),
