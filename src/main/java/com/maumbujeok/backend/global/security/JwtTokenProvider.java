@@ -84,6 +84,26 @@ public class JwtTokenProvider {
         return java.time.LocalDateTime.now().plus(jwtProperties.refreshTokenExpiration());
     }
 
+    // Register Token (임시 회원가입 토큰) 생성
+    public String createRegisterToken(String provider, String providerId, String email) {
+        Claims claims = Jwts.claims();
+        claims.put("type", "REGISTER");
+        claims.put("provider", provider);
+        claims.put("providerId", providerId);
+        claims.put("email", email != null ? email : "");
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + 15 * 60 * 1000); // 15분
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuer(jwtProperties.issuer())
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     // Claims 기반 인증 정보 조회 (중복 파싱 방지용)
     public Authentication getAuthentication(Claims claims) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());

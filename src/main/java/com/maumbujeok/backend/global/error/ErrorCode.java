@@ -16,6 +16,11 @@ public enum ErrorCode {
     DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "AUTH_004", "이미 가입된 전화번호입니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "유효하지 않거나 만료된 Refresh Token입니다."),
     PHONE_NUMBER_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_006", "회원 정보의 전화번호와 일치하지 않습니다."),
+    INVALID_REGISTER_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_007", "유효하지 않거나 만료된 가입 임시 토큰입니다."),
+    SOCIAL_USER_CANNOT_RESET_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_008", "소셜 로그인 가입자는 비밀번호를 재설정할 수 없습니다."),
+    ALREADY_LOCAL_REGISTERED(HttpStatus.BAD_REQUEST, "AUTH_009", "이미 일반 회원가입으로 등록된 전화번호입니다. 아이디/비밀번호 로그인을 이용해 주세요."),
+    ALREADY_SOCIAL_REGISTERED(HttpStatus.BAD_REQUEST, "AUTH_010", "이미 소셜 로그인(구글)으로 가입된 전화번호입니다. 소셜 로그인을 이용해 주세요."),
+    SOCIAL_USER_MUST_LOGIN_WITH_OAUTH(HttpStatus.BAD_REQUEST, "AUTH_011", "소셜 로그인으로 가입된 계정입니다. 구글 로그인을 이용해 주세요."),
     
     // SMS Auth
     SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "인증번호가 존재하지 않거나 일치하지 않습니다."),

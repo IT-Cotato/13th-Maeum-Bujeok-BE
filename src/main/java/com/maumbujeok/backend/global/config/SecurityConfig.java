@@ -2,6 +2,8 @@ package com.maumbujeok.backend.global.config;
 
 import com.maumbujeok.backend.global.security.JwtAuthenticationFilter;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
+import com.maumbujeok.backend.global.security.oauth2.CustomOAuth2UserService;
+import com.maumbujeok.backend.global.security.oauth2.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,12 +43,14 @@ public class SecurityConfig {
             
             // API 엔드포인트 접근 권한 설정
             .authorizeHttpRequests(auth -> auth
-                // 스웨거, 로그인, 회원가입 등 화이트리스트 개방
+                // 스웨거, 로그인, 회원가입, OAuth2 경로 등 화이트리스트 개방
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
                     "/api/auth/**",
+                    "/login/oauth2/**",
+                    "/oauth2/**",
                     "/swagger-resources/**",
                     "/webjars/**"
                 ).permitAll()
@@ -52,6 +58,12 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             
+            // OAuth2 로그인 설정
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2SuccessHandler)
+            )
+
             // JWT 인증 필터 등록
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 

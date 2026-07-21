@@ -33,8 +33,9 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	
-	// Spring Security (보안)
+	// Spring Security (보안 및 OAuth2)
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
     // JWT (토큰)
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

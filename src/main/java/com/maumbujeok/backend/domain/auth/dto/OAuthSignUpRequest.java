@@ -1,0 +1,16 @@
+package com.maumbujeok.backend.domain.auth.dto;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+public class OAuthSignUpRequest {
+    private String registerToken;
+    private String phoneNumber;
+    private String birthDate;
+    private Boolean termsAgreed;
+    private Boolean privacyAgreed;
+    private Boolean sensitiveDataAgreed;
+    private Boolean marketingAgreed;
+}
