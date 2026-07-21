@@ -12,7 +12,6 @@ import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
-import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
-@Tag(name = "인증 API", description = "SMS 인증, 회원가입, 로그인, 소셜 가입, 토큰 재발급, 로그아웃, 비밀번호 재설정 관련 API")
+@Tag(name = "인증 API", description = "SMS 인증, 회원가입, 로그인, 토큰 재발급, 로그아웃, 비밀번호 재설정 관련 API")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -52,23 +51,15 @@ public class AuthController {
         return ApiResponse.onSuccess("전화번호 인증이 완료되었습니다.");
     }
 
-    @Operation(summary = "회원가입 API", description = "전화번호 본인 인증 완료 후 회원 정보(약관 동의 내역, 아이디, 비밀번호, 생년월일 등)를 받아 가입 처리합니다.")
+    @Operation(summary = "회원가입 API", description = "전화번호 본인 인증 완료 후 회원 정보(약관 동의 내역, 이름, 비밀번호, 생년월일 등)를 받아 가입 처리합니다.")
     @PostMapping("/signup")
     public ApiResponse<String> signup(@RequestBody SignUpRequest request) {
-        // 1. 아이디 중복 체크
-        if (memberRepository.findByLoginId(request.getLoginId()).isPresent()) {
-            throw new CustomException(ErrorCode.DUPLICATE_LOGIN_ID);
+        // 1. 전화번호 중복 체크
+        if (memberRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
+            throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);
         }
 
-        // 2. 전화번호 중복 체크 (소셜 가입자 여부 검증)
-        memberRepository.findByPhoneNumber(request.getPhoneNumber()).ifPresent(existingMember -> {
-            if (existingMember.getProvider() == Member.Provider.GOOGLE) {
-                throw new CustomException(ErrorCode.ALREADY_SOCIAL_REGISTERED);
-            }
-            throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);
-        });
-
-        // 3. 전화번호 본인 인증 여부 체크
+        // 2. 전화번호 본인 인증 여부 체크
         SmsAuthCode smsAuthCode = smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
                 .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
 
@@ -76,10 +67,10 @@ public class AuthController {
             throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
         }
 
-        // 4. 회원 저장
+        // 3. 회원 저장
         LocalDateTime now = LocalDateTime.now();
         Member member = Member.builder()
-                .loginId(request.getLoginId())
+                .name(request.getName())
                 .phoneNumber(request.getPhoneNumber())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .birthDate(request.getBirthDate())
@@ -95,76 +86,11 @@ public class AuthController {
         return ApiResponse.onSuccess("회원가입이 완료되었습니다.");
     }
 
-    @Operation(summary = "소셜 회원가입 완료 API", description = "구글 등 소셜 인증 후 발급받은 Register Token과 필수 추가 정보(SMS 본인인증, 생년월일, 약관동의)를 입력받아 최종 회원가입을 마칩니다.")
-    @Transactional
-    @PostMapping("/oauth/signup")
-    public ApiResponse<TokenResponse> oauthSignup(@RequestBody OAuthSignUpRequest request) {
-        // 1. Register Token 검증
-        Claims claims = jwtTokenProvider.parseClaims(request.getRegisterToken());
-        if (claims == null || !"REGISTER".equals(claims.get("type"))) {
-            throw new CustomException(ErrorCode.INVALID_REGISTER_TOKEN);
-        }
-
-        String providerStr = (String) claims.get("provider");
-        String providerId = (String) claims.get("providerId");
-
-        // 2. 전화번호 중복 체크 (로컬 가입자 여부 검증)
-        memberRepository.findByPhoneNumber(request.getPhoneNumber()).ifPresent(existingMember -> {
-            if (existingMember.getProvider() == Member.Provider.LOCAL) {
-                throw new CustomException(ErrorCode.ALREADY_LOCAL_REGISTERED);
-            }
-            throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);
-        });
-
-        // 3. 전화번호 본인 인증 여부 체크
-        SmsAuthCode smsAuthCode = smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
-                .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
-
-        if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified())) {
-            throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
-        }
-
-        // 4. 소셜 회원 저장 (loginId는 provider_providerId 규칙으로 자동 생성)
-        String loginId = providerStr + "_" + providerId;
-        LocalDateTime now = LocalDateTime.now();
-
-        Member member = Member.builder()
-                .loginId(loginId)
-                .phoneNumber(request.getPhoneNumber())
-                .passwordHash(null)
-                .birthDate(request.getBirthDate())
-                .provider(Member.Provider.valueOf(providerStr))
-                .providerId(providerId)
-                .termsAgreedAt(Boolean.TRUE.equals(request.getTermsAgreed()) ? now : null)
-                .privacyAgreedAt(Boolean.TRUE.equals(request.getPrivacyAgreed()) ? now : null)
-                .sensitiveDataAgreedAt(Boolean.TRUE.equals(request.getSensitiveDataAgreed()) ? now : null)
-                .marketingAgreedAt(Boolean.TRUE.equals(request.getMarketingAgreed()) ? now : null)
-                .role(Member.Role.ROLE_USER)
-                .build();
-
-        memberRepository.save(member);
-
-        // 5. 토큰 발급 및 저장
-        String accessToken = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getLoginId());
-        LocalDateTime refreshTokenExpiry = jwtTokenProvider.getRefreshTokenExpiryDate();
-
-        refreshTokenRepository.save(
-                RefreshToken.builder()
-                        .loginId(member.getLoginId())
-                        .token(refreshToken)
-                        .expiredAt(refreshTokenExpiry)
-                        .build()
-        );
-
-        return ApiResponse.onSuccess(new TokenResponse(accessToken, refreshToken));
-    }
-
-    @Operation(summary = "로그인 API", description = "아이디와 비밀번호로 로그인하여 Access Token 및 Refresh Token을 발급받습니다.")
+    @Operation(summary = "로그인 API", description = "전화번호와 비밀번호로 로그인하여 Access Token 및 Refresh Token을 발급받습니다.")
     @Transactional
     @PostMapping("/login")
     public ApiResponse<TokenResponse> login(@RequestBody LoginRequest request) {
-        Member member = memberRepository.findByLoginId(request.getLoginId())
+        Member member = memberRepository.findByPhoneNumber(request.getPhoneNumber())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 소셜 전용 계정일 경우 일반 로그인 방어
@@ -176,17 +102,18 @@ public class AuthController {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
-        String accessToken = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getLoginId());
+        String userKey = member.getPhoneNumber();
+        String accessToken = jwtTokenProvider.createToken(userKey, member.getRole().name());
+        String refreshToken = jwtTokenProvider.createRefreshToken(userKey);
         LocalDateTime refreshTokenExpiry = jwtTokenProvider.getRefreshTokenExpiryDate();
 
         // Refresh Token DB 저장 혹은 갱신
-        refreshTokenRepository.findByLoginId(member.getLoginId())
+        refreshTokenRepository.findByUserKey(userKey)
                 .ifPresentOrElse(
                         existingToken -> existingToken.updateToken(refreshToken, refreshTokenExpiry),
                         () -> refreshTokenRepository.save(
                                 RefreshToken.builder()
-                                        .loginId(member.getLoginId())
+                                        .userKey(userKey)
                                         .token(refreshToken)
                                         .expiredAt(refreshTokenExpiry)
                                         .build()
@@ -217,12 +144,17 @@ public class AuthController {
         }
 
         // 3. 사용자 조회
-        Member member = memberRepository.findByLoginId(refreshTokenEntity.getLoginId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        String userKey = refreshTokenEntity.getUserKey();
+        Member member = memberRepository.findByPhoneNumber(userKey)
+                .orElseGet(() -> {
+                    String providerId = userKey.startsWith("GOOGLE_") ? userKey.substring(7) : userKey;
+                    return memberRepository.findByProviderAndProviderId(Member.Provider.GOOGLE, providerId)
+                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                });
 
         // 4. 토큰 재발급 (RTR)
-        String newAccessToken = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(member.getLoginId());
+        String newAccessToken = jwtTokenProvider.createToken(userKey, member.getRole().name());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(userKey);
         LocalDateTime newRefreshTokenExpiry = jwtTokenProvider.getRefreshTokenExpiryDate();
 
         refreshTokenEntity.updateToken(newRefreshToken, newRefreshTokenExpiry);
@@ -241,7 +173,7 @@ public class AuthController {
         return ApiResponse.onSuccess("로그아웃 되었습니다.");
     }
 
-    @Operation(summary = "비밀번호 재설정 API", description = "SMS 본인 인증 완료 후 아이디, 전화번호, 새 비밀번호를 받아 비밀번호를 변경합니다.")
+    @Operation(summary = "비밀번호 재설정 API", description = "SMS 본인 인증 완료 후 전화번호와 새 비밀번호를 받아 비밀번호를 변경합니다.")
     @Transactional
     @PostMapping("/password/reset")
     public ApiResponse<String> resetPassword(@RequestBody PasswordResetRequest request) {
@@ -254,7 +186,7 @@ public class AuthController {
         }
 
         // 2. 유저 조회
-        Member member = memberRepository.findByLoginId(request.getLoginId())
+        Member member = memberRepository.findByPhoneNumber(request.getPhoneNumber())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 2-1. 소셜 로그인 가입자 재설정 방어
@@ -262,12 +194,7 @@ public class AuthController {
             throw new CustomException(ErrorCode.SOCIAL_USER_CANNOT_RESET_PASSWORD);
         }
 
-        // 3. 전화번호 일치 여부 체크
-        if (!member.getPhoneNumber().equals(request.getPhoneNumber())) {
-            throw new CustomException(ErrorCode.PHONE_NUMBER_MISMATCH);
-        }
-
-        // 4. 비밀번호 업데이트 (Dirty Checking)
+        // 3. 비밀번호 업데이트 (Dirty Checking)
         member.updatePasswordHash(passwordEncoder.encode(request.getNewPassword()));
 
         return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");

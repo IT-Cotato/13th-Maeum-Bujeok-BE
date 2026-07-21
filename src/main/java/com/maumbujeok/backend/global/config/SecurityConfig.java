@@ -60,7 +60,7 @@ public class SecurityConfig {
                     "/api/diaries/**",
                     "/api/members/**"
                 ).authenticated()
-                // 그 외 모든 요청은 인증 필요
+                // 3. 그 외 모든 요청은 인증 필수
                 .anyRequest().authenticated()
             )
             

@@ -75,7 +75,8 @@ public class MemberController {
         Member member = userDetails.getMember();
 
         // 1. Refresh Token 삭제
-        refreshTokenRepository.deleteByLoginId(member.getLoginId());
+        String userKey = member.getPhoneNumber() != null ? member.getPhoneNumber() : "GOOGLE_" + member.getProviderId();
+        refreshTokenRepository.deleteByUserKey(userKey);
 
         // 2. MemberSajuProfile 삭제
         sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);

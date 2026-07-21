@@ -20,8 +20,8 @@ public class RefreshToken extends BaseTimeEntity {
     @Column(name = "refresh_token_id")
     private Long id;
 
-    @Column(name = "login_id", nullable = false, unique = true)
-    private String loginId;
+    @Column(name = "user_key", nullable = false, unique = true)
+    private String userKey;
 
     @Column(name = "token", nullable = false, length = 500)
     private String token;
@@ -30,8 +30,8 @@ public class RefreshToken extends BaseTimeEntity {
     private LocalDateTime expiredAt;
 
     @Builder
-    public RefreshToken(String loginId, String token, LocalDateTime expiredAt) {
-        this.loginId = loginId;
+    public RefreshToken(String userKey, String token, LocalDateTime expiredAt) {
+        this.userKey = userKey;
         this.token = token;
         this.expiredAt = expiredAt;
     }

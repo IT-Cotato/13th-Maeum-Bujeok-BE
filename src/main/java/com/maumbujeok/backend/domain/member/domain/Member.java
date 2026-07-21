@@ -20,10 +20,13 @@ public class Member extends BaseTimeEntity {
     @Column(name = "member_id")
     private Long id;
 
-    @Column(name = "login_id", nullable = true, unique = true)
-    private String loginId;
+    @Column(name = "name")
+    private String name;
 
-    @Column(name = "phone_number", nullable = false, unique = true)
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phone_number", nullable = true, unique = true)
     private String phoneNumber;
 
     @Column(name = "password_hash", nullable = true)
@@ -56,11 +59,12 @@ public class Member extends BaseTimeEntity {
     private Role role;
 
     @Builder
-    public Member(String loginId, String phoneNumber, String passwordHash, String birthDate,
+    public Member(String name, String email, String phoneNumber, String passwordHash, String birthDate,
                   Provider provider, String providerId,
                   LocalDateTime termsAgreedAt, LocalDateTime privacyAgreedAt,
                   LocalDateTime sensitiveDataAgreedAt, LocalDateTime marketingAgreedAt, Role role) {
-        this.loginId = loginId;
+        this.name = name;
+        this.email = email;
         this.phoneNumber = phoneNumber;
         this.passwordHash = passwordHash;
         this.birthDate = birthDate;

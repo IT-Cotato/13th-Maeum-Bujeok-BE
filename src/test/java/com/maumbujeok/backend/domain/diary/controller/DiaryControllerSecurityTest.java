@@ -41,7 +41,7 @@ class DiaryControllerSecurityTest {
     @Test
     void authenticatedMemberCreatesDiaryWithPendingAnalysis() throws Exception {
         Member member = saveMember("owner", "01000000001");
-        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(post("/api/diaries")
                         .header("Authorization", "Bearer " + token)
@@ -56,7 +56,7 @@ class DiaryControllerSecurityTest {
         Member owner = saveMember("owner2", "01000000002");
         Member stranger = saveMember("stranger", "01000000003");
         CreateDiaryResponse created = diaryService.create(owner.getId(), new CreateDiaryRequest("나만의 일기", "슬픔"));
-        String strangerToken = jwtTokenProvider.createToken(stranger.getLoginId(), stranger.getRole().name());
+        String strangerToken = jwtTokenProvider.createToken(stranger.getPhoneNumber(), stranger.getRole().name());
 
         mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
                         .header("Authorization", "Bearer " + strangerToken))
@@ -71,7 +71,7 @@ class DiaryControllerSecurityTest {
                 member.getId(),
                 new CreateDiaryRequest("친구와 즐거운 하루를 보냈다", "기쁨")
         );
-        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
                         .header("Authorization", "Bearer " + token))
@@ -83,9 +83,9 @@ class DiaryControllerSecurityTest {
                 .andExpect(jsonPath("$.data.createdAt").isNotEmpty());
     }
 
-    private Member saveMember(String loginId, String phoneNumber) {
+    private Member saveMember(String name, String phoneNumber) {
         return memberRepository.save(Member.builder()
-                .loginId(loginId)
+                .name(name)
                 .phoneNumber(phoneNumber)
                 .passwordHash("encoded-password")
                 .role(Member.Role.ROLE_USER)

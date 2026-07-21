@@ -17,7 +17,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -35,46 +34,55 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         String providerId = oAuth2User.getAttribute("sub");
         String email = oAuth2User.getAttribute("email");
+        String googleName = oAuth2User.getAttribute("name");
 
-        log.info("[OAuth2 Success] ProviderId: {}, Email: {}", providerId, email);
+        log.info("[OAuth2 Success] ProviderId: {}, Email: {}, Name: {}", providerId, email, googleName);
 
-        Optional<Member> memberOptional = memberRepository.findByProviderAndProviderId(Member.Provider.GOOGLE, providerId);
+        // 구글 유저 조회 없으면 즉시 자동 가입 (1-Step), 기존 유저 존재 시 DB의 name을 덮어씌우지 않음!
+        Member member = memberRepository.findByProviderAndProviderId(Member.Provider.GOOGLE, providerId)
+                .orElseGet(() -> {
+                    LocalDateTime now = LocalDateTime.now();
 
-        if (memberOptional.isPresent()) {
-            // [기존 가입자] -> Access Token 및 Refresh Token 발급 후 프론트 콜백 URL로 리다이렉트
-            Member member = memberOptional.get();
+                    Member newMember = Member.builder()
+                            .name(googleName)
+                            .email(email)
+                            .phoneNumber(null)
+                            .provider(Member.Provider.GOOGLE)
+                            .providerId(providerId)
+                            .termsAgreedAt(now)
+                            .privacyAgreedAt(now)
+                            .sensitiveDataAgreedAt(now)
+                            .role(Member.Role.ROLE_USER)
+                            .build();
 
-            String accessToken = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
-            String refreshToken = jwtTokenProvider.createRefreshToken(member.getLoginId());
-            LocalDateTime refreshTokenExpiry = jwtTokenProvider.getRefreshTokenExpiryDate();
+                    return memberRepository.save(newMember);
+                });
 
-            refreshTokenRepository.findByLoginId(member.getLoginId())
-                    .ifPresentOrElse(
-                            existing -> existing.updateToken(refreshToken, refreshTokenExpiry),
-                            () -> refreshTokenRepository.save(
-                                    RefreshToken.builder()
-                                            .loginId(member.getLoginId())
-                                            .token(refreshToken)
-                                            .expiredAt(refreshTokenExpiry)
-                                            .build()
-                            )
-                    );
+        String userKey = "GOOGLE_" + providerId;
 
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth/callback")
-                    .queryParam("accessToken", accessToken)
-                    .queryParam("refreshToken", refreshToken)
-                    .build().toUriString();
+        // Access Token & Refresh Token 발급
+        String accessToken = jwtTokenProvider.createToken(userKey, member.getRole().name());
+        String refreshToken = jwtTokenProvider.createRefreshToken(userKey);
+        LocalDateTime refreshTokenExpiry = jwtTokenProvider.getRefreshTokenExpiryDate();
 
-            getRedirectStrategy().sendRedirect(request, response, targetUrl);
-        } else {
-            // [신규 가입자] -> 2-Step 가입용 Register Token 발급 후 추가 정보 입력 페이지로 리다이렉트
-            String registerToken = jwtTokenProvider.createRegisterToken("GOOGLE", providerId, email);
+        // Refresh Token DB 저장 혹은 갱신
+        refreshTokenRepository.findByUserKey(userKey)
+                .ifPresentOrElse(
+                        existing -> existing.updateToken(refreshToken, refreshTokenExpiry),
+                        () -> refreshTokenRepository.save(
+                                RefreshToken.builder()
+                                        .userKey(userKey)
+                                        .token(refreshToken)
+                                        .expiredAt(refreshTokenExpiry)
+                                        .build()
+                        )
+                );
 
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth/signup")
-                    .queryParam("registerToken", registerToken)
-                    .build().toUriString();
+        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth/callback")
+                .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
+                .build().toUriString();
 
-            getRedirectStrategy().sendRedirect(request, response, targetUrl);
-        }
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
