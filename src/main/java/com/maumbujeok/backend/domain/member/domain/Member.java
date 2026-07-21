@@ -63,6 +63,10 @@ public class Member extends BaseTimeEntity {
         this.role = role != null ? role : Role.ROLE_USER;
     }
 
+    public void updatePasswordHash(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
+
     public enum Role {
         ROLE_USER, ROLE_ADMIN
     }

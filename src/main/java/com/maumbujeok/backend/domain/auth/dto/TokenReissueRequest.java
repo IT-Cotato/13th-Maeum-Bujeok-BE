@@ -1,11 +1,10 @@
 package com.maumbujeok.backend.domain.auth.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@AllArgsConstructor
-public class TokenResponse {
-    private String accessToken;
+@NoArgsConstructor
+public class TokenReissueRequest {
     private String refreshToken;
 }

@@ -46,7 +46,7 @@ public class JwtTokenProvider {
                 .build();
     }
 
-    // 토큰 생성
+    // Access Token 생성
     public String createToken(String loginId, String role) {
         Claims claims = Jwts.claims().setSubject(loginId);
         claims.put("role", role);
@@ -61,6 +61,27 @@ public class JwtTokenProvider {
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // Refresh Token 생성
+    public String createRefreshToken(String loginId) {
+        Claims claims = Jwts.claims().setSubject(loginId);
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + jwtProperties.refreshTokenExpiration().toMillis());
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuer(jwtProperties.issuer())
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // Refresh Token 만료 시각 계산
+    public java.time.LocalDateTime getRefreshTokenExpiryDate() {
+        return java.time.LocalDateTime.now().plus(jwtProperties.refreshTokenExpiration());
     }
 
     // Claims 기반 인증 정보 조회 (중복 파싱 방지용)
