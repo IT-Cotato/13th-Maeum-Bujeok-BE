@@ -35,7 +35,7 @@ public class DiaryService {
         Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), request.selectedEmotion().trim()));
         DiaryAnalysis analysis = analysisRepository.save(new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
         log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
-                diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(memberPhoneNumber));
+                diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(member.getPhoneNumber()));
         eventPublisher.publishEvent(new DiaryCreatedEvent(analysis.getId()));
         log.info("Diary analysis event published diaryId={} analysisId={}", diary.getId(), analysis.getId());
         return new CreateDiaryResponse(diary.getId(), analysis.getStatus());
