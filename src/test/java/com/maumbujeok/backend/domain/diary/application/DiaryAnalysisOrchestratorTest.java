@@ -2,14 +2,19 @@ package com.maumbujeok.backend.domain.diary.application;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.maumbujeok.backend.domain.diary.ai.AiAnalysisException;
+import com.maumbujeok.backend.domain.diary.ai.AiCallResult;
 import com.maumbujeok.backend.domain.diary.ai.AiDiaryAnalysisClient;
 import com.maumbujeok.backend.domain.diary.ai.DiaryAiResult;
 import com.maumbujeok.backend.domain.diary.domain.SafetyLevel;
+import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,11 +69,61 @@ class DiaryAnalysisOrchestratorTest {
         verify(stateService).fallback(1L, fallback, 62, false, 2, "AI_TIMEOUT", SafetyLevel.NORMAL);
     }
 
+    @Test
+    void retriesOnceWhenAiOutputFailsQualityValidation() {
+        DiaryAnalysisInput input = new DiaryAnalysisInput(1L, "답장이 오지 않아 서운하고 슬펐다", "슬픔");
+        DiaryAiResult contaminated = result("gpt-test");
+        DiaryAiResult corrected = new DiaryAiResult(
+                "기다리던 답이 없어 서운하고 슬펐겠어요.",
+                "응답을 기다리며 서운하고 슬펐던 하루",
+                32, List.of(), ReportEmotion.SADNESS, SafetyLevel.NORMAL, "gpt-test"
+        );
+        when(stateService.begin(1L)).thenReturn(true);
+        when(inputLoader.load(1L)).thenReturn(input);
+        when(aiClient.analyze(any()))
+                .thenReturn(new AiCallResult(contaminated, 1))
+                .thenReturn(new AiCallResult(corrected, 1));
+        doThrow(new IllegalArgumentException("Summary must be Korean"))
+                .doNothing()
+                .when(safetyGuard).validate(any());
+        when(safetyGuard.resolveSafetyLevel(input.content(), SafetyLevel.NORMAL)).thenReturn(SafetyLevel.NORMAL);
+        when(intensityPolicy.calculate(32, input.content(), input.selectedEmotion())).thenReturn(32);
+
+        orchestrator.analyze(1L);
+
+        verify(aiClient, times(2)).analyze(any());
+        verify(stateService).complete(1L, corrected, 32, false, 2, SafetyLevel.NORMAL);
+        verify(stateService, never()).fallback(any(), any(), any(Integer.class), any(Boolean.class),
+                any(Integer.class), any(), any());
+    }
+
+    @Test
+    void usesFallbackWhenBothAiOutputsFailQualityValidation() {
+        DiaryAnalysisInput input = new DiaryAnalysisInput(1L, "답장이 오지 않아 서운하고 슬펐다", "슬픔");
+        DiaryAiResult rejected = result("gpt-test");
+        DiaryAiResult fallback = result("fallback-rule-v1");
+        when(stateService.begin(1L)).thenReturn(true);
+        when(inputLoader.load(1L)).thenReturn(input);
+        when(aiClient.analyze(any())).thenReturn(new AiCallResult(rejected, 1));
+        doThrow(new IllegalArgumentException("Summary must be Korean"))
+                .doThrow(new IllegalArgumentException("AI meta expression"))
+                .doNothing()
+                .when(safetyGuard).validate(any());
+        when(safetyGuard.resolveSafetyLevel(input.content(), SafetyLevel.NORMAL)).thenReturn(SafetyLevel.NORMAL);
+        when(fallbackFactory.create(input, SafetyLevel.NORMAL)).thenReturn(fallback);
+        when(intensityPolicy.calculate(50, input.content(), input.selectedEmotion())).thenReturn(50);
+
+        orchestrator.analyze(1L);
+
+        verify(aiClient, times(2)).analyze(any());
+        verify(stateService).fallback(1L, fallback, 50, false, 2, "AI_OUTPUT_REJECTED", SafetyLevel.NORMAL);
+    }
+
     private DiaryAiResult result(String model) {
         return new DiaryAiResult(
                 "오늘의 마음을 견디느라 애썼어요.",
                 "불안한 마음으로 오늘을 천천히 되돌아본 하루의 기록",
-                50, List.of(), SafetyLevel.NORMAL, model
+                50, List.of(), ReportEmotion.ANXIETY, SafetyLevel.NORMAL, model
         );
     }
 }

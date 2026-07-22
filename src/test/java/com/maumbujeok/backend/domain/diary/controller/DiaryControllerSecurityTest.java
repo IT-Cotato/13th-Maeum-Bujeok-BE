@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.nullValue;
 
 import com.maumbujeok.backend.domain.diary.application.DiaryService;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryRequest;
@@ -65,7 +66,7 @@ class DiaryControllerSecurityTest {
     }
 
     @Test
-    void returnsTemporaryAmuletGenerationFieldsWithAnalysis() throws Exception {
+    void returnsNullAmuletFieldsUntilAnAmuletIsActuallyGenerated() throws Exception {
         Member member = saveMember("amulet", "01000000004");
         CreateDiaryResponse created = diaryService.create(
                 member.getId(),
@@ -73,12 +74,15 @@ class DiaryControllerSecurityTest {
         );
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
-        mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
+                mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.amuletId").value(0))
-                .andExpect(jsonPath("$.data.amuletType").value("friendship"))
-                .andExpect(jsonPath("$.data.title").value("테스트 응답"))
+                .andExpect(jsonPath("$.data.amuletId").value(nullValue()))
+                .andExpect(jsonPath("$.data.amuletType").value(nullValue()))
+                .andExpect(jsonPath("$.data.title").value(nullValue()))
+                .andExpect(jsonPath("$.data.modelName").value(nullValue()))
+                .andExpect(jsonPath("$.data.failureCode").value(nullValue()))
+                .andExpect(jsonPath("$.data.attemptCount").value(0))
                 .andExpect(jsonPath("$.data.createdAt").isString())
                 .andExpect(jsonPath("$.data.createdAt").isNotEmpty());
     }

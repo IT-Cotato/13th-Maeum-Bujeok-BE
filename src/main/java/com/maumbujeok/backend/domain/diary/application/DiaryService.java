@@ -10,6 +10,7 @@ import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +18,9 @@ import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DiaryService {
-    static final String PROMPT_VERSION = "diary-v1";
+    static final String PROMPT_VERSION = "diary-v2";
     static final String POLICY_VERSION = "policy-v1";
 
     private final MemberRepository memberRepository;
@@ -32,7 +34,10 @@ public class DiaryService {
         Member member = memberRepository.getReferenceById(memberId);
         Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), request.selectedEmotion().trim()));
         DiaryAnalysis analysis = analysisRepository.save(new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
+        log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
+                diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(memberPhoneNumber));
         eventPublisher.publishEvent(new DiaryCreatedEvent(analysis.getId()));
+        log.info("Diary analysis event published diaryId={} analysisId={}", diary.getId(), analysis.getId());
         return new CreateDiaryResponse(diary.getId(), analysis.getStatus());
     }
 
@@ -40,7 +45,14 @@ public class DiaryService {
     public DiaryAnalysisResponse getAnalysis(Long memberId, Long diaryId) {
         DiaryAnalysis analysis = analysisRepository.findByDiaryIdAndDiaryMemberId(diaryId, memberId)
                 .orElseThrow(() -> new DiaryRequestException("DIARY_404", "일기를 찾을 수 없습니다."));
+        log.info("Diary analysis queried diaryId={} analysisId={} status={} model={} failureCode={}",
+                diaryId, analysis.getId(), analysis.getStatus(), analysis.getModelName(), analysis.getFailureCode());
         return DiaryAnalysisResponse.from(analysis);
+    }
+
+    private String maskPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.length() < 4) return "****";
+        return phoneNumber.substring(phoneNumber.length() - 4);
     }
 
     private void validate(CreateDiaryRequest request) {

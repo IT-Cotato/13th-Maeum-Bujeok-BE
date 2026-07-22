@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.maumbujeok.backend.domain.diary.ai.DiaryAiResult;
 import com.maumbujeok.backend.domain.diary.domain.SafetyLevel;
+import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +21,40 @@ class AiResponseSafetyGuardTest {
     @Test
     void rejectsFortuneTellingAndInvalidSummaryLength() {
         DiaryAiResult unsafe = new DiaryAiResult(
-                "당신은 원래 불안한 사람이에요.", "짧음", 50, List.of(), SafetyLevel.NORMAL, "test"
+                "당신은 원래 불안한 사람이에요.", "짧음", 50, List.of(),
+                ReportEmotion.ANXIETY, SafetyLevel.NORMAL, "test"
         );
         assertThrows(IllegalArgumentException.class, () -> guard.validate(unsafe));
+    }
+
+    @Test
+    void acceptsConciseKoreanSummary() {
+        DiaryAiResult concise = new DiaryAiResult(
+                "기다리던 답이 없어 서운하고 슬펐겠어요.",
+                "응답을 기다리며 서운하고 슬펐던 하루",
+                32,
+                List.of(),
+                ReportEmotion.SADNESS,
+                SafetyLevel.NORMAL,
+                "test"
+        );
+
+        assertDoesNotThrow(() -> guard.validate(concise));
+    }
+
+    @Test
+    void rejectsForeignLanguageContaminationInSummary() {
+        DiaryAiResult contaminated = new DiaryAiResult(
+                "기다리던 답이 없어 서운하고 슬펐겠어요.",
+                "응답이 없어 서운하고 슬픈 마음이 듦受邀返回的代码时，我这边遇到了乱码？需要",
+                32,
+                List.of(),
+                ReportEmotion.SADNESS,
+                SafetyLevel.NORMAL,
+                "test"
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> guard.validate(contaminated));
     }
 
     @Test
@@ -36,6 +68,7 @@ class AiResponseSafetyGuardTest {
                 "불안한 마음으로 오늘을 천천히 되돌아본 하루의 기록",
                 50,
                 List.of(),
+                ReportEmotion.ANXIETY,
                 SafetyLevel.NORMAL,
                 "test"
         );

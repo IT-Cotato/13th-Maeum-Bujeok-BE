@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.maumbujeok.backend.domain.diary.ai.DiaryAiResult;
+import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,7 @@ class DiaryAnalysisTest {
         assertEquals(DiaryAnalysisStatus.COMPLETED, analysis.getStatus());
         assertEquals(72, analysis.getFinalNegativeIntensity());
         assertEquals(1, analysis.getAttemptCount());
+        assertEquals(ReportEmotion.ANXIETY, analysis.getReportEmotion());
     }
 
     @Test
@@ -31,7 +33,7 @@ class DiaryAnalysisTest {
         return new DiaryAiResult(
                 "오늘의 힘든 마음을 견디느라 애썼어요.",
                 "불안한 마음으로 오늘을 천천히 되돌아본 하루의 기록",
-                70, List.of(), SafetyLevel.NORMAL, "test"
+                70, List.of(), ReportEmotion.ANXIETY, SafetyLevel.NORMAL, "test"
         );
     }
 }

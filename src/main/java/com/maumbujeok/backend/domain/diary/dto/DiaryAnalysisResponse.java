@@ -10,16 +10,17 @@ public record DiaryAnalysisResponse(
         String summary,
         String empathyResponse,
         Integer negativeIntensity,
+        String reportEmotion,
         Boolean salpuriRecommended,
         SafetyLevel safetyLevel,
         Long amuletId,
         String amuletType,
         String title,
-        String createdAt
+        String createdAt,
+        String modelName,
+        String failureCode,
+        int attemptCount
 ) {
-    private static final long TEST_AMULET_ID = 0L;
-    private static final String TEST_AMULET_TYPE = "friendship";
-    private static final String TEST_AMULET_TITLE = "테스트 응답";
     private static final DateTimeFormatter AMULET_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     public static DiaryAnalysisResponse from(DiaryAnalysis analysis) {
@@ -28,12 +29,16 @@ public record DiaryAnalysisResponse(
                 analysis.getSummary(),
                 analysis.getEmpathyResponse(),
                 analysis.getFinalNegativeIntensity(),
+                analysis.getReportEmotion() == null ? null : analysis.getReportEmotion().getLabel(),
                 analysis.getSalpuriRecommended(),
                 analysis.getSafetyLevel(),
-                TEST_AMULET_ID,
-                TEST_AMULET_TYPE,
-                TEST_AMULET_TITLE,
-                analysis.getCreatedAt().format(AMULET_DATE_FORMAT)
+                null,
+                null,
+                null,
+                analysis.getCreatedAt().format(AMULET_DATE_FORMAT),
+                analysis.getModelName(),
+                analysis.getFailureCode(),
+                analysis.getAttemptCount()
         );
     }
 }
