@@ -24,12 +24,12 @@ public class NotificationService {
 
     @Transactional
     public NotificationSettingsResponse updateNotificationSettings(
-            Long memberId,
+            String memberPhoneNumber,
             NotificationSettingsUpdateRequest request
     ) {
         validateNotificationSettingsRequest(request);
 
-        MemberNotificationSetting setting = getOrCreateSetting(memberId);
+        MemberNotificationSetting setting = getOrCreateSetting(memberPhoneNumber);
         setting.updateNotificationSettings(
                 request.diaryReminderEnabled(),
                 request.fortuneActionEnabled()
@@ -41,12 +41,12 @@ public class NotificationService {
 
     @Transactional
     public NotificationDaysResponse updateNotificationDays(
-            Long memberId,
+            String memberPhoneNumber,
             NotificationDaysUpdateRequest request
     ) {
         validateNotificationDaysRequest(request);
 
-        MemberNotificationSetting setting = getOrCreateSetting(memberId);
+        MemberNotificationSetting setting = getOrCreateSetting(memberPhoneNumber);
         setting.updateNotificationDays(
                 request.mondayEnabled(),
                 request.tuesdayEnabled(),
@@ -61,13 +61,13 @@ public class NotificationService {
         return NotificationDaysResponse.from(setting);
     }
 
-    private MemberNotificationSetting getOrCreateSetting(Long memberId) {
-        return notificationSettingRepository.findByMemberId(memberId)
-                .orElseGet(() -> MemberNotificationSetting.create(getMemberById(memberId)));
+    private MemberNotificationSetting getOrCreateSetting(String memberPhoneNumber) {
+        return notificationSettingRepository.findByMemberPhoneNumber(memberPhoneNumber)
+                .orElseGet(() -> MemberNotificationSetting.create(getMemberByPhoneNumber(memberPhoneNumber)));
     }
 
-    private Member getMemberById(Long memberId) {
-        return memberRepository.findById(memberId)
+    private Member getMemberByPhoneNumber(String memberPhoneNumber) {
+        return memberRepository.findByPhoneNumber(memberPhoneNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 

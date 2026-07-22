@@ -5,5 +5,5 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MemberNotificationSettingRepository extends JpaRepository<MemberNotificationSetting, Long> {
-    Optional<MemberNotificationSetting> findByMemberId(Long memberId);
+    Optional<MemberNotificationSetting> findByMemberPhoneNumber(String phoneNumber);
 }

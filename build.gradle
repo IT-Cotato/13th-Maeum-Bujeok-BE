@@ -44,6 +44,12 @@ dependencies {
 
     // Swagger (API 문서화)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+
+    // dotenv (환경변수 자동 로드)
+    implementation 'me.paulschwarz:spring-dotenv:5.0.1'
+
+    // validation (유효성 검증)
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
 
 tasks.named('test') {

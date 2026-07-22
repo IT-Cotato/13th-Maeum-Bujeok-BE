@@ -27,7 +27,7 @@ public class MemberNotificationSetting extends BaseTimeEntity {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false, unique = true)
+    @JoinColumn(name = "member_phone_number", nullable = false, unique = true)
     private Member member;
 
     @Column(name = "diary_reminder_enabled", nullable = false)
