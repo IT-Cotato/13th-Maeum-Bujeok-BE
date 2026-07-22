@@ -27,9 +27,9 @@ public class DiaryService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public CreateDiaryResponse create(Long memberId, CreateDiaryRequest request) {
+    public CreateDiaryResponse create(String memberPhoneNumber, CreateDiaryRequest request) {
         validate(request);
-        Member member = memberRepository.getReferenceById(memberId);
+        Member member = memberRepository.getReferenceById(memberPhoneNumber);
         Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), request.selectedEmotion().trim()));
         DiaryAnalysis analysis = analysisRepository.save(new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
         eventPublisher.publishEvent(new DiaryCreatedEvent(analysis.getId()));
@@ -37,8 +37,8 @@ public class DiaryService {
     }
 
     @Transactional(readOnly = true)
-    public DiaryAnalysisResponse getAnalysis(Long memberId, Long diaryId) {
-        DiaryAnalysis analysis = analysisRepository.findByDiaryIdAndDiaryMemberId(diaryId, memberId)
+    public DiaryAnalysisResponse getAnalysis(String memberPhoneNumber, Long diaryId) {
+        DiaryAnalysis analysis = analysisRepository.findByDiaryIdAndDiaryMemberPhoneNumber(diaryId, memberPhoneNumber)
                 .orElseThrow(() -> new DiaryRequestException("DIARY_404", "일기를 찾을 수 없습니다."));
         return DiaryAnalysisResponse.from(analysis);
     }

@@ -46,7 +46,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     Member newMember = Member.builder()
                             .name(googleName)
                             .email(email)
-                            .phoneNumber(null)
+                            .phoneNumber("GOOGLE_" + providerId)
                             .provider(Member.Provider.GOOGLE)
                             .providerId(providerId)
                             .termsAgreedAt(now)

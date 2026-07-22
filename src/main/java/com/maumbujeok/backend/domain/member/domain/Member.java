@@ -16,9 +16,8 @@ import java.time.LocalDateTime;
 public class Member extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "member_id")
-    private Long id;
+    @Column(name = "phone_number", nullable = false, length = 50)
+    private String phoneNumber;
 
     @Column(name = "name")
     private String name;
@@ -26,13 +25,10 @@ public class Member extends BaseTimeEntity {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "phone_number", nullable = true, unique = true)
-    private String phoneNumber;
-
-    @Column(name = "password_hash", nullable = true)
+    @Column(name = "password_hash")
     private String passwordHash;
 
-    @Column(name = "birth_date", length = 8)
+    @Column(name = "birth_date", length = 20)
     private String birthDate;
 
     @Enumerated(EnumType.STRING)
