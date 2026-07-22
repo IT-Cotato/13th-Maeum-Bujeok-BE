@@ -2,15 +2,18 @@ package com.maumbujeok.backend.domain.diary.application;
 
 import com.maumbujeok.backend.domain.diary.domain.Diary;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
+import com.maumbujeok.backend.domain.diary.domain.DiaryEmotion;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryRequest;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryAnalysisResponse;
+import com.maumbujeok.backend.domain.diary.dto.DiaryResponse;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,8 @@ public class DiaryService {
     public CreateDiaryResponse create(String memberPhoneNumber, CreateDiaryRequest request) {
         validate(request);
         Member member = memberRepository.getReferenceById(memberPhoneNumber);
-        Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), request.selectedEmotion().trim()));
+        DiaryEmotion selectedEmotion = parseEmotion(request.selectedEmotion());
+        Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), selectedEmotion));
         DiaryAnalysis analysis = analysisRepository.save(new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
         log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
                 diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(member.getPhoneNumber()));
@@ -50,6 +54,14 @@ public class DiaryService {
         return DiaryAnalysisResponse.from(analysis);
     }
 
+    @Transactional(readOnly = true)
+    public List<DiaryResponse> getAll(String memberPhoneNumber) {
+        return diaryRepository.findAllByMemberPhoneNumberOrderByCreatedAtDescIdDesc(memberPhoneNumber)
+                .stream()
+                .map(DiaryResponse::from)
+                .toList();
+    }
+
     private String maskPhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.length() < 4) return "****";
         return phoneNumber.substring(phoneNumber.length() - 4);
@@ -60,7 +72,18 @@ public class DiaryService {
             throw new DiaryRequestException("DIARY_400", "일기 내용은 1자 이상 5000자 이하여야 합니다.");
         }
         if (!StringUtils.hasText(request.selectedEmotion()) || request.selectedEmotion().length() > 30) {
-            throw new DiaryRequestException("DIARY_400", "선택 감정은 1자 이상 30자 이하여야 합니다.");
+            throw new DiaryRequestException("DIARY_400", "선택 감정은 필수입니다.");
+        }
+    }
+
+    private DiaryEmotion parseEmotion(String value) {
+        try {
+            return DiaryEmotion.fromInput(value);
+        } catch (IllegalArgumentException exception) {
+            throw new DiaryRequestException(
+                    "DIARY_400",
+                    "선택 감정은 다음 9개 코드 중 하나여야 합니다: " + String.join(", ", DiaryEmotion.codes())
+            );
         }
     }
 }

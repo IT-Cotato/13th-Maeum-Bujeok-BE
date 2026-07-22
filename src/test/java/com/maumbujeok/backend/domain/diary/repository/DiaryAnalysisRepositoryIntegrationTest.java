@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.maumbujeok.backend.domain.diary.domain.Diary;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysisStatus;
+import com.maumbujeok.backend.domain.diary.domain.DiaryEmotion;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.Tag;
@@ -43,7 +44,7 @@ class DiaryAnalysisRepositoryIntegrationTest {
                 .passwordHash("encoded")
                 .role(Member.Role.ROLE_USER)
                 .build());
-        Diary diary = diaryRepository.save(new Diary(member, "오늘의 일기", "불안"));
+        Diary diary = diaryRepository.save(new Diary(member, "오늘의 일기", DiaryEmotion.ANXIOUS));
         DiaryAnalysis first = analysisRepository.saveAndFlush(new DiaryAnalysis(diary, "diary-v1", "policy-v1"));
 
         assertEquals(DiaryAnalysisStatus.PENDING, first.getStatus());

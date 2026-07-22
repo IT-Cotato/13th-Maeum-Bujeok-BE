@@ -4,9 +4,11 @@ import com.maumbujeok.backend.domain.diary.application.DiaryService;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryRequest;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryAnalysisResponse;
+import com.maumbujeok.backend.domain.diary.dto.DiaryResponse;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +29,13 @@ public class DiaryController {
             @RequestBody CreateDiaryRequest request
     ) {
         return ApiResponse.onSuccess(diaryService.create(userDetails.getMember().getPhoneNumber(), request));
+    }
+
+    @GetMapping
+    public ApiResponse<List<DiaryResponse>> getAll(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ApiResponse.onSuccess(diaryService.getAll(userDetails.getMember().getPhoneNumber()));
     }
 
     @GetMapping("/{diaryId}/analysis")

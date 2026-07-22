@@ -18,7 +18,7 @@ public class DiaryAnalysisInputLoader {
         return new DiaryAnalysisInput(
                 analysisId,
                 analysis.getDiary().getContent(),
-                analysis.getDiary().getSelectedEmotion()
+                analysis.getDiary().getSelectedEmotion().getAnalysisValue()
         );
     }
 }
