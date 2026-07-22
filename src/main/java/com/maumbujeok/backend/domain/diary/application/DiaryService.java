@@ -11,6 +11,7 @@ import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
+import com.maumbujeok.backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
@@ -48,7 +49,7 @@ public class DiaryService {
     @Transactional(readOnly = true)
     public DiaryAnalysisResponse getAnalysis(String memberPhoneNumber, Long diaryId) {
         DiaryAnalysis analysis = analysisRepository.findByDiaryIdAndDiaryMemberPhoneNumber(diaryId, memberPhoneNumber)
-                .orElseThrow(() -> new DiaryRequestException("DIARY_404", "일기를 찾을 수 없습니다."));
+                .orElseThrow(() -> new DiaryRequestException(ErrorCode.DIARY_NOT_FOUND, "일기를 찾을 수 없습니다."));
         log.info("Diary analysis queried diaryId={} analysisId={} status={} model={} failureCode={}",
                 diaryId, analysis.getId(), analysis.getStatus(), analysis.getModelName(), analysis.getFailureCode());
         return DiaryAnalysisResponse.from(analysis);
@@ -69,10 +70,10 @@ public class DiaryService {
 
     private void validate(CreateDiaryRequest request) {
         if (request == null || !StringUtils.hasText(request.content()) || request.content().length() > 5000) {
-            throw new DiaryRequestException("DIARY_400", "일기 내용은 1자 이상 5000자 이하여야 합니다.");
+            throw new DiaryRequestException(ErrorCode.INVALID_DIARY_REQUEST, "일기 내용은 1자 이상 5000자 이하여야 합니다.");
         }
         if (!StringUtils.hasText(request.selectedEmotion()) || request.selectedEmotion().length() > 30) {
-            throw new DiaryRequestException("DIARY_400", "선택 감정은 필수입니다.");
+            throw new DiaryRequestException(ErrorCode.INVALID_DIARY_REQUEST, "선택 감정은 필수입니다.");
         }
     }
 
@@ -81,7 +82,7 @@ public class DiaryService {
             return DiaryEmotion.fromInput(value);
         } catch (IllegalArgumentException exception) {
             throw new DiaryRequestException(
-                    "DIARY_400",
+                    ErrorCode.INVALID_DIARY_REQUEST,
                     "선택 감정은 다음 9개 코드 중 하나여야 합니다: " + String.join(", ", DiaryEmotion.codes())
             );
         }
