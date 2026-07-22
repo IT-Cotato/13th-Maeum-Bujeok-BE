@@ -53,7 +53,7 @@ public class AuthController {
 
     @Operation(summary = "회원가입 API", description = "전화번호 본인 인증 완료 후 회원 정보(약관 동의 내역, 이름, 비밀번호, 생년월일 등)를 받아 가입 처리합니다.")
     @PostMapping("/signup")
-    public ApiResponse<String> signup(@RequestBody SignUpRequest request) {
+    public ApiResponse<String> signup(@jakarta.validation.Valid @RequestBody SignUpRequest request) {
         // 1. 전화번호 중복 체크
         if (memberRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
             throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);

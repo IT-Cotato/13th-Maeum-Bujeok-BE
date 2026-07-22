@@ -26,7 +26,7 @@ public class DiaryController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody CreateDiaryRequest request
     ) {
-        return ApiResponse.onSuccess(diaryService.create(userDetails.getMember().getId(), request));
+        return ApiResponse.onSuccess(diaryService.create(userDetails.getMember().getPhoneNumber(), request));
     }
 
     @GetMapping("/{diaryId}/analysis")
@@ -34,6 +34,6 @@ public class DiaryController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long diaryId
     ) {
-        return ApiResponse.onSuccess(diaryService.getAnalysis(userDetails.getMember().getId(), diaryId));
+        return ApiResponse.onSuccess(diaryService.getAnalysis(userDetails.getMember().getPhoneNumber(), diaryId));
     }
 }

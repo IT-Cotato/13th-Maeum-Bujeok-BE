@@ -25,7 +25,7 @@ public class Diary extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_phone_number", nullable = false)
     private Member member;
 
     @Column(nullable = false, columnDefinition = "TEXT")

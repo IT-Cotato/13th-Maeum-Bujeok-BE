@@ -10,5 +10,5 @@ public interface DiaryAnalysisRepository extends JpaRepository<DiaryAnalysis, Lo
     @EntityGraph(attributePaths = "diary")
     Optional<DiaryAnalysis> findById(Long id);
 
-    Optional<DiaryAnalysis> findByDiaryIdAndDiaryMemberId(Long diaryId, Long memberId);
+    Optional<DiaryAnalysis> findByDiaryIdAndDiaryMemberPhoneNumber(Long diaryId, String phoneNumber);
 }

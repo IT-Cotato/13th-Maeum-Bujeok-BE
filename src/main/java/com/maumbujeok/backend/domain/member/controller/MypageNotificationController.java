@@ -36,7 +36,7 @@ public class MypageNotificationController {
             @RequestBody NotificationSettingsUpdateRequest request
     ) {
         return ApiResponse.onSuccess(
-                notificationService.updateNotificationSettings(userDetails.getMember().getId(), request)
+                notificationService.updateNotificationSettings(userDetails.getMember().getPhoneNumber(), request)
         );
     }
 
@@ -51,7 +51,7 @@ public class MypageNotificationController {
             @RequestBody NotificationDaysUpdateRequest request
     ) {
         return ApiResponse.onSuccess(
-                notificationService.updateNotificationDays(userDetails.getMember().getId(), request)
+                notificationService.updateNotificationDays(userDetails.getMember().getPhoneNumber(), request)
         );
     }
 }

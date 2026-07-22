@@ -42,7 +42,7 @@ class MypageNotificationControllerTest {
     @Test
     void updatesNotificationSettingsForAuthenticatedMember() throws Exception {
         Member member = saveMember("notification-user", "01000000111");
-        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(patch("/api/mypage/notifications")
                         .header("Authorization", "Bearer " + token)
@@ -52,7 +52,7 @@ class MypageNotificationControllerTest {
                 .andExpect(jsonPath("$.data.diaryReminderEnabled").value(true))
                 .andExpect(jsonPath("$.data.fortuneActionEnabled").value(false));
 
-        MemberNotificationSetting setting = notificationSettingRepository.findByMemberId(member.getId())
+        MemberNotificationSetting setting = notificationSettingRepository.findByMemberPhoneNumber(member.getPhoneNumber())
                 .orElseThrow();
         assertTrue(setting.isDiaryReminderEnabled());
         assertFalse(setting.isFortuneActionEnabled());
@@ -61,7 +61,7 @@ class MypageNotificationControllerTest {
     @Test
     void updatesNotificationDaysForAuthenticatedMember() throws Exception {
         Member member = saveMember("day-user", "01000000112");
-        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(patch("/api/mypage/notifications/days")
                         .header("Authorization", "Bearer " + token)
@@ -86,7 +86,7 @@ class MypageNotificationControllerTest {
                 .andExpect(jsonPath("$.data.saturdayEnabled").value(false))
                 .andExpect(jsonPath("$.data.sundayEnabled").value(false));
 
-        MemberNotificationSetting setting = notificationSettingRepository.findByMemberId(member.getId())
+        MemberNotificationSetting setting = notificationSettingRepository.findByMemberPhoneNumber(member.getPhoneNumber())
                 .orElseThrow();
         assertTrue(setting.isMondayEnabled());
         assertFalse(setting.isTuesdayEnabled());
@@ -100,7 +100,7 @@ class MypageNotificationControllerTest {
     @Test
     void returnsBadRequestWhenNotificationSettingsRequestIsIncomplete() throws Exception {
         Member member = saveMember("invalid-notification-user", "01000000113");
-        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(patch("/api/mypage/notifications")
                         .header("Authorization", "Bearer " + token)
@@ -113,7 +113,7 @@ class MypageNotificationControllerTest {
     @Test
     void returnsBadRequestWhenNotificationDaysRequestIsIncomplete() throws Exception {
         Member member = saveMember("invalid-day-user", "01000000114");
-        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(patch("/api/mypage/notifications/days")
                         .header("Authorization", "Bearer " + token)
@@ -128,9 +128,9 @@ class MypageNotificationControllerTest {
                 .andExpect(jsonPath("$.code").value("MEMBER_002"));
     }
 
-    private Member saveMember(String loginId, String phoneNumber) {
+    private Member saveMember(String name, String phoneNumber) {
         return memberRepository.save(Member.builder()
-                .loginId(loginId)
+                .name(name)
                 .phoneNumber(phoneNumber)
                 .passwordHash("encoded-password")
                 .role(Member.Role.ROLE_USER)

@@ -56,7 +56,7 @@ class DiaryControllerSecurityTest {
     void hidesAnotherMembersAnalysis() throws Exception {
         Member owner = saveMember("owner2", "01000000002");
         Member stranger = saveMember("stranger", "01000000003");
-        CreateDiaryResponse created = diaryService.create(owner.getId(), new CreateDiaryRequest("나만의 일기", "슬픔"));
+        CreateDiaryResponse created = diaryService.create(owner.getPhoneNumber(), new CreateDiaryRequest("나만의 일기", "슬픔"));
         String strangerToken = jwtTokenProvider.createToken(stranger.getPhoneNumber(), stranger.getRole().name());
 
         mockMvc.perform(get("/api/diaries/{diaryId}/analysis", created.diaryId())
@@ -69,7 +69,7 @@ class DiaryControllerSecurityTest {
     void returnsNullAmuletFieldsUntilAnAmuletIsActuallyGenerated() throws Exception {
         Member member = saveMember("amulet", "01000000004");
         CreateDiaryResponse created = diaryService.create(
-                member.getId(),
+                member.getPhoneNumber(),
                 new CreateDiaryRequest("친구와 즐거운 하루를 보냈다", "기쁨")
         );
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
