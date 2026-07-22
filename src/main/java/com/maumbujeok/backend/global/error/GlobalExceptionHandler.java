@@ -21,6 +21,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
     }
 
+    // MethodArgumentNotValidException 처리 (Validation 실패)
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(org.springframework.web.bind.MethodArgumentNotValidException e) {
+        String defaultMessage = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        log.error("Validation failed: {}", defaultMessage, e);
+        return ResponseEntity
+                .status(org.springframework.http.HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.onFailure("COMMON_400", defaultMessage, null));
+    }
+
     // 예측하지 못한 서버 내부 예외 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
