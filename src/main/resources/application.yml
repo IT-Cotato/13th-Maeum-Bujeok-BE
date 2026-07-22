@@ -5,6 +5,17 @@ spring:
   application:
     name: backend
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:google-client-id-placeholder}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret-placeholder}
+            scope:
+              - email
+              - profile
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # 3307 포트와 allowPublicKeyRetrieval=true 확인!

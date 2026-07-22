@@ -46,9 +46,9 @@ public class JwtTokenProvider {
                 .build();
     }
 
-    // 토큰 생성
-    public String createToken(String loginId, String role) {
-        Claims claims = Jwts.claims().setSubject(loginId);
+    // Access Token 생성 (subject: userKey/phoneNumber)
+    public String createToken(String userKey, String role) {
+        Claims claims = Jwts.claims().setSubject(userKey);
         claims.put("role", role);
 
         Date now = new Date();
@@ -61,6 +61,27 @@ public class JwtTokenProvider {
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // Refresh Token 생성 (subject: userKey/phoneNumber)
+    public String createRefreshToken(String userKey) {
+        Claims claims = Jwts.claims().setSubject(userKey);
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + jwtProperties.refreshTokenExpiration().toMillis());
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuer(jwtProperties.issuer())
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // Refresh Token 만료 시각 계산
+    public java.time.LocalDateTime getRefreshTokenExpiryDate() {
+        return java.time.LocalDateTime.now().plus(jwtProperties.refreshTokenExpiration());
     }
 
     // Claims 기반 인증 정보 조회 (중복 파싱 방지용)
@@ -78,10 +99,15 @@ public class JwtTokenProvider {
         return getAuthentication(claims);
     }
 
-    // 토큰에서 회원 로그인 아이디 추출
-    public String getUserLoginId(String token) {
+    // 토큰에서 회원 주 식별자(userKey) 추출
+    public String getUserSubject(String token) {
         Claims claims = parseClaims(token);
         return claims != null ? claims.getSubject() : null;
+    }
+
+    // 기존 메서드 이름 호환성 유지
+    public String getUserLoginId(String token) {
+        return getUserSubject(token);
     }
 
     // 토큰 파싱 및 예외 검증 통합
