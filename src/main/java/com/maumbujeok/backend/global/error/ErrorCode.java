@@ -13,6 +13,10 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_001", "존재하지 않는 사용자입니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "AUTH_002", "비밀번호가 일치하지 않습니다."),
     DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "AUTH_004", "이미 가입된 전화번호입니다."),
+
+    // Member
+    INVALID_NOTIFICATION_SETTINGS(HttpStatus.BAD_REQUEST, "MEMBER_001", "알림 설정 값이 올바르지 않습니다."),
+    INVALID_NOTIFICATION_DAYS(HttpStatus.BAD_REQUEST, "MEMBER_002", "요일별 알림 설정 값이 올바르지 않습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "유효하지 않거나 만료된 Refresh Token입니다."),
     PHONE_NUMBER_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_006", "회원 정보의 전화번호와 일치하지 않습니다."),
     SOCIAL_USER_CANNOT_RESET_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_008", "소셜 로그인 가입자는 비밀번호를 재설정할 수 없습니다."),
