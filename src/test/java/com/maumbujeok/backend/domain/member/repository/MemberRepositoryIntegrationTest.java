@@ -33,9 +33,9 @@ class MemberRepositoryIntegrationTest {
     private MemberRepository memberRepository;
 
     @Test
-    void savesAndFindsMemberByLoginIdUsingMySql() {
+    void savesAndFindsMemberByPhoneNumberUsingMySql() {
         Member member = Member.builder()
-                .loginId("harness")
+                .name("harness")
                 .phoneNumber("01000000006")
                 .passwordHash("encoded-password")
                 .role(Member.Role.ROLE_USER)
@@ -43,7 +43,7 @@ class MemberRepositoryIntegrationTest {
 
         memberRepository.saveAndFlush(member);
 
-        Optional<Member> found = memberRepository.findByLoginId("harness");
+        Optional<Member> found = memberRepository.findByPhoneNumber("01000000006");
         assertTrue(found.isPresent());
         assertEquals(Member.Role.ROLE_USER, found.orElseThrow().getRole());
     }

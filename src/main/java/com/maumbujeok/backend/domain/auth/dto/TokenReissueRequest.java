@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class LoginRequest {
-    private String phoneNumber;
-    private String password;
+public class TokenReissueRequest {
+    private String refreshToken;
 }

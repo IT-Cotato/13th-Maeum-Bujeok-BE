@@ -30,7 +30,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return member.getLoginId();
+        return member.getPhoneNumber() != null ? member.getPhoneNumber() : "GOOGLE_" + member.getProviderId();
     }
 
     @Override

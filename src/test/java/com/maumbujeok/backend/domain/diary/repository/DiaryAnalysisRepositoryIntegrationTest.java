@@ -38,7 +38,7 @@ class DiaryAnalysisRepositoryIntegrationTest {
     @Test
     void storesOnePendingAnalysisPerDiaryOnMySql() {
         Member member = memberRepository.save(Member.builder()
-                .loginId("diary")
+                .name("diary")
                 .phoneNumber("01000000005")
                 .passwordHash("encoded")
                 .role(Member.Role.ROLE_USER)
