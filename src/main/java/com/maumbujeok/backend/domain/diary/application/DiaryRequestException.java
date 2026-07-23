@@ -1,14 +1,16 @@
 package com.maumbujeok.backend.domain.diary.application;
 
-public class DiaryRequestException extends RuntimeException {
-    private final String code;
+import com.maumbujeok.backend.global.error.ErrorCode;
 
-    public DiaryRequestException(String code, String message) {
+public class DiaryRequestException extends RuntimeException {
+    private final ErrorCode errorCode;
+
+    public DiaryRequestException(ErrorCode errorCode, String message) {
         super(message);
-        this.code = code;
+        this.errorCode = errorCode;
     }
 
-    public String getCode() {
-        return code;
+    public ErrorCode getErrorCode() {
+        return errorCode;
     }
 }

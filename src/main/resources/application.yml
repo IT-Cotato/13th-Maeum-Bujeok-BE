@@ -38,3 +38,19 @@ jwt:
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
   issuer: ${JWT_ISSUER:maumbujeok}
+
+ai:
+  provider: ${AI_PROVIDER:fake}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_MODEL:gpt-5.5}
+    timeout: ${OPENAI_TIMEOUT:5s}
+    max-attempts: ${OPENAI_MAX_ATTEMPTS:2}
+  analysis:
+    negative-threshold: ${AI_NEGATIVE_THRESHOLD:70}
+
+logging:
+  level:
+    com.maumbujeok.backend.global.ai: ${AI_LOG_LEVEL:INFO}
+    com.maumbujeok.backend.domain.diary: ${AI_LOG_LEVEL:INFO}

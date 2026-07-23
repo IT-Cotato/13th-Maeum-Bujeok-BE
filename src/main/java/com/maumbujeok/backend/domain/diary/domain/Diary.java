@@ -3,6 +3,7 @@ package com.maumbujeok.backend.domain.diary.domain;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.global.common.BaseTimeEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -32,9 +33,10 @@ public class Diary extends BaseTimeEntity {
     private String content;
 
     @Column(name = "selected_emotion", nullable = false, length = 30)
-    private String selectedEmotion;
+    @Convert(converter = DiaryEmotionConverter.class)
+    private DiaryEmotion selectedEmotion;
 
-    public Diary(Member member, String content, String selectedEmotion) {
+    public Diary(Member member, String content, DiaryEmotion selectedEmotion) {
         this.member = member;
         this.content = content;
         this.selectedEmotion = selectedEmotion;
