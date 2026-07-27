@@ -4,7 +4,7 @@ import com.maumbujeok.backend.domain.talisman.domain.Talisman;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
@@ -18,13 +18,13 @@ public class TalismanRepositoryImpl implements TalismanRepositoryCustom {
     public List<Talisman> findTalismansWithCursor(
             String memberPhoneNumber,
             Long cursor,
-            LocalDateTime startOfWeek,
-            LocalDateTime endOfWeek,
+            LocalDate startOfWeek,
+            LocalDate endOfWeek,
             int size
     ) {
         StringBuilder jpql = new StringBuilder(
                 "SELECT t FROM Talisman t WHERE t.member.phoneNumber = :memberPhoneNumber "
-                + "AND t.createdAt >= :startOfWeek AND t.createdAt <= :endOfWeek "
+                + "AND t.recordedAt >= :startOfWeek AND t.recordedAt <= :endOfWeek "
         );
 
         if (cursor != null) {

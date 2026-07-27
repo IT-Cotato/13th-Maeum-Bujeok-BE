@@ -1,8 +1,10 @@
 package com.maumbujeok.backend.domain.auth.service;
 
 import com.maumbujeok.backend.domain.auth.domain.SmsAuthCode;
+import com.maumbujeok.backend.domain.auth.dto.SmsPurpose;
 import com.maumbujeok.backend.domain.auth.exception.SmsSendFailedException;
 import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
+import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import com.solapi.sdk.SolapiClient;
@@ -24,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SmsService {
 
     private final SmsAuthCodeRepository smsAuthCodeRepository;
+    private final MemberRepository memberRepository;
 
     @Value("${coolsms.api-key}")
     private String apiKey;
@@ -43,22 +46,43 @@ public class SmsService {
 
     // SMS 인증코드 전송 API
     @Transactional
-    public void sendVerificationCode(String phoneNumber) {
-        // 6자리 랜덤 인증코드 생성
-        String code = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
-        
-        // SMS 실제 발송 처리
-        Message message = new Message();
-        message.setFrom(senderNumber);
-        message.setTo(phoneNumber);
-        message.setText(String.format("[마음부적] 인증번호는 [%s] 입니다.", code));
+    public void sendVerificationCode(String phoneNumber, SmsPurpose purpose) {
+        // 1. 유효성 검증 분기
+        if (purpose == SmsPurpose.SIGNUP) {
+            if (memberRepository.findByPhoneNumber(phoneNumber).isPresent()) {
+                throw new CustomException(ErrorCode.ALREADY_REGISTERED_PHONE);
+            }
+        } else if (purpose == SmsPurpose.PASSWORD_RESET) {
+            if (memberRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+                throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+            }
+        } else {
+            throw new CustomException(ErrorCode.INVALID_SMS_PURPOSE);
+        }
 
-        try {
-            messageService.send(message, null);
-            log.info("[SMS] Sent verification code to: {}", phoneNumber);
-        } catch (Exception e) {
-            log.error("[SMS] Failed to send verification code to: {}, Error: {}", phoneNumber, e.getMessage(), e);
-            throw new SmsSendFailedException();
+        // 2. 테스트 전용 전화번호 (Bypass) 로직
+        boolean isBypass = "01099999999".equals(phoneNumber) || "010-9999-9999".equals(phoneNumber);
+        String code;
+        if (isBypass) {
+            code = "123456";
+            log.info("[SMS BYPASS] Mock sent verification code 123456 to test number: {}", phoneNumber);
+        } else {
+            // 6자리 랜덤 인증코드 생성
+            code = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
+            
+            // SMS 실제 발송 처리
+            Message message = new Message();
+            message.setFrom(senderNumber);
+            message.setTo(phoneNumber);
+            message.setText(String.format("[마음부적] 인증번호는 [%s] 입니다.", code));
+
+            try {
+                messageService.send(message, null);
+                log.info("[SMS] Sent verification code to: {}", phoneNumber);
+            } catch (Exception e) {
+                log.error("[SMS] Failed to send verification code to: {}, Error: {}", phoneNumber, e.getMessage(), e);
+                throw new SmsSendFailedException();
+            }
         }
 
         // 만료 기한은 3분

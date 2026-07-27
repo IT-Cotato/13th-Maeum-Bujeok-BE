@@ -193,4 +193,62 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTH_005"));
     }
+
+    @Test
+    void smsSendSignupForNewNumberSucceedsWithBypass() throws Exception {
+        mockMvc.perform(post("/api/auth/sms/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"01099999999\",\"purpose\":\"SIGNUP\"}"))
+                .andExpect(status().isOk());
+
+        SmsAuthCode code = smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01099999999")
+                .orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
+    }
+
+    @Test
+    void smsSendSignupForAlreadyRegisteredNumberFails() throws Exception {
+        Member member = Member.builder()
+                .phoneNumber("01099999999")
+                .name("홍길동")
+                .passwordHash(passwordEncoder.encode("Password123!"))
+                .role(Member.Role.ROLE_USER)
+                .build();
+        memberRepository.save(member);
+
+        mockMvc.perform(post("/api/auth/sms/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"01099999999\",\"purpose\":\"SIGNUP\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("AUTH_009"));
+    }
+
+    @Test
+    void smsSendPasswordResetForUnregisteredNumberFails() throws Exception {
+        mockMvc.perform(post("/api/auth/sms/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"01099999999\",\"purpose\":\"PASSWORD_RESET\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("AUTH_010"));
+    }
+
+    @Test
+    void smsSendPasswordResetForRegisteredNumberSucceedsWithBypass() throws Exception {
+        Member member = Member.builder()
+                .phoneNumber("01099999999")
+                .name("홍길동")
+                .passwordHash(passwordEncoder.encode("Password123!"))
+                .role(Member.Role.ROLE_USER)
+                .build();
+        memberRepository.save(member);
+
+        mockMvc.perform(post("/api/auth/sms/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"01099999999\",\"purpose\":\"PASSWORD_RESET\"}"))
+                .andExpect(status().isOk());
+
+        SmsAuthCode code = smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01099999999")
+                .orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
+    }
 }

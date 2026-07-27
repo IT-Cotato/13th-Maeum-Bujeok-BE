@@ -25,14 +25,11 @@ public class TalismanService {
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate sunday = monday.plusDays(6);
 
-        LocalDateTime startOfWeek = monday.atStartOfDay();
-        LocalDateTime endOfWeek = sunday.atTime(23, 59, 59, 999999999);
-
         List<Talisman> talismans = talismanRepository.findTalismansWithCursor(
                 memberPhoneNumber,
                 cursor,
-                startOfWeek,
-                endOfWeek,
+                monday,
+                sunday,
                 size
         );
 
