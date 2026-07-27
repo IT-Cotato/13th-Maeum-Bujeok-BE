@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,14 +25,16 @@ public class TalismanController {
 
     @Operation(
             summary = "나의 부적 리스트 조회",
-            description = "로그인한 사용자의 부적 목록을 최신순으로 조회합니다."
+            description = "로그인한 사용자의 이번 주 부적 목록을 커서 기반 페이지네이션으로 조회합니다."
     )
     @GetMapping
     public ApiResponse<TalismanListResponse> getMyTalismans(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "3") int size
     ) {
         return ApiResponse.onSuccess(
-                talismanService.getTalismans(userDetails.getMember().getPhoneNumber())
+                talismanService.getTalismans(userDetails.getMember().getPhoneNumber(), cursor, size)
         );
     }
 }

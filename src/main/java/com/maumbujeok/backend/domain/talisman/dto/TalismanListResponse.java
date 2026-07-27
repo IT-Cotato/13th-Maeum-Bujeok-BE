@@ -4,6 +4,8 @@ import java.util.List;
 
 public record TalismanListResponse(
         List<TalismanItemResponse> items,
-        int count
+        int count,
+        boolean hasNext,
+        Long nextCursor
 ) {
 }

@@ -1,6 +1,7 @@
 package com.maumbujeok.backend.domain.report.controller;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -158,25 +159,60 @@ class NextWeekFlowAndTalismanTest {
                 .andExpect(jsonPath("$.data.adviceText").value("AI 조언 생성에 실패했습니다. 다음 주 흐름 분석을 다시 요청해 주세요."));
     }
 
+    @Autowired jakarta.persistence.EntityManager entityManager;
+
     @Test
-    void getTalismanListReturnsValues() throws Exception {
+    void getTalismanListReturnsValuesWithPaginationAndWeeklyFiltering() throws Exception {
         Member member = saveMember("user5", "01099990007");
-        talismanRepository.save(Talisman.builder()
+
+        // 1. Create a talisman from 2 weeks ago (should NOT be returned in this week's query)
+        Talisman oldTalisman = Talisman.builder()
                 .member(member)
-                .title("건강부적")
+                .title("과거부적")
                 .message("건강을 기원합니다.")
                 .designType("A")
                 .generationStatus(TalismanGenerationStatus.COMPLETED)
-                .build());
+                .build();
+        talismanRepository.saveAndFlush(oldTalisman);
+        entityManager.createNativeQuery("UPDATE talismans SET created_at = :createdAt WHERE id = :id")
+                .setParameter("createdAt", java.time.LocalDateTime.now().minusWeeks(2))
+                .setParameter("id", oldTalisman.getId())
+                .executeUpdate();
+
+        // 2. Create 4 talismans for this week
+        Talisman t1 = talismanRepository.save(Talisman.builder().member(member).title("부적1").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).build());
+        Talisman t2 = talismanRepository.save(Talisman.builder().member(member).title("부적2").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).build());
+        Talisman t3 = talismanRepository.save(Talisman.builder().member(member).title("부적3").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).build());
+        Talisman t4 = talismanRepository.save(Talisman.builder().member(member).title("부적4").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).build());
+        talismanRepository.flush();
+        entityManager.clear();
 
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
+        // 3. Request page 1 with size 3 (should return 부적4, 부적3, 부적2 and hasNext = true)
         mockMvc.perform(get("/api/talismans")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .param("size", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.count").value(3))
+                .andExpect(jsonPath("$.data.hasNext").value(true))
+                .andExpect(jsonPath("$.data.nextCursor").value(t2.getId()))
+                .andExpect(jsonPath("$.data.items", hasSize(3)))
+                .andExpect(jsonPath("$.data.items[0].title").value("부적4"))
+                .andExpect(jsonPath("$.data.items[1].title").value("부적3"))
+                .andExpect(jsonPath("$.data.items[2].title").value("부적2"));
+
+        // 4. Request page 2 with cursor pointing to t2 (should return 부적1, and hasNext = false, nextCursor = null)
+        mockMvc.perform(get("/api/talismans")
+                        .header("Authorization", "Bearer " + token)
+                        .param("cursor", String.valueOf(t2.getId()))
+                        .param("size", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.count").value(1))
+                .andExpect(jsonPath("$.data.hasNext").value(false))
+                .andExpect(jsonPath("$.data.nextCursor").value(nullValue()))
                 .andExpect(jsonPath("$.data.items", hasSize(1)))
-                .andExpect(jsonPath("$.data.items[0].title").value("건강부적"));
+                .andExpect(jsonPath("$.data.items[0].title").value("부적1"));
     }
 
     private Member saveMember(String name, String phone) {

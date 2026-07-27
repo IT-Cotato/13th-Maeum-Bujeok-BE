@@ -4,6 +4,10 @@ import com.maumbujeok.backend.domain.talisman.domain.Talisman;
 import com.maumbujeok.backend.domain.talisman.dto.TalismanItemResponse;
 import com.maumbujeok.backend.domain.talisman.dto.TalismanListResponse;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +20,34 @@ public class TalismanService {
     private final TalismanRepository talismanRepository;
 
     @Transactional(readOnly = true)
-    public TalismanListResponse getTalismans(String memberPhoneNumber) {
-        List<Talisman> talismans = talismanRepository.findAllByMemberPhoneNumberOrderByCreatedAtDesc(memberPhoneNumber);
+    public TalismanListResponse getTalismans(String memberPhoneNumber, Long cursor, int size) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate sunday = monday.plusDays(6);
 
-        List<TalismanItemResponse> items = talismans.stream()
+        LocalDateTime startOfWeek = monday.atStartOfDay();
+        LocalDateTime endOfWeek = sunday.atTime(23, 59, 59, 999999999);
+
+        List<Talisman> talismans = talismanRepository.findTalismansWithCursor(
+                memberPhoneNumber,
+                cursor,
+                startOfWeek,
+                endOfWeek,
+                size
+        );
+
+        boolean hasNext = talismans.size() > size;
+        List<Talisman> subset = hasNext ? talismans.subList(0, size) : talismans;
+
+        List<TalismanItemResponse> items = subset.stream()
                 .map(TalismanItemResponse::from)
                 .collect(Collectors.toList());
 
-        return new TalismanListResponse(items, items.size());
+        Long nextCursor = null;
+        if (!items.isEmpty() && hasNext) {
+            nextCursor = items.get(items.size() - 1).talismanId();
+        }
+
+        return new TalismanListResponse(items, items.size(), hasNext, nextCursor);
     }
 }
