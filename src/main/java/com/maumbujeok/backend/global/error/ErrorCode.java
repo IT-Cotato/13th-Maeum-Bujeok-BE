@@ -26,6 +26,7 @@ public enum ErrorCode {
     SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "인증번호가 존재하지 않거나 일치하지 않습니다."),
     SMS_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "SMS_002", "만료된 인증번호입니다."),
     SMS_CODE_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "SMS_003", "전화번호 인증이 완료되지 않았습니다."),
+    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SMS_004", "인증번호 전송에 실패했습니다."),
     
     // Common
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 에러가 발생했습니다.");
