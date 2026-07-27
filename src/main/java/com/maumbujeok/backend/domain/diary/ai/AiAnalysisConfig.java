@@ -17,6 +17,11 @@ public class AiAnalysisConfig {
         return executor("diary-analysis-", 2, 20);
     }
 
+    @Bean(name = "weeklyReportExecutor")
+    public Executor weeklyReportExecutor() {
+        return executor("weekly-report-", 2, 20);
+    }
+
     private ThreadPoolTaskExecutor executor(String prefix, int poolSize, int queueCapacity) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setThreadNamePrefix(prefix);
