@@ -163,6 +163,7 @@ class NextWeekFlowAndTalismanTest {
 
     @Test
     void getTalismanListReturnsValuesWithPaginationAndWeeklyFiltering() throws Exception {
+        java.time.LocalDate today = java.time.LocalDate.now();
         Member member = saveMember("user5", "01099990007");
 
         // 1. Create a talisman from 2 weeks ago (should NOT be returned in this week's query)
@@ -172,15 +173,15 @@ class NextWeekFlowAndTalismanTest {
                 .message("건강을 기원합니다.")
                 .designType("A")
                 .generationStatus(TalismanGenerationStatus.COMPLETED)
-                .recordedAt(java.time.LocalDate.now().minusWeeks(2))
+                .recordedAt(today.minusWeeks(2))
                 .build();
         talismanRepository.saveAndFlush(oldTalisman);
 
         // 2. Create 4 talismans for this week
-        Talisman t1 = talismanRepository.save(Talisman.builder().member(member).title("부적1").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(java.time.LocalDate.now()).build());
-        Talisman t2 = talismanRepository.save(Talisman.builder().member(member).title("부적2").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(java.time.LocalDate.now()).build());
-        Talisman t3 = talismanRepository.save(Talisman.builder().member(member).title("부적3").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(java.time.LocalDate.now()).build());
-        Talisman t4 = talismanRepository.save(Talisman.builder().member(member).title("부적4").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(java.time.LocalDate.now()).build());
+        Talisman t1 = talismanRepository.save(Talisman.builder().member(member).title("부적1").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(today).build());
+        Talisman t2 = talismanRepository.save(Talisman.builder().member(member).title("부적2").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(today).build());
+        Talisman t3 = talismanRepository.save(Talisman.builder().member(member).title("부적3").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(today).build());
+        Talisman t4 = talismanRepository.save(Talisman.builder().member(member).title("부적4").designType("A").generationStatus(TalismanGenerationStatus.COMPLETED).recordedAt(today).build());
         talismanRepository.flush();
 
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());

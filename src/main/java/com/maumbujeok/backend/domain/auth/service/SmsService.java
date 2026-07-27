@@ -56,6 +56,8 @@ public class SmsService {
             if (memberRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
                 throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
             }
+        } else {
+            throw new CustomException(ErrorCode.INVALID_SMS_PURPOSE);
         }
 
         // 2. 테스트 전용 전화번호 (Bypass) 로직
