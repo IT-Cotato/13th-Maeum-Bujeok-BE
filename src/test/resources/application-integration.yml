@@ -15,3 +15,9 @@ jwt:
   refresh-token-expiration: 14d
   issuer: maumbujeok-integration
 
+# CoolSMS/Solapi 설정
+coolsms:
+  api-key: mock_coolsms_api_key
+  api-secret: mock_coolsms_api_secret
+  sender-number: 01000000000
+
