@@ -3,6 +3,8 @@ package com.maumbujeok.backend.domain.diary.controller;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryAnalysisResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryResponse;
+import com.maumbujeok.backend.domain.diary.dto.EmotionStatResponse;
+import com.maumbujeok.backend.domain.diary.dto.UpdateDiaryResponse;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
@@ -21,6 +23,27 @@ final class DiarySwaggerSchemas {
     @Schema(name = "DiaryListApiResponse", description = "일기 목록 조회 공통 응답")
     static final class DiaryListApiResponse extends ApiResponse<List<DiaryResponse>> {
         private DiaryListApiResponse() {
+            super(true, "200", "요청에 성공하였습니다.", null);
+        }
+    }
+
+    @Schema(name = "DiaryDetailApiResponse", description = "일기 단건 조회 공통 응답")
+    static final class DiaryDetailApiResponse extends ApiResponse<DiaryResponse> {
+        private DiaryDetailApiResponse() {
+            super(true, "200", "요청에 성공하였습니다.", null);
+        }
+    }
+
+    @Schema(name = "UpdateDiaryApiResponse", description = "일기 수정 공통 응답")
+    static final class UpdateDiaryApiResponse extends ApiResponse<UpdateDiaryResponse> {
+        private UpdateDiaryApiResponse() {
+            super(true, "200", "요청에 성공하였습니다.", null);
+        }
+    }
+
+    @Schema(name = "DiaryEmotionStatsApiResponse", description = "대표 감정 통계 공통 응답")
+    static final class DiaryEmotionStatsApiResponse extends ApiResponse<List<EmotionStatResponse>> {
+        private DiaryEmotionStatsApiResponse() {
             super(true, "200", "요청에 성공하였습니다.", null);
         }
     }

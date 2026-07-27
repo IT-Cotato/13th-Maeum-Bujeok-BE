@@ -11,6 +11,7 @@ final class DiarySwaggerExamples {
               "message": "요청에 성공하였습니다.",
               "data": {
                 "diaryId": 42,
+                "recordedDate": "2026-07-23",
                 "analysisStatus": "PENDING"
               }
             }
@@ -27,7 +28,9 @@ final class DiarySwaggerExamples {
                   "content": "오늘은 걱정이 많았지만 산책을 하며 마음을 가라앉혔다.",
                   "selectedEmotion": "ANXIOUS",
                   "selectedEmotionLabel": "불안해요",
-                  "createdAt": "2026-07-23T21:15:30"
+                  "recordedDate": "2026-07-23",
+                  "createdAt": "2026-07-23T21:15:30",
+                  "updatedAt": "2026-07-27T10:30:00"
                 }
               ]
             }

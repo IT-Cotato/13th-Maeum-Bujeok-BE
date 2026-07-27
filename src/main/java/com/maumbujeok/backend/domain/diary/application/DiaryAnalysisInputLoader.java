@@ -12,11 +12,15 @@ public class DiaryAnalysisInputLoader {
     private final DiaryAnalysisRepository analysisRepository;
 
     @Transactional(readOnly = true)
-    public DiaryAnalysisInput load(Long analysisId) {
+    public DiaryAnalysisInput load(Long analysisId, long inputRevision) {
         DiaryAnalysis analysis = analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
+        if (analysis.getInputRevision() != inputRevision) {
+            throw new StaleDiaryAnalysisException(analysisId, inputRevision);
+        }
         return new DiaryAnalysisInput(
                 analysisId,
+                inputRevision,
                 analysis.getDiary().getContent(),
                 analysis.getDiary().getSelectedEmotion().getAnalysisValue()
         );

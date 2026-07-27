@@ -15,9 +15,17 @@ public class DiaryAnalysisEventListener {
 
     @Async("diaryAnalysisExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(DiaryCreatedEvent event) {
-        log.info("Diary analysis event received analysisId={}", event.analysisId());
-        orchestrator.analyze(event.analysisId());
-        log.info("Diary analysis event handled analysisId={}", event.analysisId());
+    public void handle(DiaryAnalysisRequestedEvent event) {
+        log.info(
+                "Diary analysis event received analysisId={} inputRevision={}",
+                event.analysisId(),
+                event.inputRevision()
+        );
+        orchestrator.analyze(event.analysisId(), event.inputRevision());
+        log.info(
+                "Diary analysis event handled analysisId={} inputRevision={}",
+                event.analysisId(),
+                event.inputRevision()
+        );
     }
 }
