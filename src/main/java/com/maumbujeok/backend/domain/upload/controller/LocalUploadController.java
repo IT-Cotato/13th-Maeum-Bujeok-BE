@@ -1,6 +1,7 @@
 package com.maumbujeok.backend.domain.upload.controller;
 
 import com.maumbujeok.backend.domain.upload.storage.LocalObjectStorage;
+import io.swagger.v3.oas.annotations.Hidden;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 @RequestMapping("/api/local-uploads")
 @ConditionalOnProperty(name = "storage.provider", havingValue = "local", matchIfMissing = true)

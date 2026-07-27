@@ -13,7 +13,7 @@ public record CreateDiaryRequest(
         String selectedEmotion,
         @Schema(description = "사용자 기록일. 생략하면 Asia/Seoul 기준 오늘이며 미래 날짜는 허용하지 않음", example = "2026-07-27", type = "string", format = "date")
         LocalDate recordedDate,
-        @Schema(description = "업로드 완료된 이미지 ID 목록(최대 5개, 배열 순서가 표시 순서). 생략 가능", example = "[\"550e8400-e29b-41d4-a716-446655440000\"]", maxItems = 5)
+        @Schema(description = "업로드 완료된 이미지 ID 목록(최대 5개, 배열 순서가 표시 순서). 생략 가능", example = "[\"550e8400-e29b-41d4-a716-446655440000\"]")
         List<UUID> imageUploadIds
 ) {
     public CreateDiaryRequest(String content, String selectedEmotion) {
