@@ -39,6 +39,30 @@ jwt:
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
   issuer: ${JWT_ISSUER:maumbujeok}
 
+ai:
+  provider: ${AI_PROVIDER:fake}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_MODEL:gpt-5.5}
+    timeout: ${OPENAI_TIMEOUT:5s}
+    max-attempts: ${OPENAI_MAX_ATTEMPTS:2}
+  analysis:
+    negative-threshold: ${AI_NEGATIVE_THRESHOLD:70}
+
+storage:
+  provider: ${STORAGE_PROVIDER:local}
+  bucket: ${S3_BUCKET:}
+  local-directory: ${STORAGE_LOCAL_DIRECTORY:build/local-uploads}
+  upload-url-validity: ${STORAGE_UPLOAD_URL_VALIDITY:10m}
+  download-url-validity: ${STORAGE_DOWNLOAD_URL_VALIDITY:10m}
+  orphan-retention: ${STORAGE_ORPHAN_RETENTION:24h}
+  cleanup-delay: ${STORAGE_CLEANUP_DELAY:1m}
+logging:
+  level:
+    com.maumbujeok.backend.global.ai: ${AI_LOG_LEVEL:INFO}
+    com.maumbujeok.backend.domain.diary: ${AI_LOG_LEVEL:INFO}
+
 # CoolSMS/Solapi 설정
 coolsms:
   api-key: ${COOLSMS_API_KEY}

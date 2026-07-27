@@ -103,7 +103,7 @@ public class MemberController {
 
             // 5. 일기 분석 및 일기 삭제
             java.util.List<com.maumbujeok.backend.domain.diary.domain.Diary> diaries =
-                    diaryRepository.findAllByMemberPhoneNumberOrderByCreatedAtDescIdDesc(phoneNumber);
+                    diaryRepository.findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(phoneNumber);
             if (!diaries.isEmpty()) {
                 diaryAnalysisRepository.deleteByDiaryIn(diaries);
                 diaryRepository.deleteAllInBatch(diaries);

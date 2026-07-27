@@ -9,18 +9,34 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "diaries")
+@Table(
+        name = "diaries",
+        indexes = @Index(
+                name = "idx_diaries_member_recorded_created",
+                columnList = "member_phone_number, recorded_date, created_at, id"
+        ),
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_diaries_member_recorded_date",
+                columnNames = {"member_phone_number", "recorded_date"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Diary extends BaseTimeEntity {
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,9 +52,26 @@ public class Diary extends BaseTimeEntity {
     @Convert(converter = DiaryEmotionConverter.class)
     private DiaryEmotion selectedEmotion;
 
+    @Column(name = "recorded_date", nullable = false)
+    private LocalDate recordedDate;
+
     public Diary(Member member, String content, DiaryEmotion selectedEmotion) {
+        this(member, content, selectedEmotion, LocalDate.now(SERVICE_ZONE));
+    }
+
+    public Diary(Member member, String content, DiaryEmotion selectedEmotion, LocalDate recordedDate) {
         this.member = member;
         this.content = content;
         this.selectedEmotion = selectedEmotion;
+        this.recordedDate = recordedDate;
+    }
+
+    public boolean update(String content, DiaryEmotion selectedEmotion) {
+        if (this.content.equals(content) && this.selectedEmotion == selectedEmotion) {
+            return false;
+        }
+        this.content = content;
+        this.selectedEmotion = selectedEmotion;
+        return true;
     }
 }

@@ -14,7 +14,6 @@ import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -121,11 +120,10 @@ public class WeeklyReportService {
     }
 
     private boolean hasDiarySource(String memberPhoneNumber, LocalDate periodStart, LocalDate periodEnd) {
-        LocalDateTime startedAt = periodStart.atStartOfDay();
-        LocalDateTime endedAtExclusive = periodEnd.plusDays(1).atStartOfDay();
-        return diaryRepository.existsByMemberPhoneNumberAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        LocalDate endedAtExclusive = periodEnd.plusDays(1);
+        return diaryRepository.existsByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
                 memberPhoneNumber,
-                startedAt,
+                periodStart,
                 endedAtExclusive
         );
     }

@@ -1,9 +1,9 @@
 package com.maumbujeok.backend.domain.diary.domain;
 
 import com.maumbujeok.backend.domain.diary.ai.DiaryAiResult;
-import com.maumbujeok.backend.global.common.BaseTimeEntity;
 import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
 import com.maumbujeok.backend.global.ai.emotion.ReportEmotionConverter;
+import com.maumbujeok.backend.global.common.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -58,44 +58,65 @@ public class DiaryAnalysis extends BaseTimeEntity {
     @Column(name = "attempt_count", nullable = false) private int attemptCount;
     @Column(name = "failure_code", length = 50) private String failureCode;
     @Column(name = "analyzed_at") private LocalDateTime analyzedAt;
+    @Column(name = "input_revision", nullable = false) private long inputRevision;
 
     public DiaryAnalysis(Diary diary, String promptVersion, String policyVersion) {
         this.diary = diary;
         this.status = DiaryAnalysisStatus.PENDING;
         this.promptVersion = promptVersion;
         this.policyVersion = policyVersion;
+        this.inputRevision = 1L;
     }
 
-    public void markProcessing() {
-        if (status != DiaryAnalysisStatus.PENDING) {
-            throw new IllegalStateException("Only pending analysis can start");
-        }
+    public boolean markProcessing(long expectedRevision) {
+        if (inputRevision != expectedRevision || status != DiaryAnalysisStatus.PENDING) return false;
         status = DiaryAnalysisStatus.PROCESSING;
+        return true;
     }
 
-    public void complete(DiaryAiResult result, int finalScore, boolean recommended, int attempts, SafetyLevel safety) {
+    public boolean complete(long expectedRevision, DiaryAiResult result, int finalScore, boolean recommended, int attempts, SafetyLevel safety) {
+        if (!canFinish(expectedRevision)) return false;
         applyResult(result, finalScore, recommended, attempts, safety);
         status = DiaryAnalysisStatus.COMPLETED;
         failureCode = null;
+        return true;
     }
 
-    public void completeWithFallback(DiaryAiResult result, int finalScore, boolean recommended, int attempts, String code, SafetyLevel safety) {
+    public boolean completeWithFallback(long expectedRevision, DiaryAiResult result, int finalScore, boolean recommended, int attempts, String code, SafetyLevel safety) {
+        if (!canFinish(expectedRevision)) return false;
         applyResult(result, finalScore, recommended, attempts, safety);
         status = DiaryAnalysisStatus.FALLBACK_COMPLETED;
         failureCode = code;
+        return true;
     }
 
-    public void fail(int attempts, String code) {
+    public boolean fail(long expectedRevision, int attempts, String code) {
+        if (!canFinish(expectedRevision)) return false;
         status = DiaryAnalysisStatus.FAILED;
         attemptCount = attempts;
         failureCode = code;
         analyzedAt = LocalDateTime.now();
+        return true;
+    }
+
+    public long restart() {
+        inputRevision++;
+        status = DiaryAnalysisStatus.PENDING;
+        summary = null;
+        empathyResponse = null;
+        aiNegativeIntensity = null;
+        finalNegativeIntensity = null;
+        reportEmotion = null;
+        salpuriRecommended = null;
+        safetyLevel = null;
+        modelName = null;
+        attemptCount = 0;
+        failureCode = null;
+        analyzedAt = null;
+        return inputRevision;
     }
 
     private void applyResult(DiaryAiResult result, int finalScore, boolean recommended, int attempts, SafetyLevel safety) {
-        if (status != DiaryAnalysisStatus.PROCESSING) {
-            throw new IllegalStateException("Only processing analysis can complete");
-        }
         summary = result.summary();
         empathyResponse = result.empathyResponse();
         aiNegativeIntensity = result.negativeIntensity();
@@ -106,5 +127,9 @@ public class DiaryAnalysis extends BaseTimeEntity {
         modelName = result.modelName();
         attemptCount = attempts;
         analyzedAt = LocalDateTime.now();
+    }
+
+    private boolean canFinish(long expectedRevision) {
+        return inputRevision == expectedRevision && status == DiaryAnalysisStatus.PROCESSING;
     }
 }

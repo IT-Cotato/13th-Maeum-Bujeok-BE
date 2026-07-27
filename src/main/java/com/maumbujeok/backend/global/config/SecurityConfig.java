@@ -47,6 +47,7 @@ public class SecurityConfig {
                 // 1. 접근 허용 (permitAll) 엔드포인트
                 .requestMatchers(
                     "/api/auth/**",
+                    "/api/local-uploads/**",
                     "/oauth/**",
                     "/login/oauth2/**",
                     "/swagger-ui/**",
