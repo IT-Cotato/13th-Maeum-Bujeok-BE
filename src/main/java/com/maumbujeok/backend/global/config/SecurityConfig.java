@@ -58,7 +58,9 @@ public class SecurityConfig {
                 // 2. 인증 필수 (authenticated) 엔드포인트
                 .requestMatchers(
                     "/api/diaries/**",
-                    "/api/members/**"
+                    "/api/members/**",
+                    "/api/reports/**",
+                    "/api/talismans/**"
                 ).authenticated()
                 // 3. 그 외 모든 요청은 인증 필수
                 .anyRequest().authenticated()

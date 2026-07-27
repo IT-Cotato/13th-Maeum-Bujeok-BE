@@ -23,4 +23,6 @@ public interface EmotionReportRepository extends JpaRepository<EmotionReport, Lo
             String memberPhoneNumber,
             EmotionReportType reportType
     );
+
+    void deleteByMemberPhoneNumber(String memberPhoneNumber);
 }
