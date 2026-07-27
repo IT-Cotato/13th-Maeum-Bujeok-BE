@@ -5,7 +5,9 @@ import com.maumbujeok.backend.domain.diary.dto.CreateDiaryRequest;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryAnalysisResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryCalendarResponse;
+import com.maumbujeok.backend.domain.diary.dto.DiaryCursorPageResponse;
 import com.maumbujeok.backend.domain.diary.dto.DiaryDetailResponse;
+import com.maumbujeok.backend.domain.diary.dto.DiaryResponse;
 import com.maumbujeok.backend.domain.diary.dto.EmotionStatResponse;
 import com.maumbujeok.backend.domain.diary.dto.UpdateDiaryRequest;
 import com.maumbujeok.backend.domain.diary.dto.UpdateDiaryResponse;
@@ -64,28 +66,38 @@ public class DiaryController {
 
     @Operation(
             summary = "내 일기 커서 목록 조회",
-            description = "recordedDate와 diaryId 기준 최신순 커서 페이지를 반환합니다. size 기본값은 20, 최댓값은 50입니다. date 또는 year/month를 지정하면 기존 필터 목록 응답을 반환합니다."
+            description = "recordedDate와 diaryId 기준 최신순 커서 페이지를 반환합니다. size 기본값은 20, 최댓값은 50입니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryCursorPageApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 커서, 크기 또는 날짜 필터", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 커서 또는 페이지 크기", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 실패")
     })
     @GetMapping
-    public ApiResponse<?> getAll(
+    public ApiResponse<DiaryCursorPageResponse> getPage(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "특정 기록일 필터(기존 호환용)", example = "2026-07-27") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @Parameter(description = "연도 필터(기존 호환용, month와 함께 사용)", example = "2026") @RequestParam(required = false) Integer year,
-            @Parameter(description = "월 필터(기존 호환용, 1~12)", example = "7") @RequestParam(required = false) Integer month,
             @Parameter(description = "이전 응답의 nextCursor. 첫 페이지에서는 생략", example = "MjAyNi0wNy0yN3w0Mg") @RequestParam(required = false) String cursor,
             @Parameter(description = "페이지 크기(기본 20, 최대 50)", example = "20") @RequestParam(required = false) Integer size
     ) {
-        if (date != null || year != null || month != null) {
-            return ApiResponse.onSuccess(diaryService.getAll(phone(userDetails), date, year, month));
-        }
         return ApiResponse.onSuccess(diaryService.getPage(phone(userDetails), cursor, size));
     }
 
+    @Operation(
+            summary = "기록일별 일기 목록 조회",
+            description = "지정한 recordedDate에 속한 내 일기 목록을 반환합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryDateListApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 실패")
+    })
+    @GetMapping("/by-date")
+    public ApiResponse<List<DiaryResponse>> getByDate(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "조회할 기록일", example = "2026-07-27", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ApiResponse.onSuccess(diaryService.getByDate(phone(userDetails), date));
+    }
     @Operation(
             summary = "월별 일기 달력 조회",
             description = "일기가 존재하는 날짜만 반환합니다. status는 STORED 또는 BURNED이며, 현재 소각 도메인 연동 전에는 STORED만 반환합니다."

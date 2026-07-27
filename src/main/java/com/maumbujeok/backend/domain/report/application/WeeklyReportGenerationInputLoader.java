@@ -7,7 +7,7 @@ import com.maumbujeok.backend.domain.report.domain.EmotionReport;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -36,10 +36,10 @@ public class WeeklyReportGenerationInputLoader {
         EmotionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("Report not found"));
 
-        LocalDateTime periodStart = report.getPeriodStart().atStartOfDay();
-        LocalDateTime periodEndExclusive = report.getPeriodEnd().plusDays(1).atStartOfDay();
+        LocalDate periodStart = report.getPeriodStart();
+        LocalDate periodEndExclusive = report.getPeriodEnd().plusDays(1);
         List<Diary> diaries = diaryRepository
-                .findAllByMemberPhoneNumberAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAscIdAsc(
+                .findAllByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanOrderByRecordedDateAscIdAsc(
                         report.getMember().getPhoneNumber(),
                         periodStart,
                         periodEndExclusive
@@ -62,7 +62,7 @@ public class WeeklyReportGenerationInputLoader {
 
     private WeeklyDiaryEntry toDiaryEntry(Diary diary) {
         return new WeeklyDiaryEntry(
-                diary.getCreatedAt().toLocalDate(),
+                diary.getRecordedDate(),
                 diary.getSelectedEmotion().name(),
                 diary.getSelectedEmotion().getLabel(),
                 diary.getContent()

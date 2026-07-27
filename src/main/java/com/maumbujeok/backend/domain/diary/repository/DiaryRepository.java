@@ -1,11 +1,7 @@
 package com.maumbujeok.backend.domain.diary.repository;
 
 import com.maumbujeok.backend.domain.diary.domain.Diary;
-<<<<<<< HEAD
 import java.time.LocalDate;
-=======
-import java.time.LocalDateTime;
->>>>>>> e979575fd410689772266a20957ea06b3cff6477
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +13,6 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     Optional<Diary> findByIdAndMemberPhoneNumber(Long id, String phoneNumber);
     boolean existsByMemberPhoneNumberAndRecordedDate(String phoneNumber, LocalDate recordedDate);
 
-<<<<<<< HEAD
     List<Diary> findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(String phoneNumber);
     List<Diary> findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(
             String phoneNumber, LocalDate recordedDate);
@@ -38,20 +33,16 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
-}
-=======
-    List<Diary> findAllByMemberPhoneNumberOrderByCreatedAtDescIdDesc(String phoneNumber);
 
-    boolean existsByMemberPhoneNumberAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+    boolean existsByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
             String phoneNumber,
-            LocalDateTime createdAt,
-            LocalDateTime endedAtExclusive
+            LocalDate recordedDate,
+            LocalDate endedAtExclusive
     );
 
-    List<Diary> findAllByMemberPhoneNumberAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAscIdAsc(
+    List<Diary> findAllByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanOrderByRecordedDateAscIdAsc(
             String phoneNumber,
-            LocalDateTime createdAt,
-            LocalDateTime endedAtExclusive
+            LocalDate recordedDate,
+            LocalDate endedAtExclusive
     );
 }
->>>>>>> e979575fd410689772266a20957ea06b3cff6477

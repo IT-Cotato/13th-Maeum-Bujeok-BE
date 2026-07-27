@@ -26,9 +26,9 @@ final class DiarySwaggerSchemas {
         private DiaryCursorPageApiResponse() { super(true, "200", "요청에 성공하였습니다.", null); }
     }
 
-    @Schema(name = "LegacyDiaryListApiResponse", description = "날짜·연월 필터 일기 목록 공통 응답")
-    static final class LegacyDiaryListApiResponse extends ApiResponse<List<DiaryResponse>> {
-        private LegacyDiaryListApiResponse() { super(true, "200", "요청에 성공하였습니다.", null); }
+    @Schema(name = "DiaryDateListApiResponse", description = "기록일별 일기 목록 공통 응답")
+    static final class DiaryDateListApiResponse extends ApiResponse<List<DiaryResponse>> {
+        private DiaryDateListApiResponse() { super(true, "200", "요청에 성공하였습니다.", null); }
     }
 
     @Schema(name = "DiaryCalendarApiResponse", description = "월별 일기 달력 공통 응답")

@@ -114,7 +114,7 @@ class DiaryControllerSecurityTest {
     }
 
     @Test
-    void returnsDateAndMonthFilteredDiariesInDefinedOrder() throws Exception {
+    void returnsDateFilteredDiariesFromDedicatedEndpoint() throws Exception {
         Member owner = saveMember("list-owner", "01000000006");
         Member another = saveMember("list-another", "01000000007");
         diaryService.create(owner.getPhoneNumber(), request("first", "HAPPY", "2026-07-20"));
@@ -122,21 +122,13 @@ class DiaryControllerSecurityTest {
         diaryService.create(owner.getPhoneNumber(), request("other day", "SAD", "2026-07-19"));
         diaryService.create(another.getPhoneNumber(), request("other member", "SAD", "2026-07-20"));
 
-        mockMvc.perform(get("/api/diaries")
+        mockMvc.perform(get("/api/diaries/by-date")
                         .param("date", "2026-07-20")
                         .header("Authorization", "Bearer " + token(owner)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].content").value("first"))
                 .andExpect(jsonPath("$.data[0].recordedDate").value("2026-07-20"));
-
-        mockMvc.perform(get("/api/diaries")
-                        .param("year", "2026")
-                        .param("month", "7")
-                        .header("Authorization", "Bearer " + token(owner)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(3)))
-                .andExpect(jsonPath("$.data[2].recordedDate").value("2026-07-18"));
     }
     @Test
     void getsOnlyOwnedDiaryDetail() throws Exception {

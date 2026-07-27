@@ -31,11 +31,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-<<<<<<< HEAD
-=======
-import java.time.LocalDate;
-import java.util.List;
->>>>>>> e979575fd410689772266a20957ea06b3cff6477
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
@@ -64,7 +59,6 @@ public class DiaryService {
     private final Clock serviceClock;
 
     @Transactional
-<<<<<<< HEAD
     public CreateDiaryResponse create(String phoneNumber, CreateDiaryRequest request) {
         validateCreate(request);
         LocalDate recordedDate = request.recordedDate() == null
@@ -85,24 +79,15 @@ public class DiaryService {
         DiaryAnalysis analysis = analysisRepository.save(
                 new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
         uploadService.syncAttachments(phoneNumber, diary, request.imageUploadIds());
+        log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
+                diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(phoneNumber));
         eventPublisher.publishEvent(
                 new DiaryAnalysisRequestedEvent(analysis.getId(), analysis.getInputRevision()));
+        eventPublisher.publishEvent(
+                new DiaryWeeklyReportRefreshRequestedEvent(phoneNumber, diary.getRecordedDate()));
+        log.info("Diary analysis and weekly report refresh events published diaryId={} analysisId={}",
+                diary.getId(), analysis.getId());
         return new CreateDiaryResponse(diary.getId(), diary.getRecordedDate(), analysis.getStatus());
-=======
-    public CreateDiaryResponse create(String memberPhoneNumber, CreateDiaryRequest request) {
-        validate(request);
-        Member member = memberRepository.getReferenceById(memberPhoneNumber);
-        DiaryEmotion selectedEmotion = parseEmotion(request.selectedEmotion());
-        Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), selectedEmotion));
-        DiaryAnalysis analysis = analysisRepository.save(new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
-        log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
-                diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(member.getPhoneNumber()));
-        eventPublisher.publishEvent(new DiaryCreatedEvent(analysis.getId()));
-        LocalDate diaryDate = diary.getCreatedAt() == null ? LocalDate.now() : diary.getCreatedAt().toLocalDate();
-        eventPublisher.publishEvent(new DiaryWeeklyReportRefreshRequestedEvent(memberPhoneNumber, diaryDate));
-        log.info("Diary analysis event published diaryId={} analysisId={}", diary.getId(), analysis.getId());
-        return new CreateDiaryResponse(diary.getId(), analysis.getStatus());
->>>>>>> e979575fd410689772266a20957ea06b3cff6477
     }
 
     @Transactional(readOnly = true)
@@ -123,27 +108,14 @@ public class DiaryService {
     }
 
     @Transactional(readOnly = true)
-    public List<DiaryResponse> getAll(String phoneNumber) {
-        return diaryRepository.findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(phoneNumber)
+    public List<DiaryResponse> getByDate(String phoneNumber, LocalDate date) {
+        if (date == null) {
+            throw invalidRequest("date is required");
+        }
+        return diaryRepository.findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(
+                        phoneNumber, date)
                 .stream().map(DiaryResponse::from).toList();
     }
-
-    @Transactional(readOnly = true)
-    public List<DiaryResponse> getAll(
-            String phoneNumber, LocalDate date, Integer year, Integer month) {
-        if (date != null) {
-            if (year != null || month != null) throw invalidRequest("date cannot be combined with year/month");
-            return diaryRepository.findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(
-                            phoneNumber, date)
-                    .stream().map(DiaryResponse::from).toList();
-        }
-        if (year != null || month != null) {
-            YearMonth target = parseYearMonth(year, month);
-            return findMonth(phoneNumber, target).stream().map(DiaryResponse::from).toList();
-        }
-        return getAll(phoneNumber);
-    }
-
     @Transactional(readOnly = true)
     public DiaryCursorPageResponse getPage(String phoneNumber, String cursor, Integer requestedSize) {
         int size = requestedSize == null ? DEFAULT_PAGE_SIZE : requestedSize;
@@ -286,5 +258,12 @@ public class DiaryService {
 
     private DiaryRequestException invalidRequest(String message) {
         return new DiaryRequestException(ErrorCode.INVALID_DIARY_REQUEST, message);
+    }
+
+    private String maskPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.length() < 4) {
+            return "****";
+        }
+        return phoneNumber.substring(phoneNumber.length() - 4);
     }
 }

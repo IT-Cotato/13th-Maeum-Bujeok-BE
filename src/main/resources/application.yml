@@ -39,7 +39,6 @@ jwt:
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
   issuer: ${JWT_ISSUER:maumbujeok}
 
-<<<<<<< HEAD
 ai:
   provider: ${AI_PROVIDER:fake}
   openai:
@@ -63,10 +62,9 @@ logging:
   level:
     com.maumbujeok.backend.global.ai: ${AI_LOG_LEVEL:INFO}
     com.maumbujeok.backend.domain.diary: ${AI_LOG_LEVEL:INFO}
-=======
+
 # CoolSMS/Solapi 설정
 coolsms:
   api-key: ${COOLSMS_API_KEY}
   api-secret: ${COOLSMS_API_SECRET}
   sender-number: ${COOLSMS_SENDER_NUMBER}
->>>>>>> e979575fd410689772266a20957ea06b3cff6477
