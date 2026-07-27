@@ -77,12 +77,19 @@ final class ReportSwaggerExamples {
             }
             """;
 
-    static final String REPORT_SOURCE_NOT_FOUND = """
+    static final String GENERATE_WEEKLY_WITHOUT_DIARY_SUCCESS = """
             {
-              "success": false,
-              "code": "REPORT_400",
-              "message": "리포트를 생성할 일기 기록이 없습니다.",
-              "data": null
+              "success": true,
+              "code": "200",
+              "message": "요청에 성공하였습니다.",
+              "data": {
+                "emotionReportId": 12,
+                "reportType": "WEEKLY",
+                "periodStart": "2026-07-13",
+                "periodEnd": "2026-07-19",
+                "generationStatus": "COMPLETED",
+                "message": "작성된 일기가 없어 안내 문구로 주간 감정 리포트를 생성했습니다."
+              }
             }
             """;
 

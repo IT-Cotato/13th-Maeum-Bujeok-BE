@@ -24,7 +24,7 @@ class ReportOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/reports/weekly/generate'].post.summary").value("주간 감정 리포트 요약 생성"))
                 .andExpect(jsonPath("$.paths['/api/reports/weekly/generate'].post.security[0].JWT_TOKEN").isArray())
                 .andExpect(jsonPath("$.paths['/api/reports/weekly/generate'].post.responses['200'].content['application/json'].schema").exists())
-                .andExpect(jsonPath("$.paths['/api/reports/weekly/generate'].post.responses['400'].content['application/json'].examples['주간 일기 없음']").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/generate'].post.responses['200'].content['application/json'].examples['일기 없음']").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/weekly-summary/{summaryId}'].get.summary").value("주간 리포트 요약 결과 조회"))
                 .andExpect(jsonPath("$.paths['/api/reports/weekly-summary/{summaryId}'].get.responses['200'].content['application/json'].examples['생성 실패']").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/weekly-summary/{summaryId}'].get.responses['404'].content['application/json'].example.code").value("REPORT_404"))

@@ -75,7 +75,7 @@ class ReportControllerSecurityTest {
     }
 
     @Test
-    void rejectsWeeklyReportGenerationWithoutDiarySource() throws Exception {
+    void returnsCompletedWeeklyReportWithGuideMessageWhenDiarySourceIsMissing() throws Exception {
         Member member = saveMember("report-empty", "01010000002");
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
         LocalDate weekStart = currentWeekStart();
@@ -84,9 +84,9 @@ class ReportControllerSecurityTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"weekStart\":\"" + weekStart + "\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("REPORT_400"))
-                .andExpect(jsonPath("$.message").value("리포트를 생성할 일기 기록이 없습니다."));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.generationStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.message").value("작성된 일기가 없어 안내 문구로 주간 감정 리포트를 생성했습니다."));
     }
 
     @Test

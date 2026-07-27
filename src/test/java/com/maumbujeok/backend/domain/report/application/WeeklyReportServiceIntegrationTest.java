@@ -1,6 +1,9 @@
 package com.maumbujeok.backend.domain.report.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.maumbujeok.backend.domain.diary.application.DiaryService;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryRequest;
@@ -28,7 +31,7 @@ class WeeklyReportServiceIntegrationTest {
     @Autowired EmotionReportRepository emotionReportRepository;
 
     @Test
-    void reusesExistingWeeklyReportIdWhenRegeneratedForSameWeek() {
+    void deletesExistingWeeklyReportAndCreatesNewOneWhenRegeneratedForSameWeek() {
         Member member = memberRepository.save(Member.builder()
                 .name("weekly-user")
                 .phoneNumber("01010000003")
@@ -47,7 +50,9 @@ class WeeklyReportServiceIntegrationTest {
                 new GenerateWeeklyReportRequest(weekStart)
         );
 
-        assertEquals(first.emotionReportId(), second.emotionReportId());
+        assertNotEquals(first.emotionReportId(), second.emotionReportId());
+        assertFalse(emotionReportRepository.findById(first.emotionReportId()).isPresent());
+        assertTrue(emotionReportRepository.findById(second.emotionReportId()).isPresent());
         assertEquals(1, emotionReportRepository.count());
     }
 

@@ -1,9 +1,9 @@
 package com.maumbujeok.backend.domain.report.controller;
 
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.GENERATE_WEEKLY_SUCCESS;
+import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.GENERATE_WEEKLY_WITHOUT_DIARY_SUCCESS;
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.INTERNAL_SERVER_ERROR;
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.INVALID_WEEK_START;
-import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.REPORT_SOURCE_NOT_FOUND;
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.WEEKLY_SUMMARY_COMPLETED;
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.WEEKLY_SUMMARY_FAILED;
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.WEEKLY_SUMMARY_NOT_FOUND;
@@ -54,17 +54,19 @@ public class ReportController {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = GenerateWeeklyReportApiResponse.class),
-                            examples = @ExampleObject(value = GENERATE_WEEKLY_SUCCESS)
+                            examples = {
+                                    @ExampleObject(name = "일기 있음", value = GENERATE_WEEKLY_SUCCESS),
+                                    @ExampleObject(name = "일기 없음", value = GENERATE_WEEKLY_WITHOUT_DIARY_SUCCESS)
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 또는 생성할 일기 없음 (REPORT_400)",
+                    description = "입력값 오류 (REPORT_400)",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = {
-                                    @ExampleObject(name = "주간 일기 없음", value = REPORT_SOURCE_NOT_FOUND),
                                     @ExampleObject(name = "weekStart 누락", value = INVALID_WEEK_START)
                             }
                     )
