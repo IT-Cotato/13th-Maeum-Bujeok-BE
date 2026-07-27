@@ -39,7 +39,11 @@ public class NextWeekFlowAsyncService {
             String calendarType = sajuProfile != null ? sajuProfile.getCalendarType().name() : "SOLAR";
             String birthTime = (sajuProfile != null && sajuProfile.getBirthTime() != null) ? sajuProfile.getBirthTime().toString() : "NONE";
             String birthDate = member.getBirthDate() != null ? member.getBirthDate() : "NONE";
-            String weeklyInsight = flow.getEmotionReport().getInsightSummary();
+            
+            String weeklyInsight = "이번 주 작성된 감정 흐름 요약이 없습니다.";
+            if (flow.getEmotionReport() != null && flow.getEmotionReport().getInsightSummary() != null) {
+                weeklyInsight = flow.getEmotionReport().getInsightSummary();
+            }
 
             String adviceText = aiProvider.generate(
                     member.getName(),

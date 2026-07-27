@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TalismanRepository extends JpaRepository<Talisman, Long> {
     List<Talisman> findAllByMemberPhoneNumberOrderByCreatedAtDesc(String memberPhoneNumber);
+    void deleteByMemberPhoneNumber(String memberPhoneNumber);
 }

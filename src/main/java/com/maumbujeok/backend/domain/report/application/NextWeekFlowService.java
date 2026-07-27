@@ -73,7 +73,14 @@ public class NextWeekFlowService {
         NextWeekFlow savedFlow = nextWeekFlowRepository.save(flow);
 
         // Run async generation
-        asyncService.generate(savedFlow.getId());
+        try {
+            asyncService.generate(savedFlow.getId());
+        } catch (org.springframework.core.task.TaskRejectedException e) {
+            log.error("Task rejected for flowId={} due to thread pool saturation", savedFlow.getId(), e);
+            savedFlow.fail();
+            nextWeekFlowRepository.saveAndFlush(savedFlow);
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
 
         return new NextWeekFlowStartResponse(
                 savedFlow.getId(),

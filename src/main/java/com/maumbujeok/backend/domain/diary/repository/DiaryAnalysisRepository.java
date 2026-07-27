@@ -1,6 +1,8 @@
 package com.maumbujeok.backend.domain.diary.repository;
 
+import com.maumbujeok.backend.domain.diary.domain.Diary;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +13,6 @@ public interface DiaryAnalysisRepository extends JpaRepository<DiaryAnalysis, Lo
     Optional<DiaryAnalysis> findById(Long id);
 
     Optional<DiaryAnalysis> findByDiaryIdAndDiaryMemberPhoneNumber(Long diaryId, String phoneNumber);
+
+    void deleteByDiaryIn(List<Diary> diaries);
 }

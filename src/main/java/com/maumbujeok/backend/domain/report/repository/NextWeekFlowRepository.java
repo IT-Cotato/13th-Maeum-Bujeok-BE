@@ -9,4 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NextWeekFlowRepository extends JpaRepository<NextWeekFlow, Long> {
     Optional<NextWeekFlow> findByMemberPhoneNumberAndWeekStart(String memberPhoneNumber, LocalDate weekStart);
+    void deleteByMemberPhoneNumber(String memberPhoneNumber);
 }
