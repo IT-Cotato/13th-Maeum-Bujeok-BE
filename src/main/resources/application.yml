@@ -41,6 +41,6 @@ jwt:
 
 # CoolSMS/Solapi 설정
 coolsms:
-  api-key: ${COOLSMS_API_KEY:mock_coolsms_api_key}
-  api-secret: ${COOLSMS_API_SECRET:mock_coolsms_api_secret}
-  sender-number: ${COOLSMS_SENDER_NUMBER:01000000000}
+  api-key: ${COOLSMS_API_KEY}
+  api-secret: ${COOLSMS_API_SECRET}
+  sender-number: ${COOLSMS_SENDER_NUMBER}
