@@ -16,7 +16,9 @@ public record TalismanItemResponse(
         String usedSaju,
         TalismanGenerationStatus generationStatus,
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        java.time.LocalDate recordedAt
 ) {
     private static final ZoneOffset SEOUL_OFFSET = ZoneOffset.ofHours(9);
 
@@ -30,7 +32,8 @@ public record TalismanItemResponse(
                 talisman.getImageUrl(),
                 talisman.getUsedSaju(),
                 talisman.getGenerationStatus(),
-                talisman.getCreatedAt() == null ? null : talisman.getCreatedAt().atOffset(SEOUL_OFFSET)
+                talisman.getCreatedAt() == null ? null : talisman.getCreatedAt().atOffset(SEOUL_OFFSET),
+                talisman.getRecordedAt()
         );
     }
 }

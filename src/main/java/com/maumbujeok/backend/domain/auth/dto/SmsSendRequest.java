@@ -7,4 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SmsSendRequest {
     private String phoneNumber;
+    private SmsPurpose purpose;
 }

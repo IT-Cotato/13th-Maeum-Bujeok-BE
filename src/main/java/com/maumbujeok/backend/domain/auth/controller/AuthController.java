@@ -40,7 +40,7 @@ public class AuthController {
     @Operation(summary = "SMS 인증번호 발송 API", description = "입력한 전화번호로 6자리 인증번호를 생성하여 Mock 발송하고 3분간 저장합니다.")
     @PostMapping("/sms/send")
     public ApiResponse<String> sendSmsCode(@RequestBody SmsSendRequest request) {
-        smsService.sendVerificationCode(request.getPhoneNumber());
+        smsService.sendVerificationCode(request.getPhoneNumber(), request.getPurpose());
         return ApiResponse.onSuccess("인증번호가 발송되었습니다.");
     }
 

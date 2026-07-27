@@ -54,8 +54,11 @@ public class Talisman extends BaseTimeEntity {
     @Column(name = "generation_status", nullable = false, length = 30)
     private TalismanGenerationStatus generationStatus;
 
+    @Column(name = "recorded_at", nullable = false)
+    private java.time.LocalDate recordedAt;
+
     @Builder
-    public Talisman(Member member, Long burnRitualId, String designType, String title, String message, String imageUrl, String usedSaju, TalismanGenerationStatus generationStatus) {
+    public Talisman(Member member, Long burnRitualId, String designType, String title, String message, String imageUrl, String usedSaju, TalismanGenerationStatus generationStatus, java.time.LocalDate recordedAt) {
         this.member = member;
         this.burnRitualId = burnRitualId;
         this.designType = designType;
@@ -64,5 +67,6 @@ public class Talisman extends BaseTimeEntity {
         this.imageUrl = imageUrl;
         this.usedSaju = usedSaju;
         this.generationStatus = generationStatus != null ? generationStatus : TalismanGenerationStatus.COMPLETED;
+        this.recordedAt = recordedAt != null ? recordedAt : java.time.LocalDate.now();
     }
 }
