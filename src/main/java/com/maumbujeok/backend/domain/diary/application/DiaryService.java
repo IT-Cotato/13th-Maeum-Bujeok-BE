@@ -14,6 +14,7 @@ import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,8 @@ public class DiaryService {
         log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
                 diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(member.getPhoneNumber()));
         eventPublisher.publishEvent(new DiaryCreatedEvent(analysis.getId()));
+        LocalDate diaryDate = diary.getCreatedAt() == null ? LocalDate.now() : diary.getCreatedAt().toLocalDate();
+        eventPublisher.publishEvent(new DiaryWeeklyReportRefreshRequestedEvent(memberPhoneNumber, diaryDate));
         log.info("Diary analysis event published diaryId={} analysisId={}", diary.getId(), analysis.getId());
         return new CreateDiaryResponse(diary.getId(), analysis.getStatus());
     }

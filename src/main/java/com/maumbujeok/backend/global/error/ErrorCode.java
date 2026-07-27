@@ -25,6 +25,10 @@ public enum ErrorCode {
     // Diary
     INVALID_DIARY_REQUEST(HttpStatus.BAD_REQUEST, "DIARY_400", "일기 요청이 올바르지 않습니다."),
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "DIARY_404", "일기를 찾을 수 없습니다."),
+
+    // Report
+    INVALID_REPORT_REQUEST(HttpStatus.BAD_REQUEST, "REPORT_400", "리포트 요청이 올바르지 않습니다."),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_404", "리포트를 찾을 수 없습니다."),
     
     // SMS Auth
     SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "인증번호가 존재하지 않거나 일치하지 않습니다."),
