@@ -2,7 +2,10 @@ package com.maumbujeok.backend.domain.diary.domain;
 
 import com.maumbujeok.backend.domain.diary.ai.DiaryAiResult;
 import com.maumbujeok.backend.global.common.BaseTimeEntity;
+import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
+import com.maumbujeok.backend.global.ai.emotion.ReportEmotionConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -44,6 +47,8 @@ public class DiaryAnalysis extends BaseTimeEntity {
     @Column(name = "empathy_response", length = 500) private String empathyResponse;
     @Column(name = "ai_negative_intensity") private Integer aiNegativeIntensity;
     @Column(name = "final_negative_intensity") private Integer finalNegativeIntensity;
+    @Convert(converter = ReportEmotionConverter.class)
+    @Column(name = "report_emotion", length = 30) private ReportEmotion reportEmotion;
     @Column(name = "salpuri_recommended") private Boolean salpuriRecommended;
     @Enumerated(EnumType.STRING)
     @Column(name = "safety_level", length = 20) private SafetyLevel safetyLevel;
@@ -95,6 +100,7 @@ public class DiaryAnalysis extends BaseTimeEntity {
         empathyResponse = result.empathyResponse();
         aiNegativeIntensity = result.negativeIntensity();
         finalNegativeIntensity = finalScore;
+        reportEmotion = result.reportEmotion();
         salpuriRecommended = recommended;
         safetyLevel = safety;
         modelName = result.modelName();
