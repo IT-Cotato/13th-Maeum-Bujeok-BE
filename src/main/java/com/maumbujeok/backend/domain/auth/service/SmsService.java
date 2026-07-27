@@ -1,11 +1,17 @@
 package com.maumbujeok.backend.domain.auth.service;
 
 import com.maumbujeok.backend.domain.auth.domain.SmsAuthCode;
+import com.maumbujeok.backend.domain.auth.exception.SmsSendFailedException;
 import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
+import com.solapi.sdk.SolapiClient;
+import com.solapi.sdk.message.model.Message;
+import com.solapi.sdk.message.service.DefaultMessageService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,14 +25,41 @@ public class SmsService {
 
     private final SmsAuthCodeRepository smsAuthCodeRepository;
 
-    // SMS 인증코드 전송 Mock API
+    @Value("${coolsms.api-key}")
+    private String apiKey;
+
+    @Value("${coolsms.api-secret}")
+    private String apiSecret;
+
+    @Value("${coolsms.sender-number}")
+    private String senderNumber;
+
+    private DefaultMessageService messageService;
+
+    @PostConstruct
+    public void init() {
+        this.messageService = SolapiClient.INSTANCE.createInstance(apiKey, apiSecret);
+    }
+
+    // SMS 인증코드 전송 API
     @Transactional
     public void sendVerificationCode(String phoneNumber) {
         // 6자리 랜덤 인증코드 생성
         String code = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
         
-        // SMS MOCK 발송 로그 출력
-        log.info("[SMS MOCK] To: {}, Code: {}", phoneNumber, code);
+        // SMS 실제 발송 처리
+        Message message = new Message();
+        message.setFrom(senderNumber);
+        message.setTo(phoneNumber);
+        message.setText(String.format("[마음부적] 인증번호는 [%s] 입니다.", code));
+
+        try {
+            messageService.send(message, null);
+            log.info("[SMS] Sent verification code to: {}", phoneNumber);
+        } catch (Exception e) {
+            log.error("[SMS] Failed to send verification code to: {}, Error: {}", phoneNumber, e.getMessage(), e);
+            throw new SmsSendFailedException();
+        }
 
         // 만료 기한은 3분
         LocalDateTime expiredAt = LocalDateTime.now().plusMinutes(3);

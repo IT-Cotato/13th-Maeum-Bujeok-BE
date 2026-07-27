@@ -1,10 +1,14 @@
 package com.maumbujeok.backend.domain.diary.repository;
 
+import com.maumbujeok.backend.domain.diary.domain.Diary;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
+<<<<<<< HEAD
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysisStatus;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.Collection;
+=======
+>>>>>>> e979575fd410689772266a20957ea06b3cff6477
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -20,6 +24,7 @@ public interface DiaryAnalysisRepository extends JpaRepository<DiaryAnalysis, Lo
 
     Optional<DiaryAnalysis> findByDiaryIdAndDiaryMemberPhoneNumber(Long diaryId, String phoneNumber);
 
+<<<<<<< HEAD
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select analysis from DiaryAnalysis analysis join fetch analysis.diary where analysis.id = :analysisId")
     Optional<DiaryAnalysis> findByIdForUpdate(@Param("analysisId") Long analysisId);
@@ -52,4 +57,7 @@ public interface DiaryAnalysisRepository extends JpaRepository<DiaryAnalysis, Lo
             @Param("to") LocalDate to,
             @Param("statuses") Collection<DiaryAnalysisStatus> statuses
     );
+=======
+    void deleteByDiaryIn(List<Diary> diaries);
+>>>>>>> e979575fd410689772266a20957ea06b3cff6477
 }

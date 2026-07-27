@@ -31,6 +31,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+<<<<<<< HEAD
+=======
+import java.time.LocalDate;
+import java.util.List;
+>>>>>>> e979575fd410689772266a20957ea06b3cff6477
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +64,7 @@ public class DiaryService {
     private final Clock serviceClock;
 
     @Transactional
+<<<<<<< HEAD
     public CreateDiaryResponse create(String phoneNumber, CreateDiaryRequest request) {
         validateCreate(request);
         LocalDate recordedDate = request.recordedDate() == null
@@ -82,6 +88,21 @@ public class DiaryService {
         eventPublisher.publishEvent(
                 new DiaryAnalysisRequestedEvent(analysis.getId(), analysis.getInputRevision()));
         return new CreateDiaryResponse(diary.getId(), diary.getRecordedDate(), analysis.getStatus());
+=======
+    public CreateDiaryResponse create(String memberPhoneNumber, CreateDiaryRequest request) {
+        validate(request);
+        Member member = memberRepository.getReferenceById(memberPhoneNumber);
+        DiaryEmotion selectedEmotion = parseEmotion(request.selectedEmotion());
+        Diary diary = diaryRepository.save(new Diary(member, request.content().trim(), selectedEmotion));
+        DiaryAnalysis analysis = analysisRepository.save(new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
+        log.info("Diary created diaryId={} analysisId={} status={} memberPhoneSuffix={}",
+                diary.getId(), analysis.getId(), analysis.getStatus(), maskPhoneNumber(member.getPhoneNumber()));
+        eventPublisher.publishEvent(new DiaryCreatedEvent(analysis.getId()));
+        LocalDate diaryDate = diary.getCreatedAt() == null ? LocalDate.now() : diary.getCreatedAt().toLocalDate();
+        eventPublisher.publishEvent(new DiaryWeeklyReportRefreshRequestedEvent(memberPhoneNumber, diaryDate));
+        log.info("Diary analysis event published diaryId={} analysisId={}", diary.getId(), analysis.getId());
+        return new CreateDiaryResponse(diary.getId(), analysis.getStatus());
+>>>>>>> e979575fd410689772266a20957ea06b3cff6477
     }
 
     @Transactional(readOnly = true)

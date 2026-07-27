@@ -32,13 +32,20 @@ public enum ErrorCode {
     // Diary
     INVALID_DIARY_REQUEST(HttpStatus.BAD_REQUEST, "DIARY_400", "일기 요청이 올바르지 않습니다."),
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "DIARY_404", "일기를 찾을 수 없습니다."),
+
+    // Report
+    INVALID_REPORT_REQUEST(HttpStatus.BAD_REQUEST, "REPORT_400", "리포트 요청이 올바르지 않습니다."),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_404", "리포트를 찾을 수 없습니다."),
+    FLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FLOW_001", "다음 주 흐름을 찾을 수 없습니다."),
     
     // SMS Auth
     SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "인증번호가 존재하지 않거나 일치하지 않습니다."),
     SMS_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "SMS_002", "만료된 인증번호입니다."),
     SMS_CODE_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "SMS_003", "전화번호 인증이 완료되지 않았습니다."),
+    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SMS_004", "인증번호 전송에 실패했습니다."),
     
     // Common
+    UNAUTHORIZED_ACCESS(HttpStatus.FORBIDDEN, "COMMON_403", "권한이 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 에러가 발생했습니다.");
 
     private final HttpStatus httpStatus;

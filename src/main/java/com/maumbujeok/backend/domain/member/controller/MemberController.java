@@ -1,11 +1,17 @@
 package com.maumbujeok.backend.domain.member.controller;
 
 import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
+import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
+import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
 import com.maumbujeok.backend.domain.member.dto.SajuProfileRequest;
+import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
+import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
+import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
+import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +31,12 @@ public class MemberController {
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final MemberSajuProfileRepository sajuProfileRepository;
+    private final MemberNotificationSettingRepository notificationSettingRepository;
+    private final TalismanRepository talismanRepository;
+    private final NextWeekFlowRepository nextWeekFlowRepository;
+    private final EmotionReportRepository emotionReportRepository;
+    private final DiaryAnalysisRepository diaryAnalysisRepository;
+    private final DiaryRepository diaryRepository;
 
     @Operation(
             summary = "사주 정보 입력/수정 API",
@@ -62,7 +74,7 @@ public class MemberController {
 
     @Operation(
             summary = "회원 탈퇴 API",
-            description = "현재 로그인된 사용자의 Refresh Token, 사주 프로필, 회원 본인 정보를 DB에서 완전히 삭제(Hard Delete)합니다.",
+            description = "현재 로그인된 사용자의 모든 관련 데이터(부적, 다음주흐름, 감정리포트, 일기, 알림설정, 사주프로필, Refresh Token) 및 회원 본인 정보를 DB에서 완전히 삭제(Hard Delete)합니다.",
             security = @SecurityRequirement(name = "JWT_TOKEN")
     )
     @Transactional
@@ -73,15 +85,38 @@ public class MemberController {
         }
 
         Member member = userDetails.getMember();
+        String phoneNumber = member.getPhoneNumber();
 
         // 1. Refresh Token 삭제
-        String userKey = member.getPhoneNumber() != null ? member.getPhoneNumber() : "GOOGLE_" + member.getProviderId();
+        String userKey = phoneNumber != null ? phoneNumber : "GOOGLE_" + member.getProviderId();
         refreshTokenRepository.deleteByUserKey(userKey);
 
-        // 2. MemberSajuProfile 삭제
-        sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);
+        if (phoneNumber != null) {
+            // 2. 부적 리스트 삭제
+            talismanRepository.deleteByMemberPhoneNumber(phoneNumber);
 
-        // 3. Member 삭제
+            // 3. 다음 주 흐름 삭제
+            nextWeekFlowRepository.deleteByMemberPhoneNumber(phoneNumber);
+
+            // 4. 감정 리포트 삭제
+            emotionReportRepository.deleteByMemberPhoneNumber(phoneNumber);
+
+            // 5. 일기 분석 및 일기 삭제
+            java.util.List<com.maumbujeok.backend.domain.diary.domain.Diary> diaries =
+                    diaryRepository.findAllByMemberPhoneNumberOrderByCreatedAtDescIdDesc(phoneNumber);
+            if (!diaries.isEmpty()) {
+                diaryAnalysisRepository.deleteByDiaryIn(diaries);
+                diaryRepository.deleteAllInBatch(diaries);
+            }
+
+            // 6. 알림 설정 삭제
+            notificationSettingRepository.deleteByMemberPhoneNumber(phoneNumber);
+
+            // 7. 사주 프로필 삭제
+            sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);
+        }
+
+        // 8. Member 삭제
         memberRepository.delete(member);
 
         return ApiResponse.onSuccess("회원 탈퇴가 완료되었습니다.");

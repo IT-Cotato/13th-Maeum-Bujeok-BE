@@ -19,9 +19,9 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # 3307 포트와 allowPublicKeyRetrieval=true 확인!
-    url: jdbc:mysql://localhost:${DB_PORT}/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:${DB_PORT:3307}/maumbujeok?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
     username: root
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:1234}
 
   jpa:
     hibernate:
@@ -34,11 +34,12 @@ spring:
 
 # JWT 설정
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=}
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
   issuer: ${JWT_ISSUER:maumbujeok}
 
+<<<<<<< HEAD
 ai:
   provider: ${AI_PROVIDER:fake}
   openai:
@@ -62,3 +63,10 @@ logging:
   level:
     com.maumbujeok.backend.global.ai: ${AI_LOG_LEVEL:INFO}
     com.maumbujeok.backend.domain.diary: ${AI_LOG_LEVEL:INFO}
+=======
+# CoolSMS/Solapi 설정
+coolsms:
+  api-key: ${COOLSMS_API_KEY}
+  api-secret: ${COOLSMS_API_SECRET}
+  sender-number: ${COOLSMS_SENDER_NUMBER}
+>>>>>>> e979575fd410689772266a20957ea06b3cff6477
