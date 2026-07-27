@@ -2,6 +2,7 @@ package com.maumbujeok.backend.domain.diary.controller;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -116,20 +117,18 @@ class DiaryControllerSecurityTest {
     void returnsDateAndMonthFilteredDiariesInDefinedOrder() throws Exception {
         Member owner = saveMember("list-owner", "01000000006");
         Member another = saveMember("list-another", "01000000007");
-        diaryService.create(owner.getPhoneNumber(), request("첫 번째", "HAPPY", "2026-07-20"));
-        diaryService.create(owner.getPhoneNumber(), request("두 번째", "ANXIOUS", "2026-07-20"));
-        diaryService.create(owner.getPhoneNumber(), request("다른 날", "SAD", "2026-07-19"));
-        diaryService.create(another.getPhoneNumber(), request("다른 사용자", "SAD", "2026-07-20"));
+        diaryService.create(owner.getPhoneNumber(), request("first", "HAPPY", "2026-07-20"));
+        diaryService.create(owner.getPhoneNumber(), request("second", "ANXIOUS", "2026-07-18"));
+        diaryService.create(owner.getPhoneNumber(), request("other day", "SAD", "2026-07-19"));
+        diaryService.create(another.getPhoneNumber(), request("other member", "SAD", "2026-07-20"));
 
         mockMvc.perform(get("/api/diaries")
                         .param("date", "2026-07-20")
                         .header("Authorization", "Bearer " + token(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].content").value("두 번째"))
-                .andExpect(jsonPath("$.data[0].recordedDate").value("2026-07-20"))
-                .andExpect(jsonPath("$.data[0].updatedAt").isNotEmpty())
-                .andExpect(jsonPath("$.data[1].content").value("첫 번째"));
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].content").value("first"))
+                .andExpect(jsonPath("$.data[0].recordedDate").value("2026-07-20"));
 
         mockMvc.perform(get("/api/diaries")
                         .param("year", "2026")
@@ -137,9 +136,8 @@ class DiaryControllerSecurityTest {
                         .header("Authorization", "Bearer " + token(owner)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(3)))
-                .andExpect(jsonPath("$.data[2].recordedDate").value("2026-07-19"));
+                .andExpect(jsonPath("$.data[2].recordedDate").value("2026-07-18"));
     }
-
     @Test
     void getsOnlyOwnedDiaryDetail() throws Exception {
         Member owner = saveMember("detail-owner", "01000000013");
@@ -212,7 +210,7 @@ class DiaryControllerSecurityTest {
         );
         diaryService.create(
                 member.getPhoneNumber(),
-                request("분석 대기 기록", "HAPPY", "2026-07-15")
+                request("분석 대기 기록", "HAPPY", "2026-07-16")
         );
 
         DiaryAnalysis analysis = analysisRepository
@@ -234,7 +232,7 @@ class DiaryControllerSecurityTest {
 
         mockMvc.perform(get("/api/diaries/emotion-stats")
                         .param("from", "2026-07-15")
-                        .param("to", "2026-07-15")
+                        .param("to", "2026-07-16")
                         .header("Authorization", "Bearer " + token(member)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(9)))
@@ -276,6 +274,56 @@ class DiaryControllerSecurityTest {
                 .andExpect(jsonPath("$.data.attemptCount").value(0));
     }
 
+    @Test
+    void rejectsSecondDiaryForSameRecordedDate() throws Exception {
+        Member member = saveMember("duplicate-date", "01000000018");
+        diaryService.create(member.getPhoneNumber(), request("first", "HAPPY", "2026-07-14"));
+
+        mockMvc.perform(post("/api/diaries")
+                        .header("Authorization", "Bearer " + token(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"second\",\"selectedEmotion\":\"SAD\",\"recordedDate\":\"2026-07-14\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DIARY_409"));
+    }
+
+    @Test
+    void returnsCalendarAndCursorPage() throws Exception {
+        Member member = saveMember("calendar", "01000000019");
+        diaryService.create(member.getPhoneNumber(), request("newer", "HAPPY", "2026-07-13"));
+        diaryService.create(member.getPhoneNumber(), request("older", "SAD", "2026-07-12"));
+
+        mockMvc.perform(get("/api/diaries/calendar")
+                        .param("year", "2026").param("month", "7")
+                        .header("Authorization", "Bearer " + token(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.days", hasSize(2)))
+                .andExpect(jsonPath("$.data.days[0].status").value("STORED"));
+
+        mockMvc.perform(get("/api/diaries")
+                        .param("size", "1")
+                        .header("Authorization", "Bearer " + token(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items", hasSize(1)))
+                .andExpect(jsonPath("$.data.items[0].content").value("newer"))
+                .andExpect(jsonPath("$.data.nextCursor").isNotEmpty())
+                .andExpect(jsonPath("$.data.hasNext").value(true));
+    }
+
+    @Test
+    void deletesOwnedDiary() throws Exception {
+        Member member = saveMember("delete", "01000000020");
+        CreateDiaryResponse created = diaryService.create(
+                member.getPhoneNumber(), request("delete me", "NORMAL", "2026-07-11"));
+
+        mockMvc.perform(delete("/api/diaries/{diaryId}", created.diaryId())
+                        .header("Authorization", "Bearer " + token(member)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/diaries/{diaryId}", created.diaryId())
+                        .header("Authorization", "Bearer " + token(member)))
+                .andExpect(status().isNotFound());
+    }
     private CreateDiaryRequest request(String content, String emotion, String date) {
         return new CreateDiaryRequest(content, emotion, LocalDate.parse(date));
     }

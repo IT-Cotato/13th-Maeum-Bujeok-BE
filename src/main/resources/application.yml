@@ -50,6 +50,14 @@ ai:
   analysis:
     negative-threshold: ${AI_NEGATIVE_THRESHOLD:70}
 
+storage:
+  provider: ${STORAGE_PROVIDER:local}
+  bucket: ${S3_BUCKET:}
+  local-directory: ${STORAGE_LOCAL_DIRECTORY:build/local-uploads}
+  upload-url-validity: ${STORAGE_UPLOAD_URL_VALIDITY:10m}
+  download-url-validity: ${STORAGE_DOWNLOAD_URL_VALIDITY:10m}
+  orphan-retention: ${STORAGE_ORPHAN_RETENTION:24h}
+  cleanup-delay: ${STORAGE_CLEANUP_DELAY:1m}
 logging:
   level:
     com.maumbujeok.backend.global.ai: ${AI_LOG_LEVEL:INFO}

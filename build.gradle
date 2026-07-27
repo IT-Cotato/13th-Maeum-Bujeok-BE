@@ -50,6 +50,10 @@ dependencies {
 
     // validation (유효성 검증)
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // AWS S3 object storage
+    implementation platform('software.amazon.awssdk:bom:2.32.26')
+    implementation 'software.amazon.awssdk:s3'
 }
 
 tasks.named('test') {

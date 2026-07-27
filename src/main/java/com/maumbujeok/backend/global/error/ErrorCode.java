@@ -8,6 +8,13 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {
+
+    DUPLICATE_DIARY_DATE(HttpStatus.CONFLICT, "DIARY_409", "A diary already exists for this date."),
+    INVALID_DIARY_CURSOR(HttpStatus.BAD_REQUEST, "DIARY_CURSOR_400", "Invalid diary cursor."),
+
+    INVALID_UPLOAD_REQUEST(HttpStatus.BAD_REQUEST, "UPLOAD_400", "Invalid upload request."),
+    UPLOAD_NOT_FOUND(HttpStatus.NOT_FOUND, "UPLOAD_404", "Upload not found."),
+    UPLOAD_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "UPLOAD_500", "Object storage operation failed."),
     
     // Auth
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_001", "존재하지 않는 사용자입니다."),

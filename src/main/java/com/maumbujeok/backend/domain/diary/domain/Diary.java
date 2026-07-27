@@ -13,6 +13,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import lombok.AccessLevel;
@@ -25,6 +26,10 @@ import lombok.NoArgsConstructor;
         indexes = @Index(
                 name = "idx_diaries_member_recorded_created",
                 columnList = "member_phone_number, recorded_date, created_at, id"
+        ),
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_diaries_member_recorded_date",
+                columnNames = {"member_phone_number", "recorded_date"}
         )
 )
 @Getter
