@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
 
-    DUPLICATE_DIARY_DATE(HttpStatus.CONFLICT, "DIARY_409", "A diary already exists for this date."),
     INVALID_DIARY_CURSOR(HttpStatus.BAD_REQUEST, "DIARY_CURSOR_400", "Invalid diary cursor."),
 
     INVALID_UPLOAD_REQUEST(HttpStatus.BAD_REQUEST, "UPLOAD_400", "Invalid upload request."),

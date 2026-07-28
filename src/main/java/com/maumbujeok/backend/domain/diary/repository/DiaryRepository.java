@@ -11,7 +11,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
     Optional<Diary> findByIdAndMemberPhoneNumber(Long id, String phoneNumber);
-    boolean existsByMemberPhoneNumberAndRecordedDate(String phoneNumber, LocalDate recordedDate);
 
     List<Diary> findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(String phoneNumber);
     List<Diary> findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(

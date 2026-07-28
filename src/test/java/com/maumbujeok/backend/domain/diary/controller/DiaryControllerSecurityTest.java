@@ -114,11 +114,11 @@ class DiaryControllerSecurityTest {
     }
 
     @Test
-    void returnsDateFilteredDiariesFromDedicatedEndpoint() throws Exception {
+    void returnsAllDateFilteredDiariesFromDedicatedEndpoint() throws Exception {
         Member owner = saveMember("list-owner", "01000000006");
         Member another = saveMember("list-another", "01000000007");
         diaryService.create(owner.getPhoneNumber(), request("first", "HAPPY", "2026-07-20"));
-        diaryService.create(owner.getPhoneNumber(), request("second", "ANXIOUS", "2026-07-18"));
+        diaryService.create(owner.getPhoneNumber(), request("second", "ANXIOUS", "2026-07-20"));
         diaryService.create(owner.getPhoneNumber(), request("other day", "SAD", "2026-07-19"));
         diaryService.create(another.getPhoneNumber(), request("other member", "SAD", "2026-07-20"));
 
@@ -126,9 +126,11 @@ class DiaryControllerSecurityTest {
                         .param("date", "2026-07-20")
                         .header("Authorization", "Bearer " + token(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].content").value("first"))
-                .andExpect(jsonPath("$.data[0].recordedDate").value("2026-07-20"));
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].content").value("second"))
+                .andExpect(jsonPath("$.data[0].recordedDate").value("2026-07-20"))
+                .andExpect(jsonPath("$.data[1].content").value("first"))
+                .andExpect(jsonPath("$.data[1].recordedDate").value("2026-07-20"));
     }
     @Test
     void getsOnlyOwnedDiaryDetail() throws Exception {
@@ -267,7 +269,7 @@ class DiaryControllerSecurityTest {
     }
 
     @Test
-    void rejectsSecondDiaryForSameRecordedDate() throws Exception {
+    void allowsSecondDiaryForSameRecordedDate() throws Exception {
         Member member = saveMember("duplicate-date", "01000000018");
         diaryService.create(member.getPhoneNumber(), request("first", "HAPPY", "2026-07-14"));
 
@@ -275,8 +277,9 @@ class DiaryControllerSecurityTest {
                         .header("Authorization", "Bearer " + token(member))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"second\",\"selectedEmotion\":\"SAD\",\"recordedDate\":\"2026-07-14\"}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("DIARY_409"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recordedDate").value("2026-07-14"))
+                .andExpect(jsonPath("$.data.analysisStatus").value("PENDING"));
     }
 
     @Test
