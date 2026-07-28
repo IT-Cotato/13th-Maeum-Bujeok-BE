@@ -4,6 +4,7 @@ import com.maumbujeok.backend.domain.auth.domain.RefreshToken;
 import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
+import com.maumbujeok.backend.global.config.FrontendUrlProvider;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final FrontendUrlProvider frontendUrlProvider;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -78,10 +80,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                         )
                 );
 
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth/callback")
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrlProvider.oauthCallbackUrl())
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
-                .build().toUriString();
+                .build()
+                .toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

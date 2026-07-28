@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -34,6 +36,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(Customizer.withDefaults())
             // 기본 보안 설정 비활성화 (JWT 사용 목적)
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
@@ -44,6 +47,8 @@ public class SecurityConfig {
             
             // API 엔드포인트 접근 권한 설정
             .authorizeHttpRequests(auth -> auth
+                // CORS preflight 요청 허용
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 1. 접근 허용 (permitAll) 엔드포인트
                 .requestMatchers(
                     "/api/auth/**",

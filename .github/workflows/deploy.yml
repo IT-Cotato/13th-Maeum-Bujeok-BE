@@ -1,0 +1,61 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            set -e
+
+            cd /home/ubuntu/13th-Maeum-Bujeok-BE
+
+            echo "최신 코드 가져오는 중..."
+            git pull origin deploy
+
+            echo "애플리케이션 빌드 중..."
+            chmod +x gradlew
+            ./gradlew clean bootJar -x test
+
+            echo "기존 애플리케이션 종료 중..."
+            sudo fuser -k 8080/tcp || true
+            sleep 3
+
+            echo "새 애플리케이션 실행 중..."
+            nohup java -Dfile.encoding=UTF-8 \
+              -jar build/libs/backend-0.0.1-SNAPSHOT.jar \
+              > /home/ubuntu/app.log 2>&1 &
+
+            echo "애플리케이션 시작 대기 중..."
+
+            for i in {1..30}; do
+              if sudo lsof -i :8080 > /dev/null; then
+                echo "배포 성공: 8080 포트에서 실행 중입니다."
+                tail -30 /home/ubuntu/app.log
+                exit 0
+              fi
+
+              if ! pgrep -f "backend-0.0.1-SNAPSHOT.jar" > /dev/null; then
+                echo "배포 실패: 애플리케이션 프로세스가 종료되었습니다."
+                tail -100 /home/ubuntu/app.log
+                exit 1
+              fi
+
+              echo "서버 시작 대기 중... (${i}/30)"
+              sleep 2
+            done
+
+            echo "배포 실패: 애플리케이션 시작 시간이 초과되었습니다."
+            tail -100 /home/ubuntu/app.log
+            exit 1
