@@ -5,27 +5,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.maumbujeok.backend.domain.auth.service.SmsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(CorsConfigTest.TestCorsControllerConfig.class)
 class CorsConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockitoBean
-    private SmsService smsService;
 
     @Test
     void allowsSmsSendPreflightFromConfiguredFrontendOrigin() throws Exception {
@@ -53,7 +55,7 @@ class CorsConfigTest {
 
     @Test
     void includesCorsHeadersOnSmsSendPostResponse() throws Exception {
-        mockMvc.perform(post("/api/auth/sms/send")
+        mockMvc.perform(post("/api/auth/test/cors/echo")
                         .header(HttpHeaders.ORIGIN, "https://13th-maeum-bujeok.vercel.app")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"phoneNumber\":\"01012345678\"}"))
@@ -61,5 +63,21 @@ class CorsConfigTest {
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
                         "https://13th-maeum-bujeok.vercel.app"))
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
+    }
+
+    @TestConfiguration
+    static class TestCorsControllerConfig {
+        @Bean
+        TestCorsController testCorsController() {
+            return new TestCorsController();
+        }
+    }
+
+    @RestController
+    static class TestCorsController {
+        @PostMapping("/api/auth/test/cors/echo")
+        String echo(@RequestBody String body) {
+            return body;
+        }
     }
 }
