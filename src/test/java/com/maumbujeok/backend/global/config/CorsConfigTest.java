@@ -51,7 +51,7 @@ class CorsConfigTest {
         mockMvc.perform(post("/api/auth/sms/send")
                         .header(HttpHeaders.ORIGIN, "https://13th-maeum-bujeok.vercel.app")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phoneNumber\":\"01012345678\"}"))
+                        .content("{\"phoneNumber\":\"01099999999\",\"purpose\":\"SIGNUP\"}"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
                         "https://13th-maeum-bujeok.vercel.app"))
