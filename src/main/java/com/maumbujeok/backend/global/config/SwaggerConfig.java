@@ -6,6 +6,8 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,6 +35,7 @@ public class SwaggerConfig {
                         .title("마음부적 API 명세서")
                         .description("마음부적 서비스 백엔드 API 명세서")
                         .version("v1.0.0"))
+                .servers(List.of(new Server().url("/").description("Current host")))
                 .addSecurityItem(securityRequirement)
                 .components(components);
     }
