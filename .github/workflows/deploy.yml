@@ -22,7 +22,17 @@ jobs:
             cd /home/ubuntu/13th-Maeum-Bujeok-BE
 
             echo "최신 코드 가져오는 중..."
-            git pull origin deploy
+            git fetch origin deploy
+            git reset --hard origin/deploy
+
+            test -f /etc/maeum-bujeok/app.env
+            set -a
+            . /etc/maeum-bujeok/app.env
+            set +a
+
+            test -n "$SPRING_DATASOURCE_URL"
+            test -n "$SPRING_DATASOURCE_USERNAME"
+            test -n "$SPRING_DATASOURCE_PASSWORD"
 
             echo "애플리케이션 빌드 중..."
             chmod +x gradlew
@@ -31,6 +41,8 @@ jobs:
             echo "기존 애플리케이션 종료 중..."
             sudo fuser -k 8080/tcp || true
             sleep 3
+
+
 
             echo "새 애플리케이션 실행 중..."
             nohup java -Dfile.encoding=UTF-8 \
