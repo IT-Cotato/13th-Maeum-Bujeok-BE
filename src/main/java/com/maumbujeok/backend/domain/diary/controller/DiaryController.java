@@ -47,14 +47,13 @@ public class DiaryController {
 
     @Operation(
             summary = "일기 작성",
-            description = "기록일 기준 회원당 하루 한 건만 작성합니다. 기록일을 생략하면 Asia/Seoul 기준 오늘을 사용하며 미래 날짜는 허용하지 않습니다. 저장 후 AI 분석을 비동기로 시작합니다."
+            description = "같은 기록일에도 여러 건 작성할 수 있습니다. 기록일을 생략하면 Asia/Seoul 기준 오늘을 사용하며 미래 날짜는 허용하지 않습니다. 저장 후 AI 분석을 비동기로 시작합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "작성 성공", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.CreateDiaryApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "본문·감정·기록일 또는 이미지 요청 오류", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 실패"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "연결할 업로드를 찾을 수 없음", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "해당 기록일에 이미 일기가 존재함", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "연결할 업로드를 찾을 수 없음", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
     })
     @PostMapping
     public ApiResponse<CreateDiaryResponse> create(

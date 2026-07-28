@@ -28,7 +28,6 @@ class DiaryOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/diaries/{diaryId}'].get.summary").value("일기 상세 조회"))
                 .andExpect(jsonPath("$.paths['/api/diaries/{diaryId}'].patch.summary").value("일기 수정"))
                 .andExpect(jsonPath("$.paths['/api/diaries/{diaryId}'].delete.responses['204']").exists())
-                .andExpect(jsonPath("$.paths['/api/diaries'].post.responses['409']").exists())
                 .andExpect(jsonPath("$.paths['/api/diaries'].get.responses['400']").exists())
                 .andExpect(jsonPath("$.paths['/api/diaries/by-date'].get.summary").value("기록일별 일기 목록 조회"))
                 .andExpect(jsonPath("$.paths['/api/diaries/by-date'].get.responses['200'].content['application/json'].schema['$ref']")

@@ -44,7 +44,7 @@ public class LocalObjectStorage implements ObjectStorage {
             Files.write(pathFor(grant.objectKey()), content);
             objects.put(grant.objectKey(), new StoredObject(contentType, content.length));
         } catch (IOException exception) {
-            throw new IllegalStateException("Local object write failed", exception);
+            throw new ObjectStorageException("Local object write failed", exception);
         }
     }
 
@@ -57,7 +57,7 @@ public class LocalObjectStorage implements ObjectStorage {
         try {
             return new LocalDownload(Files.readAllBytes(pathFor(grant.objectKey())), metadata.contentType());
         } catch (IOException exception) {
-            throw new IllegalStateException("Local object read failed", exception);
+            throw new ObjectStorageException("Local object read failed", exception);
         }
     }
 
@@ -65,7 +65,7 @@ public class LocalObjectStorage implements ObjectStorage {
     public StoredObject head(String key) {
         StoredObject object = objects.get(key);
         if (object == null || !Files.exists(pathFor(key))) {
-            throw new IllegalStateException("Object not uploaded: " + key);
+            throw new ObjectNotUploadedException(key);
         }
         return object;
     }
@@ -84,7 +84,7 @@ public class LocalObjectStorage implements ObjectStorage {
             Files.deleteIfExists(pathFor(key));
             objects.remove(key);
         } catch (IOException exception) {
-            throw new IllegalStateException("Local object delete failed", exception);
+            throw new ObjectStorageException("Local object delete failed", exception);
         }
     }
 

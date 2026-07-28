@@ -9,7 +9,9 @@ import com.maumbujeok.backend.domain.upload.dto.DiaryImageResponse;
 import com.maumbujeok.backend.domain.upload.dto.PresignedUrlRequest;
 import com.maumbujeok.backend.domain.upload.dto.PresignedUrlResponse;
 import com.maumbujeok.backend.domain.upload.repository.DiaryUploadRepository;
+import com.maumbujeok.backend.domain.upload.storage.ObjectNotUploadedException;
 import com.maumbujeok.backend.domain.upload.storage.ObjectStorage;
+import com.maumbujeok.backend.domain.upload.storage.ObjectStorageException;
 import com.maumbujeok.backend.domain.upload.storage.PresignedObjectUrl;
 import com.maumbujeok.backend.domain.upload.storage.StorageProperties;
 import com.maumbujeok.backend.domain.upload.storage.StoredObject;
@@ -84,7 +86,14 @@ public class UploadService {
             if (!upload.canAttachTo(diary)) {
                 throw new CustomException(ErrorCode.INVALID_UPLOAD_REQUEST);
             }
-            StoredObject object = objectStorage.head(upload.getObjectKey());
+            StoredObject object;
+            try {
+                object = objectStorage.head(upload.getObjectKey());
+            } catch (ObjectNotUploadedException exception) {
+                throw new CustomException(ErrorCode.INVALID_UPLOAD_REQUEST);
+            } catch (ObjectStorageException exception) {
+                throw new CustomException(ErrorCode.UPLOAD_STORAGE_ERROR);
+            }
             if (!upload.getContentType().equals(object.contentType()) || upload.getFileSize() != object.fileSize()) {
                 throw new CustomException(ErrorCode.INVALID_UPLOAD_REQUEST);
             }

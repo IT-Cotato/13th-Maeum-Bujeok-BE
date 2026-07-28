@@ -18,6 +18,12 @@ jwt:
   refresh-token-expiration: 14d
   issuer: maumbujeok-test
 
+ai:
+  provider: fake
+
+storage:
+  provider: local
+
 # CoolSMS/Solapi 설정
 coolsms:
   api-key: mock_coolsms_api_key

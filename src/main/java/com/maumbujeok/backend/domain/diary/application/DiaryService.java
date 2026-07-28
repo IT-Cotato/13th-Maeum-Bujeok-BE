@@ -32,7 +32,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,18 +63,9 @@ public class DiaryService {
         LocalDate recordedDate = request.recordedDate() == null
                 ? LocalDate.now(serviceClock) : request.recordedDate();
         validateRecordedDate(recordedDate);
-        if (diaryRepository.existsByMemberPhoneNumberAndRecordedDate(phoneNumber, recordedDate)) {
-            throw duplicateDate();
-        }
-
         Member member = memberRepository.getReferenceById(phoneNumber);
-        Diary diary;
-        try {
-            diary = diaryRepository.saveAndFlush(new Diary(
-                    member, request.content().trim(), parseEmotion(request.selectedEmotion()), recordedDate));
-        } catch (DataIntegrityViolationException exception) {
-            throw duplicateDate();
-        }
+        Diary diary = diaryRepository.saveAndFlush(new Diary(
+                member, request.content().trim(), parseEmotion(request.selectedEmotion()), recordedDate));
         DiaryAnalysis analysis = analysisRepository.save(
                 new DiaryAnalysis(diary, PROMPT_VERSION, POLICY_VERSION));
         uploadService.syncAttachments(phoneNumber, diary, request.imageUploadIds());
@@ -250,10 +240,6 @@ public class DiaryService {
 
     private DiaryRequestException diaryNotFound() {
         return new DiaryRequestException(ErrorCode.DIARY_NOT_FOUND, "Diary not found");
-    }
-
-    private DiaryRequestException duplicateDate() {
-        return new DiaryRequestException(ErrorCode.DUPLICATE_DIARY_DATE, "Diary already exists for date");
     }
 
     private DiaryRequestException invalidRequest(String message) {

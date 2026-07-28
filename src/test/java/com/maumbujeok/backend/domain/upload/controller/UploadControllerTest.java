@@ -92,6 +92,35 @@ class UploadControllerTest {
                 .andExpect(jsonPath("$.code").value("UPLOAD_400"));
     }
 
+    @Test
+    void rejectsDiaryAttachmentWhenIssuedUploadWasNotUploaded() throws Exception {
+        Member member = saveMember("not-uploaded-image", "01000000034");
+        String memberToken = token(member);
+
+        String response = mockMvc.perform(post("/api/uploads/presigned-url")
+                        .header("Authorization", "Bearer " + memberToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"contentType\":\"image/png\",\"fileSize\":1024}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String uploadId = JsonPath.read(response, "$.data.uploadId");
+
+        mockMvc.perform(post("/api/diaries")
+                        .header("Authorization", "Bearer " + memberToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "upload was not completed",
+                                  "selectedEmotion": "COMFORTABLE",
+                                  "recordedDate": "2026-07-27",
+                                  "imageUploadIds": ["%s"]
+                                }
+                                """.formatted(uploadId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("UPLOAD_400"));
+    }
+
     private String token(Member member) {
         return jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
     }
