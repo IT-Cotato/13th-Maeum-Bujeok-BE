@@ -8,6 +8,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class FrontendUrlProvider {
 
     private static final String PROD_FRONTEND_BASE_URL = "https://13th-maeum-bujeok.vercel.app";
+    private static final String PROD_API_BASE_URL = "https://maumbujeok.p-e.kr";
     private static final String LOCAL_FRONTEND_BASE_URL = "http://localhost:3000";
 
     public String baseUrl() {
@@ -15,7 +16,7 @@ public class FrontendUrlProvider {
     }
 
     public List<String> allowedOrigins() {
-        return List.of(PROD_FRONTEND_BASE_URL, LOCAL_FRONTEND_BASE_URL);
+        return List.of(PROD_FRONTEND_BASE_URL, PROD_API_BASE_URL, LOCAL_FRONTEND_BASE_URL);
     }
 
     public String oauthCallbackUrl() {

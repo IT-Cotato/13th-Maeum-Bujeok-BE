@@ -42,6 +42,18 @@ class CorsConfigTest {
     }
 
     @Test
+    void allowsSmsSendPreflightFromProductionApiSwaggerOrigin() throws Exception {
+        mockMvc.perform(options("/api/auth/sms/send")
+                        .header(HttpHeaders.ORIGIN, "https://maumbujeok.p-e.kr")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+                        "https://maumbujeok.p-e.kr"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
+    }
+
+    @Test
     void allowsSmsSendPreflightFromLocalFrontendOrigin() throws Exception {
         mockMvc.perform(options("/api/auth/sms/send")
                         .header(HttpHeaders.ORIGIN, "http://localhost:3000")
