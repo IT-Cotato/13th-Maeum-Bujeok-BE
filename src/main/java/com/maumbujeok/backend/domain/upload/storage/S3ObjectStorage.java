@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -40,9 +41,16 @@ public class S3ObjectStorage implements ObjectStorage {
 
     @Override
     public StoredObject head(String key) {
-        HeadObjectResponse response = client.headObject(HeadObjectRequest.builder()
-                .bucket(properties.getBucket()).key(key).build());
-        return new StoredObject(response.contentType(), response.contentLength());
+        try {
+            HeadObjectResponse response = client.headObject(HeadObjectRequest.builder()
+                    .bucket(properties.getBucket()).key(key).build());
+            return new StoredObject(response.contentType(), response.contentLength());
+        } catch (S3Exception exception) {
+            if (exception.statusCode() == 404) {
+                throw new ObjectNotUploadedException(key, exception);
+            }
+            throw new ObjectStorageException("S3 object metadata lookup failed", exception);
+        }
     }
 
     @Override
