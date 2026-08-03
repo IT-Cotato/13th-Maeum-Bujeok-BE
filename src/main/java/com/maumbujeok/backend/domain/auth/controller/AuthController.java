@@ -42,7 +42,8 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증번호 발송 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 파라미터가 유효하지 않거나 잘못된 요청 목적(SmsPurpose)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "비밀번호 재설정 목적의 요청 시 존재하지 않는 회원"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "회원가입 목적의 요청 시 이미 가입된 회원")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "회원가입 목적의 요청 시 이미 가입된 회원"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "SMS 발송 실패")
     })
     @PostMapping("/sms/send")
     public ApiResponse<String> sendSmsCode(@jakarta.validation.Valid @RequestBody SmsSendRequest request) {
@@ -53,8 +54,7 @@ public class AuthController {
     @Operation(summary = "SMS 인증번호 검증 API", description = "발송된 인증번호의 유효성을 검증합니다.")
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "인증번호가 일치하지 않거나 만료됨"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "인증코드가 발송된 적 없는 번호")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "인증코드가 없거나 인증번호가 일치하지 않거나 만료됨")
     })
     @PostMapping("/sms/verify")
     public ApiResponse<String> verifySmsCode(@RequestBody SmsVerifyRequest request) {

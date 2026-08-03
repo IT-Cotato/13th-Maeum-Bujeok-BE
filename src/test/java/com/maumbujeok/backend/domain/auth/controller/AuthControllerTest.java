@@ -251,4 +251,72 @@ class AuthControllerTest {
                 .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
     }
+
+    @Test
+    void signUpConcurrencyTest() throws Exception {
+        String targetPhoneNumber = "01088887777";
+        SignUpRequest request = SignUpRequest.builder()
+                .phoneNumber(targetPhoneNumber)
+                .name("홍길동")
+                .password("Password123!")
+                .birthDate("19990101")
+                .termsAgreed(true)
+                .privacyAgreed(true)
+                .sensitiveDataAgreed(true)
+                .marketingAgreed(false)
+                .build();
+
+        int threadCount = 3;
+        java.util.concurrent.ExecutorService executorService = java.util.concurrent.Executors.newFixedThreadPool(threadCount);
+        java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(threadCount);
+
+        java.util.List<java.util.concurrent.Future<org.springframework.test.web.servlet.MvcResult>> futures = new java.util.ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            futures.add(executorService.submit(() -> {
+                try {
+                    latch.await();
+                    // Each thread saves its own SmsAuthCode in its own transaction context
+                    SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                            .phoneNumber(targetPhoneNumber)
+                            .code("123456")
+                            .expiredAt(LocalDateTime.now().plusMinutes(3))
+                            .build();
+                    smsAuthCode.verify();
+                    smsAuthCodeRepository.saveAndFlush(smsAuthCode);
+
+                    return mockMvc.perform(post("/api/auth/signup")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(request)))
+                            .andReturn();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            }));
+        }
+
+        latch.countDown();
+        doneLatch.await();
+        executorService.shutdown();
+
+        int successCount = 0;
+        int conflictCount = 0;
+
+        for (java.util.concurrent.Future<org.springframework.test.web.servlet.MvcResult> future : futures) {
+            org.springframework.test.web.servlet.MvcResult result = future.get();
+            int status = result.getResponse().getStatus();
+            String responseBody = result.getResponse().getContentAsString();
+            if (status == 200) {
+                successCount++;
+            } else if (status == 409 && responseBody.contains("AUTH_009")) {
+                conflictCount++;
+            }
+        }
+
+        org.junit.jupiter.api.Assertions.assertEquals(1, successCount, "단 하나의 요청만 가입 성공해야 합니다.");
+        org.junit.jupiter.api.Assertions.assertEquals(threadCount - 1, conflictCount, "나머지 요청은 중복 가입 에러(409)를 받아야 합니다.");
+    }
 }
