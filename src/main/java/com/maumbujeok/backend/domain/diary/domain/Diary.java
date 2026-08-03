@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -50,6 +51,12 @@ public class Diary extends BaseTimeEntity {
     @Column(name = "recorded_date", nullable = false)
     private LocalDate recordedDate;
 
+    @Column(name = "burned_at")
+    private LocalDateTime burnedAt;
+
+    @Column(name = "burning_id")
+    private Long burningId;
+
     public Diary(Member member, String content, DiaryEmotion selectedEmotion) {
         this(member, content, selectedEmotion, LocalDate.now(SERVICE_ZONE));
     }
@@ -69,4 +76,14 @@ public class Diary extends BaseTimeEntity {
         this.selectedEmotion = selectedEmotion;
         return true;
     }
+
+    public boolean isBurned() { return burnedAt != null; }
+
+    public void markBurned(Long burningId, LocalDateTime burnedAt) {
+        this.burningId = burningId;
+        this.burnedAt = burnedAt;
+    }
 }
+
+
+

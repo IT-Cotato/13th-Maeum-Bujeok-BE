@@ -9,4 +9,7 @@ import org.springframework.stereotype.Repository;
 public interface TalismanRepository extends JpaRepository<Talisman, Long>, TalismanRepositoryCustom {
     List<Talisman> findAllByMemberPhoneNumberOrderByCreatedAtDesc(String memberPhoneNumber);
     void deleteByMemberPhoneNumber(String memberPhoneNumber);
+    boolean existsByBurnRitualId(Long burnRitualId);
 }
+
+

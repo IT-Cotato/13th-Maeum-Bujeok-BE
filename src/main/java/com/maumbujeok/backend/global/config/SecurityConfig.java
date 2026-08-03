@@ -37,19 +37,19 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(Customizer.withDefaults())
-            // 기본 보안 설정 비활성화 (JWT 사용 목적)
+            // 湲곕낯 蹂댁븞 ?ㅼ젙 鍮꾪솢?깊솕 (JWT ?ъ슜 紐⑹쟻)
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             
-            // 세션 정책: STATELESS (서버에 세션 저장 X)
+            // ?몄뀡 ?뺤콉: STATELESS (?쒕쾭???몄뀡 ???X)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             
-            // API 엔드포인트 접근 권한 설정
+            // API ?붾뱶?ъ씤???묎렐 沅뚰븳 ?ㅼ젙
             .authorizeHttpRequests(auth -> auth
-                // CORS preflight 요청 허용
+                // CORS preflight ?붿껌 ?덉슜
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // 1. 접근 허용 (permitAll) 엔드포인트
+                // 1. ?묎렐 ?덉슜 (permitAll) ?붾뱶?ъ씤??
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/local-uploads/**",
@@ -61,33 +61,36 @@ public class SecurityConfig {
                     "/swagger-resources/**",
                     "/webjars/**"
                 ).permitAll()
-                // 2. 인증 필수 (authenticated) 엔드포인트
+                // 2. ?몄쬆 ?꾩닔 (authenticated) ?붾뱶?ъ씤??
                 .requestMatchers(
                     "/api/diaries/**",
                     "/api/members/**",
                     "/api/reports/**",
-                    "/api/talismans/**"
+                    "/api/talismans/**",
+                    "/api/burnings/**"
                 ).authenticated()
-                // 3. 그 외 모든 요청은 인증 필수
+                // 3. 洹???紐⑤뱺 ?붿껌? ?몄쬆 ?꾩닔
                 .anyRequest().authenticated()
             )
             
-            // 비인증 사용자 차단 시 403 Forbidden 응답 처리
+            // 鍮꾩씤利??ъ슜??李⑤떒 ??403 Forbidden ?묐떟 泥섎━
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) ->
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden")
                 )
             )
 
-            // OAuth2 로그인 설정
+            // OAuth2 濡쒓렇???ㅼ젙
             .oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                 .successHandler(oAuth2SuccessHandler)
             )
 
-            // JWT 인증 필터 등록
+            // JWT ?몄쬆 ?꾪꽣 ?깅줉
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 }
+
+
