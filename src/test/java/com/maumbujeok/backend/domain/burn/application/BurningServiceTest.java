@@ -66,7 +66,7 @@ class BurningServiceTest {
         Burning burning = new Burning(member, BurningSourceType.DIRECT, null, "remember", LocalDateTime.now());
         BurningAnalysis analysis = new BurningAnalysis(burning);
         analysis.markProcessing(1);
-        analysis.complete(1, new BurningAiResult("comment", "type", "CALM", "fake"));
+        analysis.complete(1, new BurningAiResult("comment", 2, "평온회복", "fake"));
         Talisman talisman = Talisman.builder().member(member).burnRitualId(1L).message("CALM").build();
         when(burningRepository.findByIdAndMemberPhoneNumber(1L, member.getPhoneNumber())).thenReturn(java.util.Optional.of(burning));
         when(analysisRepository.findByBurningIdForUpdate(1L)).thenReturn(java.util.Optional.of(analysis));

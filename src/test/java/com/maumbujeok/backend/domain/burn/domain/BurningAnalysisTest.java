@@ -15,7 +15,7 @@ class BurningAnalysisTest {
 
         assertTrue(analysis.markProcessing(1));
         assertFalse(analysis.markProcessing(1));
-        assertTrue(analysis.complete(1, new BurningAiResult("comment", "type", "CALM", "fake")));
+        assertTrue(analysis.complete(1, new BurningAiResult("comment", 2, "평온회복", "fake")));
         assertEquals(BurningAnalysisStatus.COMPLETED, analysis.getStatus());
         assertEquals("comment", analysis.getComment());
         assertFalse(analysis.fail(1, "late-failure"));

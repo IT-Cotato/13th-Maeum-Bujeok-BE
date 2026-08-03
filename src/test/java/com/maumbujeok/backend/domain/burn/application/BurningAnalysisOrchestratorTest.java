@@ -33,7 +33,7 @@ class BurningAnalysisOrchestratorTest {
         BurningAnalysis analysis = analysis();
         when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(analysis));
         when(repository.findById(7L)).thenReturn(Optional.of(analysis));
-        when(client.analyze(any(BurningAiRequest.class))).thenReturn(new BurningAiResult("comment", "type", "CALM", "fake"));
+        when(client.analyze(any(BurningAiRequest.class))).thenReturn(new BurningAiResult("comment", 2, "평온회복", "fake"));
 
         orchestrator.analyze(7L, 1);
 
@@ -48,12 +48,14 @@ class BurningAnalysisOrchestratorTest {
         when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(analysis));
         when(repository.findById(7L)).thenReturn(Optional.of(analysis));
         when(client.analyze(any(BurningAiRequest.class))).thenThrow(new RuntimeException("AI_DOWN"));
-        when(fallbackFactory.create(any())).thenReturn(new BurningAiResult("fallback", "type", "CALM", "fallback"));
+        when(fallbackFactory.create(any())).thenReturn(new BurningAiResult("fallback", 2, "평온회복", "fallback"));
 
         orchestrator.analyze(7L, 1);
 
         org.junit.jupiter.api.Assertions.assertEquals(BurningAnalysisStatus.FALLBACK_COMPLETED, analysis.getStatus());
         org.junit.jupiter.api.Assertions.assertEquals("fallback", analysis.getComment());
+        org.junit.jupiter.api.Assertions.assertEquals("2", analysis.getTalismanType());
+        org.junit.jupiter.api.Assertions.assertEquals("평온회복", analysis.getTalismanText());
         verify(client, times(1)).analyze(any(BurningAiRequest.class));
         verify(fallbackFactory, times(1)).create(any());
     }

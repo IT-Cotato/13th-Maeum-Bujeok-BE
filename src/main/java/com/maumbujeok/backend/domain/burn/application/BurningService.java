@@ -78,7 +78,7 @@ public class BurningService {
                 .member(burning.getMember())
                 .burnRitualId(burningId)
                 .designType(analysis.getTalismanType())
-                .title(analysis.getTalismanType())
+                .title(BurningTalismanCatalog.keyword(BurningTalismanCatalog.number(analysis.getTalismanType())))
                 .message(analysis.getTalismanText())
                 .generationStatus(TalismanGenerationStatus.COMPLETED)
                 .recordedAt(burning.getBurnedAt().toLocalDate())
@@ -105,14 +105,14 @@ public class BurningService {
         Burning b = owned(phone, id);
         BurningAnalysis a = analysisRepository.findByBurningId(id).orElseThrow();
         boolean talisman = talismanRepository.existsByBurnRitualId(id);
-        return new BurningDetailResponse(id, b.getSourceType(), b.getBurnedAt(), a.getStatus(), a.getComment(), a.getTalismanType(), a.getTalismanText(), talisman);
+        return new BurningDetailResponse(id, b.getSourceType(), b.getBurnedAt(), a.getStatus(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), talisman);
     }
 
     @Transactional(readOnly = true)
     public BurningAnalysisResponse getAnalysis(String phone, Long id) {
         owned(phone, id);
         BurningAnalysis a = analysisRepository.findByBurningId(id).orElseThrow();
-        return new BurningAnalysisResponse(id, a.getStatus(), a.getInputRevision(), a.getComment(), a.getTalismanType(), a.getTalismanText(), a.getCompletedAt());
+        return new BurningAnalysisResponse(id, a.getStatus(), a.getInputRevision(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), a.getCompletedAt());
     }
 
     private Burning owned(String phone, Long id) { return burningRepository.findByIdAndMemberPhoneNumber(id, phone).orElseThrow(() -> error(ErrorCode.BURNING_NOT_FOUND, "Burning record not found")); }
