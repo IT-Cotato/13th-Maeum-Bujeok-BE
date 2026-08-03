@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, String> {
     Optional<Member> findByPhoneNumber(String phoneNumber);
     Optional<Member> findByProviderAndProviderId(Member.Provider provider, String providerId);
+    boolean existsByPhoneNumber(String phoneNumber);
 }

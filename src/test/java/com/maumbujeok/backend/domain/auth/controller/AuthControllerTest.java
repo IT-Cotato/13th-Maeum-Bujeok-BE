@@ -80,12 +80,12 @@ class AuthControllerTest {
                 .marketingAgreed(false)
                 .build();
 
-        // When & Then: 중복된 번호로 가입 시 400 Bad Request 및 AUTH_004 리턴 검증
+        // When & Then: 중복된 번호로 가입 시 409 Conflict 및 AUTH_009 리턴 검증
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("AUTH_004"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("AUTH_009"));
     }
 
     @Test
