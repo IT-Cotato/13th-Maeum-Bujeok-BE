@@ -18,5 +18,6 @@ public class BurningAnalysis {
  public BurningAnalysis(Burning burning){this.burning=burning;this.status=BurningAnalysisStatus.PENDING;this.inputRevision=1;}
  public boolean markProcessing(int revision){if(status!=BurningAnalysisStatus.PENDING||inputRevision!=revision)return false;status=BurningAnalysisStatus.PROCESSING;return true;}
  public boolean complete(int revision,BurningAiResult result){if(status!=BurningAnalysisStatus.PROCESSING||inputRevision!=revision)return false;comment=result.comment();talismanType=result.talismanType();talismanText=result.talismanText();modelName=result.modelName();status=BurningAnalysisStatus.COMPLETED;completedAt=LocalDateTime.now();return true;}
+ public boolean completeWithFallback(int revision,BurningAiResult result,String code){if(status!=BurningAnalysisStatus.PROCESSING||inputRevision!=revision)return false;comment=result.comment();talismanType=result.talismanType();talismanText=result.talismanText();modelName=result.modelName();failureCode=code;status=BurningAnalysisStatus.FALLBACK_COMPLETED;completedAt=LocalDateTime.now();return true;}
  public boolean fail(int revision,String code){if(inputRevision!=revision||status==BurningAnalysisStatus.COMPLETED)return false;status=BurningAnalysisStatus.FAILED;failureCode=code;return true;}
 }

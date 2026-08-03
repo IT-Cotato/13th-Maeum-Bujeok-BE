@@ -129,7 +129,7 @@ public class DiaryService {
         YearMonth target = parseYearMonth(year, month);
         List<DiaryCalendarDayResponse> days = findMonth(phoneNumber, target).stream()
                 .map(diary -> new DiaryCalendarDayResponse(
-                        diary.getRecordedDate(), "STORED", diary.getId(), null))
+                        diary.getRecordedDate(), diary.isBurned() ? "BURNED" : "STORED", diary.getId(), diary.getBurningId()))
                 .toList();
         return new DiaryCalendarResponse(target.getYear(), target.getMonthValue(), days);
     }
