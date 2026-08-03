@@ -6,9 +6,9 @@ import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,7 +19,14 @@ class BurningAnalysisOrchestratorTest {
     @Mock BurningAnalysisRepository repository;
     @Mock BurningAiClient client;
     @Mock BurningFallbackFactory fallbackFactory;
-    @InjectMocks BurningAnalysisOrchestrator orchestrator;
+    BurningAnalysisOrchestrator orchestrator;
+
+    @BeforeEach
+    void setUp() {
+        orchestrator = new BurningAnalysisOrchestrator(
+                new BurningAnalysisStateService(repository), client, fallbackFactory
+        );
+    }
 
     @Test
     void analyzesPendingRecordAndPersistsCompletedResult() {
