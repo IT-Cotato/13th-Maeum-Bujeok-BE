@@ -1,0 +1,2 @@
+package com.maumbujeok.backend.domain.burn.ai;
+public record BurningAiResponse(String comment, String talismanType, String talismanText) { public BurningAiResult toResult(String model){return new BurningAiResult(comment,talismanType,talismanText,model);} }
