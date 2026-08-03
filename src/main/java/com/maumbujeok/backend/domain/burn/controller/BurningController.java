@@ -14,4 +14,5 @@ public class BurningController {
  @GetMapping public ApiResponse<BurningListResponse> list(@AuthenticationPrincipal CustomUserDetails user,@RequestParam(required=false) Long cursor,@RequestParam(required=false) Integer size){ return ApiResponse.onSuccess(service.getPage(user.getMember().getPhoneNumber(),cursor,size)); }
  @GetMapping("/{burningId}") public ApiResponse<BurningDetailResponse> get(@AuthenticationPrincipal CustomUserDetails user,@PathVariable Long burningId){ return ApiResponse.onSuccess(service.get(user.getMember().getPhoneNumber(),burningId)); }
  @GetMapping("/{burningId}/analysis") public ApiResponse<BurningAnalysisResponse> analysis(@AuthenticationPrincipal CustomUserDetails user,@PathVariable Long burningId){ return ApiResponse.onSuccess(service.getAnalysis(user.getMember().getPhoneNumber(),burningId)); }
+ @PostMapping("/{burningId}/talisman") public ApiResponse<TalismanCreationResponse> createTalisman(@AuthenticationPrincipal CustomUserDetails user,@PathVariable Long burningId){ return ApiResponse.onSuccess(service.createTalisman(user.getMember().getPhoneNumber(), burningId)); }
 }
