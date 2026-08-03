@@ -13,6 +13,7 @@ import java.time.*;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -26,6 +27,7 @@ public class BurningService {
     private final BurningAnalysisRepository analysisRepository;
     private final TalismanRepository talismanRepository;
     private final Clock serviceClock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public CreateBurningResponse create(String phone, CreateBurningRequest request) {
@@ -41,6 +43,7 @@ public class BurningService {
         Burning burning=burningRepository.saveAndFlush(new Burning(member,request.sourceType(),diaryId,content,now));
         if(diary!=null){ diary.markBurned(burning.getId(),now); diaryRepository.flush(); }
         BurningAnalysis analysis=analysisRepository.save(new BurningAnalysis(burning));
+        eventPublisher.publishEvent(new BurningAnalysisRequestedEvent(analysis.getId(), analysis.getInputRevision()));
         return new CreateBurningResponse(burning.getId(),burning.getSourceType(),burning.getBurnedAt(),analysis.getStatus());
     }
 
