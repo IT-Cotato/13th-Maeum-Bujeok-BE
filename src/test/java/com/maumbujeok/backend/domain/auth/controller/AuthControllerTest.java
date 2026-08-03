@@ -253,8 +253,24 @@ class AuthControllerTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     void signUpConcurrencyTest() throws Exception {
         String targetPhoneNumber = "01088887777";
+        
+        // Clean up any stale data first
+        memberRepository.findById(targetPhoneNumber).ifPresent(memberRepository::delete);
+        smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc(targetPhoneNumber)
+                .ifPresent(smsAuthCodeRepository::delete);
+
+        // Pre-save a verified SmsAuthCode (committed immediately because NOT_SUPPORTED propagation is used)
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber(targetPhoneNumber)
+                .code("123456")
+                .expiredAt(LocalDateTime.now().plusMinutes(3))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.saveAndFlush(smsAuthCode);
+
         SignUpRequest request = SignUpRequest.builder()
                 .phoneNumber(targetPhoneNumber)
                 .name("홍길동")
@@ -277,15 +293,6 @@ class AuthControllerTest {
             futures.add(executorService.submit(() -> {
                 try {
                     latch.await();
-                    // Each thread saves its own SmsAuthCode in its own transaction context
-                    SmsAuthCode smsAuthCode = SmsAuthCode.builder()
-                            .phoneNumber(targetPhoneNumber)
-                            .code("123456")
-                            .expiredAt(LocalDateTime.now().plusMinutes(3))
-                            .build();
-                    smsAuthCode.verify();
-                    smsAuthCodeRepository.saveAndFlush(smsAuthCode);
-
                     return mockMvc.perform(post("/api/auth/signup")
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .content(objectMapper.writeValueAsString(request)))
@@ -315,6 +322,10 @@ class AuthControllerTest {
                 conflictCount++;
             }
         }
+
+        // Clean up created resources after validation
+        memberRepository.findById(targetPhoneNumber).ifPresent(memberRepository::delete);
+        smsAuthCodeRepository.delete(smsAuthCode);
 
         org.junit.jupiter.api.Assertions.assertEquals(1, successCount, "단 하나의 요청만 가입 성공해야 합니다.");
         org.junit.jupiter.api.Assertions.assertEquals(threadCount - 1, conflictCount, "나머지 요청은 중복 가입 에러(409)를 받아야 합니다.");
