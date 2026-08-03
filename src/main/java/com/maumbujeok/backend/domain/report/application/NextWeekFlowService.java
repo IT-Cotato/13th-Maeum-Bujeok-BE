@@ -7,6 +7,7 @@ import com.maumbujeok.backend.domain.report.domain.EmotionReportGenerationStatus
 import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlow;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlowGenerationStatus;
+import com.maumbujeok.backend.domain.report.dto.NextWeekFlowAdviceResponse;
 import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
 import com.maumbujeok.backend.domain.report.dto.NextWeekFlowRequest;
 import com.maumbujeok.backend.domain.report.dto.NextWeekFlowStartResponse;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,7 @@ public class NextWeekFlowService {
     private final EmotionReportRepository emotionReportRepository;
     private final NextWeekFlowRepository nextWeekFlowRepository;
     private final NextWeekFlowAsyncService asyncService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
@@ -105,6 +108,22 @@ public class NextWeekFlowService {
             adviceText = DEFAULT_FAILED_ADVICE;
         }
 
+        NextWeekFlowAdviceResponse adviceResponse;
+        if (flow.getGenerationStatus() == NextWeekFlowGenerationStatus.PROCESSING && adviceText == null) {
+            adviceResponse = new NextWeekFlowAdviceResponse("분석 중", "AI가 다음 주 흐름을 분석하고 있습니다. 잠시만 기다려 주세요.", "대기 중");
+        } else {
+            try {
+                adviceResponse = objectMapper.readValue(adviceText, NextWeekFlowAdviceResponse.class);
+            } catch (Exception e) {
+                // fallback if adviceText is plain text or parsing fails
+                adviceResponse = new NextWeekFlowAdviceResponse(
+                        flow.getGenerationStatus() == NextWeekFlowGenerationStatus.FAILED ? "분석 실패" : "다음 주 흐름 조언",
+                        adviceText != null ? adviceText : "",
+                        "여유 찾기"
+                );
+            }
+        }
+
         ZoneOffset SEOUL_OFFSET = ZoneOffset.ofHours(9);
 
         return new NextWeekFlowQueryResponse(
@@ -113,7 +132,7 @@ public class NextWeekFlowService {
                 flow.getPeriodStart(),
                 flow.getPeriodEnd(),
                 flow.getGenerationStatus(),
-                adviceText,
+                adviceResponse,
                 flow.getModelName(),
                 flow.getReportVersion(),
                 flow.getGeneratedAt() == null ? null : flow.getGeneratedAt().atOffset(SEOUL_OFFSET)

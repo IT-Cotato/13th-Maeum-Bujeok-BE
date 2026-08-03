@@ -234,4 +234,27 @@ public class AuthController {
 
         return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
     }
+
+    @Operation(summary = "구글 소셜 로그인 API", description = "프론트엔드에서 수신한 구글 OAuth 토큰을 검증하고, 서비스 전용 JWT 토큰을 발급합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 구글 토큰")
+    })
+    @PostMapping("/google/login")
+    public ApiResponse<TokenResponse> googleLogin(@jakarta.validation.Valid @RequestBody GoogleLoginRequest request) {
+        // [MOCK] 구글 OAuth 토큰 유효성 검증 로직
+        // 실제 운영 환경에서는 GoogleIdTokenVerifier 등을 사용하여 토큰 서명과 클라이언트 ID를 검증합니다.
+        if ("invalid-token".equals(request.getGoogleToken())) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN); // 401 Unauthorized
+        }
+
+        // [MOCK] 구글 회원 가입/로그인 처리
+        // 1. 토큰에서 sub (구글 고유 ID), email, name 등 추출
+        // 2. MemberRepository에서 Provider.GOOGLE 과 providerId로 기가입 회원인지 조회
+        // 3. 미가입 회원인 경우 신규 회원 정보 저장 후 JWT 토큰 발행, 기가입 회원이면 바로 토큰 발행
+        String mockAccessToken = jwtTokenProvider.createToken("GOOGLE_MOCK_USER", Member.Role.ROLE_USER.name());
+        String mockRefreshToken = jwtTokenProvider.createRefreshToken("GOOGLE_MOCK_USER");
+
+        return ApiResponse.onSuccess(new TokenResponse(mockAccessToken, mockRefreshToken));
+    }
 }
