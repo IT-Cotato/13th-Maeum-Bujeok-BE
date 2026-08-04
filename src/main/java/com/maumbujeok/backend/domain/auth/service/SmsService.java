@@ -49,11 +49,11 @@ public class SmsService {
     public void sendVerificationCode(String phoneNumber, SmsPurpose purpose) {
         // 1. 유효성 검증 분기
         if (purpose == SmsPurpose.SIGNUP) {
-            if (memberRepository.existsByPhoneNumber(phoneNumber)) {
+            if (memberRepository.findByPhoneNumber(phoneNumber).isPresent()) {
                 throw new CustomException(ErrorCode.ALREADY_REGISTERED_PHONE);
             }
         } else if (purpose == SmsPurpose.PASSWORD_RESET) {
-            if (!memberRepository.existsByPhoneNumber(phoneNumber)) {
+            if (memberRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
                 throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
             }
         } else {

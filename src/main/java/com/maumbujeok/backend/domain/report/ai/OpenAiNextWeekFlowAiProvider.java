@@ -58,7 +58,7 @@ public class OpenAiNextWeekFlowAiProvider implements NextWeekFlowAiProvider {
                     ),
                     NextWeekFlowAiResponse.class
             );
-            return objectMapper.writeValueAsString(execution.output());
+            return execution.output().adviceText();
         } catch (AiClientException exception) {
             throw new WeeklyReportAiException(
                     exception.getFailureCode().name(),

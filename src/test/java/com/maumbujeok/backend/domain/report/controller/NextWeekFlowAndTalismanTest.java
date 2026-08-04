@@ -156,7 +156,7 @@ class NextWeekFlowAndTalismanTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.generationStatus").value("FAILED"))
-                .andExpect(jsonPath("$.data.advice.content").value("AI 조언 생성에 실패했습니다. 다음 주 흐름 분석을 다시 요청해 주세요."));
+                .andExpect(jsonPath("$.data.adviceText").value("AI 조언 생성에 실패했습니다. 다음 주 흐름 분석을 다시 요청해 주세요."));
     }
 
     @Autowired jakarta.persistence.EntityManager entityManager;
