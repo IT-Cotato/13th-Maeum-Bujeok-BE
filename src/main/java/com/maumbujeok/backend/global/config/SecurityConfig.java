@@ -42,8 +42,8 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             
-            // ?몄뀡 ?뺤콉: STATELESS (?쒕쾭???몄뀡 ???X)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // JWT API는 세션을 사용하지 않지만 OAuth2 로그인은 Google callback의 state 검증을 위해 authorization request를 세션에 잠시 저장해야 한다.
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             
             // API ?붾뱶?ъ씤???묎렐 沅뚰븳 ?ㅼ젙
             .authorizeHttpRequests(auth -> auth

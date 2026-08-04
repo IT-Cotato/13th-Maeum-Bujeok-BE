@@ -13,6 +13,8 @@ import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -202,9 +204,13 @@ public class AuthController {
         return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
     }
 
-    @Operation(summary = "Google 로그인 시작")
+    @Operation(summary = "Google 로그인 시작", description = "브라우저에서 호출하면 Google 인증 화면으로 이동합니다. Swagger의 Execute(fetch)로 호출하지 말고 브라우저 주소 이동 또는 window.location.assign으로 사용하세요. 인증 성공 후 프런트엔드 /oauth/callback으로 accessToken과 refreshToken이 query parameter로 전달됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "Google OAuth 인증 화면으로 리다이렉트"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Google OAuth client 설정 누락 또는 서버 설정 오류", content = @Content)
+    })
     @GetMapping("/google")
     public void startGoogleLogin(HttpServletResponse response) throws java.io.IOException {
-        response.setStatus(HttpServletResponse.SC_FOUND);
-        response.setHeader("Location", "/oauth2/authorization/google");
-    }}
+        response.sendRedirect("/oauth2/authorization/google");
+    }
+}
