@@ -17,10 +17,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDateTime;
 
@@ -199,4 +201,10 @@ public class AuthController {
 
         return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
     }
-}
+
+    @Operation(summary = "Google 로그인 시작")
+    @GetMapping("/google")
+    public void startGoogleLogin(HttpServletResponse response) throws java.io.IOException {
+        response.setStatus(HttpServletResponse.SC_FOUND);
+        response.setHeader("Location", "/oauth2/authorization/google");
+    }}

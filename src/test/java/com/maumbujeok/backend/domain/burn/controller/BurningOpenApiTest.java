@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasItem;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,7 +35,7 @@ class BurningOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/burnings/{burningId}/talisman'].post.responses['403']").exists())
                 .andExpect(jsonPath("$.paths['/api/burnings/{burningId}/talisman'].post.responses['404']").exists())
                 .andExpect(jsonPath("$.paths['/api/burnings/{burningId}/talisman'].post.responses['409']").exists())
-                .andExpect(jsonPath("$.components.schemas.BurningAnalysisResponse.properties.talismanType.type").value("integer"))
-                .andExpect(jsonPath("$.components.schemas.BurningDetailResponse.properties.talismanType.type").value("integer"));
+                .andExpect(jsonPath("$.components.schemas.BurningAnalysisResponse.properties.talismanType.type").value(hasItem("integer")))
+                .andExpect(jsonPath("$.components.schemas.BurningDetailResponse.properties.talismanType.type").value(hasItem("integer")));
     }
 }

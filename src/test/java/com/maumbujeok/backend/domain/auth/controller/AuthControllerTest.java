@@ -1,8 +1,10 @@
 package com.maumbujeok.backend.domain.auth.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maumbujeok.backend.domain.auth.domain.RefreshToken;
@@ -251,4 +253,10 @@ class AuthControllerTest {
                 .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
     }
-}
+
+    @Test
+    void googleLoginStartsOAuthAuthorization() throws Exception {
+        mockMvc.perform(get("/api/auth/google"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/oauth2/authorization/google"));
+    }}

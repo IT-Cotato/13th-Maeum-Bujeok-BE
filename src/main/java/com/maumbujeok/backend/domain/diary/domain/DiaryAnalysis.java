@@ -118,7 +118,7 @@ public class DiaryAnalysis extends BaseTimeEntity {
 
     private void applyResult(DiaryAiResult result, int finalScore, boolean recommended, int attempts, SafetyLevel safety) {
         summary = result.summary();
-        diary.setAiTitle(result.title());
+        if (diary != null) diary.setAiTitle(result.title());
         empathyResponse = result.empathyResponse();
         aiNegativeIntensity = result.negativeIntensity();
         finalNegativeIntensity = finalScore;

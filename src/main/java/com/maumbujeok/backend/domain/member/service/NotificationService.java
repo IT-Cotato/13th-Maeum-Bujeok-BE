@@ -22,12 +22,6 @@ public class NotificationService {
     private final MemberRepository memberRepository;
     private final MemberNotificationSettingRepository notificationSettingRepository;
 
-    public NotificationSettingsResponse getNotificationSettings(String memberPhoneNumber) {
-        return notificationSettingRepository.findByMemberPhoneNumber(memberPhoneNumber)
-                .map(NotificationSettingsResponse::from)
-                .orElseGet(() -> NotificationSettingsResponse.from(MemberNotificationSetting.create(getMemberByPhoneNumber(memberPhoneNumber))));
-    }
-
     @Transactional
     public NotificationSettingsResponse updateNotificationSettings(
             String memberPhoneNumber,

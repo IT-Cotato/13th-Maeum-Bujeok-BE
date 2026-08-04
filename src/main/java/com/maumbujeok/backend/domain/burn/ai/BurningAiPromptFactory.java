@@ -24,7 +24,7 @@ public class BurningAiPromptFactory {
                 용기는 두려움을 넘을 힘이 필요한 경우, 활력은 무기력에서 에너지를 회복하는 경우에 선택하세요.
                 talismanText는 공백과 문장부호가 없는 정확히 4글자의 한국어 문구를 반환하세요.
                 반드시 JSON 객체만 반환하세요.
-                """;
+                """ + "\\nReturn a Korean title (1-100 chars) and a concrete Korean guidance text (1-500 chars). Both are required.";
     }
 
     public String input(BurningAiRequest request) {
