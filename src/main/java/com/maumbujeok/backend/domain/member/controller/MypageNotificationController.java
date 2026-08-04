@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,20 @@ public class MypageNotificationController {
     private final NotificationService notificationService;
 
     @Operation(
+            summary = "원하는 알림 조회 API",
+            description = "로그인된 회원의 감정 기록 알림과 개운 지침 알림 설정을 조회합니다.",
+            security = @SecurityRequirement(name = "JWT_TOKEN")
+    )
+    @GetMapping
+    public ApiResponse<NotificationSettingsResponse> getNotificationSettings(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ApiResponse.onSuccess(
+                notificationService.getNotificationSettings(userDetails.getMember().getPhoneNumber())
+        );
+    }
+
+    @Operation(
             summary = "원하는 알림 수정 API",
             description = "로그인된 회원의 감정 기록 알림과 개운 지침 알림 설정을 수정합니다.",
             security = @SecurityRequirement(name = "JWT_TOKEN")
@@ -37,6 +52,20 @@ public class MypageNotificationController {
     ) {
         return ApiResponse.onSuccess(
                 notificationService.updateNotificationSettings(userDetails.getMember().getPhoneNumber(), request)
+        );
+    }
+
+    @Operation(
+            summary = "요일별 알림 설정 조회 API",
+            description = "로그인된 회원의 요일별 알림 수신 여부를 조회합니다.",
+            security = @SecurityRequirement(name = "JWT_TOKEN")
+    )
+    @GetMapping("/days")
+    public ApiResponse<NotificationDaysResponse> getNotificationDays(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ApiResponse.onSuccess(
+                notificationService.getNotificationDays(userDetails.getMember().getPhoneNumber())
         );
     }
 
