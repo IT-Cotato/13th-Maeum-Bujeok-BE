@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TalismanRepository extends JpaRepository<Talisman, Long>, TalismanRepositoryCustom {
     List<Talisman> findAllByMemberPhoneNumberOrderByCreatedAtDesc(String memberPhoneNumber);
+    List<Talisman> findAllByMemberPhoneNumberAndRecordedAtBetweenOrderByRecordedAtDescCreatedAtDesc(String phoneNumber, java.time.LocalDate from, java.time.LocalDate to);
     void deleteByMemberPhoneNumber(String memberPhoneNumber);
     boolean existsByBurnRitualId(Long burnRitualId);
     Optional<Talisman> findByBurnRitualIdAndMemberPhoneNumber(Long burnRitualId, String memberPhoneNumber);

@@ -13,6 +13,10 @@ String empathyResponse,
         String reportEmotion,
         SafetyLevel safetyLevel
 ) {
+    public DiaryAiResponse(String empathyResponse, String summary, int negativeIntensity, List<EmotionKeywordCandidate> emotionKeywords, String reportEmotion, SafetyLevel safetyLevel) {
+        this(null, empathyResponse, summary, negativeIntensity, emotionKeywords, reportEmotion, safetyLevel);
+    }
+
     public DiaryAiResult toResult(String model) {
         return new DiaryAiResult(
                                 title,

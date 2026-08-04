@@ -10,6 +10,7 @@ import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamp
 import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamples.WEEKLY_SUMMARY_PENDING;
 
 import com.maumbujeok.backend.domain.report.application.WeeklyReportService;
+import com.maumbujeok.backend.domain.report.application.ReportScreenService;
 import com.maumbujeok.backend.domain.report.controller.ReportSwaggerSchemas.GenerateWeeklyReportApiResponse;
 import com.maumbujeok.backend.domain.report.controller.ReportSwaggerSchemas.WeeklyReportSummaryApiResponse;
 import com.maumbujeok.backend.domain.report.controller.ReportSwaggerSchemas.WeeklyReportPeriodsApiResponse;
@@ -17,6 +18,10 @@ import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportRequest;
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
 import com.maumbujeok.backend.domain.report.dto.WeeklyReportSummaryResponse;
 import com.maumbujeok.backend.domain.report.dto.WeeklyReportPeriodResponse;
+import com.maumbujeok.backend.domain.report.dto.ReportEmotionStatsResponse;
+import com.maumbujeok.backend.domain.report.dto.ReportBurningItemResponse;
+import com.maumbujeok.backend.domain.report.dto.ReportTalismansResponse;
+import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +52,7 @@ import java.util.List;
 @SecurityRequirement(name = "JWT_TOKEN")
 public class ReportController {
     private final WeeklyReportService weeklyReportService;
+    private final ReportScreenService reportScreenService;
 
     @Operation(
             summary = "주간 감정 리포트 요약 생성",
@@ -190,4 +196,48 @@ public class ReportController {
             @PathVariable Long reportId
     ) {
         return ApiResponse.onSuccess(weeklyReportService.regenerate(userDetails.getMember().getPhoneNumber(), reportId));
+    }
+    @Operation(summary = "주간 리포트 감정 통계 조회")
+    @GetMapping("/weekly/{reportId}/emotion-stats")
+    public ApiResponse<ReportEmotionStatsResponse> getReportEmotionStats(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId
+    ) {
+        return ApiResponse.onSuccess(reportScreenService.emotionStats(userDetails.getMember().getPhoneNumber(), reportId));
+    }
+
+    @Operation(summary = "주간 리포트 소각 목록 조회")
+    @GetMapping("/weekly/{reportId}/burnings")
+    public ApiResponse<List<ReportBurningItemResponse>> getReportBurnings(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId
+    ) {
+        return ApiResponse.onSuccess(reportScreenService.burnings(userDetails.getMember().getPhoneNumber(), reportId));
+    }
+
+    @Operation(summary = "주간 리포트 부적 목록 조회")
+    @GetMapping("/weekly/{reportId}/talismans")
+    public ApiResponse<ReportTalismansResponse> getReportTalismans(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId
+    ) {
+        return ApiResponse.onSuccess(reportScreenService.talismans(userDetails.getMember().getPhoneNumber(), reportId));
+    }
+
+    @Operation(summary = "주간 리포트 요약 조회")
+    @GetMapping("/weekly/{reportId}/summary")
+    public ApiResponse<WeeklyReportSummaryResponse> getReportSummary(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId
+    ) {
+        return ApiResponse.onSuccess(weeklyReportService.getWeeklySummary(userDetails.getMember().getPhoneNumber(), reportId));
+    }
+
+    @Operation(summary = "주간 리포트 다음 주 흐름 조회")
+    @GetMapping("/weekly/{reportId}/next-week-flow")
+    public ApiResponse<NextWeekFlowQueryResponse> getReportNextWeekFlow(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId
+    ) {
+        return ApiResponse.onSuccess(reportScreenService.nextWeekFlow(userDetails.getMember().getPhoneNumber(), reportId));
     }}

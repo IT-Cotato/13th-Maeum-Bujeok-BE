@@ -41,4 +41,14 @@ class ReportOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/reports/weeks'].get.responses['200']").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/{reportId}/regenerate'].post.responses['200']").exists())
                 .andExpect(jsonPath("$.components.schemas.WeeklyReportPeriodsApiResponse.properties.data.type").value("array"));
+    }
+    @Test
+    void exposesReportScreenSpecifications() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/summary'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/emotion-stats'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/burnings'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/talismans'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/next-week-flow'].get").exists());
     }}
