@@ -5,7 +5,8 @@ import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
 import java.util.List;
 
 public record DiaryAiResult(
-        String empathyResponse,
+                String title,
+String empathyResponse,
         String summary,
         int negativeIntensity,
         List<EmotionKeywordCandidate> emotionKeywords,

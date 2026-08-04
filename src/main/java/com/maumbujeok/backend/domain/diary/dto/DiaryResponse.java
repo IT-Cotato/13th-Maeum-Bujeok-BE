@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 @Schema(name = "DiaryResponse", description = "Diary list item")
 public record DiaryResponse(
         Long diaryId,
-        String content,
+                String title,
+String content,
         String selectedEmotion,
         String selectedEmotionLabel,
         LocalDate recordedDate,
@@ -20,7 +21,7 @@ public record DiaryResponse(
 ) {
     public static DiaryResponse from(Diary diary) {
         return new DiaryResponse(
-                diary.getId(), diary.getContent(), diary.getSelectedEmotion().name(),
+                diary.getId(), diary.getTitle(), diary.getContent(), diary.getSelectedEmotion().name(),
                 diary.getSelectedEmotion().getLabel(), diary.getRecordedDate(), diary.getCreatedAt(),
                 diary.getUpdatedAt(), diary.isBurned() ? "BURNED" : "STORED", diary.getBurningId()
         );

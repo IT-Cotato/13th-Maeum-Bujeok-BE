@@ -18,6 +18,8 @@ public class Burning extends BaseTimeEntity {
     @Enumerated(EnumType.STRING) @Column(name = "source_type", nullable = false, length = 20) private BurningSourceType sourceType;
     @Column(name = "diary_id") private Long diaryId;
     @Column(name = "source_content", nullable = false, columnDefinition = "TEXT") private String sourceContent;
+    @Column(length = 100) private String title;
+    public void setAiTitle(String title) { this.title = title; }
     @Column(name = "burned_at", nullable = false) private LocalDateTime burnedAt;
     public Burning(Member member, BurningSourceType sourceType, Long diaryId, String sourceContent, LocalDateTime burnedAt) { this.member=member; this.sourceType=sourceType; this.diaryId=diaryId; this.sourceContent=sourceContent; this.burnedAt=burnedAt; }
 }

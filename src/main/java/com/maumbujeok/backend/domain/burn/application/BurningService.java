@@ -105,7 +105,7 @@ public class BurningService {
         Burning b = owned(phone, id);
         BurningAnalysis a = analysisRepository.findByBurningId(id).orElseThrow();
         boolean talisman = talismanRepository.existsByBurnRitualId(id);
-        return new BurningDetailResponse(id, b.getSourceType(), b.getBurnedAt(), a.getStatus(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), talisman);
+        return new BurningDetailResponse(id, b.getTitle(), b.getSourceContent(), a.getGuidance(), b.getSourceType(), b.getBurnedAt(), a.getStatus(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), talisman);
     }
 
     @Transactional(readOnly = true)

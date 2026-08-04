@@ -11,7 +11,8 @@ import java.util.List;
 @Schema(name = "DiaryDetailResponse", description = "Diary detail")
 public record DiaryDetailResponse(
         Long diaryId,
-        String content,
+                String title,
+String content,
         String selectedEmotion,
         String selectedEmotionLabel,
         LocalDate recordedDate,
@@ -24,7 +25,7 @@ public record DiaryDetailResponse(
 ) {
     public static DiaryDetailResponse from(Diary diary, DiaryAnalysis analysis, List<DiaryImageResponse> images) {
         return new DiaryDetailResponse(
-                diary.getId(), diary.getContent(), diary.getSelectedEmotion().name(),
+                diary.getId(), diary.getTitle(), diary.getContent(), diary.getSelectedEmotion().name(),
                 diary.getSelectedEmotion().getLabel(), diary.getRecordedDate(), diary.getCreatedAt(),
                 diary.getUpdatedAt(), diary.isBurned() ? "BURNED" : "STORED", diary.getBurningId(),
                 images, DiaryAnalysisResponse.from(analysis)

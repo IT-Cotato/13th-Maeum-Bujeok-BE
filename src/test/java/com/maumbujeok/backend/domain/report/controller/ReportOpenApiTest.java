@@ -33,4 +33,12 @@ class ReportOpenApiTest {
                 .andExpect(jsonPath("$.components.schemas.WeeklyReportSummaryApiResponse.properties.data['$ref']")
                         .value("#/components/schemas/WeeklyReportSummaryResponse"));
     }
-}
+    @Test
+    void exposesWeeklyQueryPeriodsAndRegenerateSpecifications() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/reports/weekly'].get.responses['200']").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/weeks'].get.responses['200']").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/{reportId}/regenerate'].post.responses['200']").exists())
+                .andExpect(jsonPath("$.components.schemas.WeeklyReportPeriodsApiResponse.properties.data.type").value("array"));
+    }}

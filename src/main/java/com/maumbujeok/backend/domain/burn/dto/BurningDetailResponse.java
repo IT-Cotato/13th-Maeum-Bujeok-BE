@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 @Schema(name = "BurningDetailResponse", description = "\uC18C\uAC01 \uC0C1\uC138 \uC751\uB2F5. \uC18C\uAC01 \uC6D0\uBB38\uC740 \uD3EC\uD568\uD558\uC9C0 \uC54A\uC74C")
 public record BurningDetailResponse(
         @Schema(description = "\uC18C\uAC01 \uAE30\uB85D ID", example = "3") Long burningId,
-        @Schema(description = "\uC18C\uAC01 \uCD9C\uCC98", example = "DIRECT") BurningSourceType sourceType,
+                @Schema(description = "소각 제목", nullable = true) String title,
+        @Schema(description = "소각 원문", nullable = true) String sourceContent,
+        @Schema(description = "AI 개운 지침", nullable = true) String guidance,
+@Schema(description = "\uC18C\uAC01 \uCD9C\uCC98", example = "DIRECT") BurningSourceType sourceType,
         @Schema(description = "\uC18C\uAC01 \uC644\uB8CC \uC2DC\uAC01", example = "2026-08-03T18:58:35.031491") LocalDateTime burnedAt,
         @Schema(description = "AI \uBD84\uC11D \uC0C1\uD0DC", example = "FALLBACK_COMPLETED") BurningAnalysisStatus analysisStatus,
         @Schema(description = "\uBD84\uC11D \uCF54\uBA58\uD2B8", nullable = true) String comment,

@@ -44,6 +44,11 @@ public class Diary extends BaseTimeEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(length = 100)
+    private String title;
+
+    public void setAiTitle(String title) { this.title = title; }
+
     @Column(name = "selected_emotion", nullable = false, length = 30)
     @Convert(converter = DiaryEmotionConverter.class)
     private DiaryEmotion selectedEmotion;

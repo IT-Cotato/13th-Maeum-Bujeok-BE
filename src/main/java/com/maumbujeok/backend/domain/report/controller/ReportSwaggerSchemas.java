@@ -2,6 +2,8 @@ package com.maumbujeok.backend.domain.report.controller;
 
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
 import com.maumbujeok.backend.domain.report.dto.WeeklyReportSummaryResponse;
+import com.maumbujeok.backend.domain.report.dto.WeeklyReportPeriodResponse;
+import java.util.List;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -22,4 +24,7 @@ final class ReportSwaggerSchemas {
             super(true, "200", "요청에 성공하였습니다.", null);
         }
     }
-}
+    @Schema(name = "WeeklyReportPeriodsApiResponse", description = "주간 리포트 기간 목록 공통 응답")
+    static final class WeeklyReportPeriodsApiResponse extends ApiResponse<List<WeeklyReportPeriodResponse>> {
+        private WeeklyReportPeriodsApiResponse() { super(true, "200", "요청이 성공했습니다.", null); }
+    }}
