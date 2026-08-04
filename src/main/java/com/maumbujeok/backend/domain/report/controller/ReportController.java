@@ -11,6 +11,7 @@ import static com.maumbujeok.backend.domain.report.controller.ReportSwaggerExamp
 
 import com.maumbujeok.backend.domain.report.application.WeeklyReportService;
 import com.maumbujeok.backend.domain.report.application.ReportScreenService;
+import com.maumbujeok.backend.domain.report.application.MonthlyReportService;
 import com.maumbujeok.backend.domain.report.controller.ReportSwaggerSchemas.GenerateWeeklyReportApiResponse;
 import com.maumbujeok.backend.domain.report.controller.ReportSwaggerSchemas.WeeklyReportSummaryApiResponse;
 import com.maumbujeok.backend.domain.report.controller.ReportSwaggerSchemas.WeeklyReportPeriodsApiResponse;
@@ -22,6 +23,8 @@ import com.maumbujeok.backend.domain.report.dto.ReportEmotionStatsResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportBurningItemResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportTalismansResponse;
 import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
+import com.maumbujeok.backend.domain.report.dto.GenerateMonthlyReportRequest;
+import com.maumbujeok.backend.domain.report.dto.MonthlyReportPeriodResponse;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,6 +56,7 @@ import java.util.List;
 public class ReportController {
     private final WeeklyReportService weeklyReportService;
     private final ReportScreenService reportScreenService;
+    private final MonthlyReportService monthlyReportService;
 
     @Operation(
             summary = "주간 감정 리포트 요약 생성",
@@ -240,4 +244,39 @@ public class ReportController {
             @PathVariable Long reportId
     ) {
         return ApiResponse.onSuccess(reportScreenService.nextWeekFlow(userDetails.getMember().getPhoneNumber(), reportId));
+    }
+    @Operation(summary = "월간 리포트 생성")
+    @PostMapping("/monthly/generate")
+    public ApiResponse<GenerateWeeklyReportResponse> generateMonthly(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody GenerateMonthlyReportRequest request
+    ) {
+        return ApiResponse.onSuccess(monthlyReportService.generate(userDetails.getMember().getPhoneNumber(), request));
+    }
+
+    @Operation(summary = "월간 리포트 조회")
+    @GetMapping("/monthly")
+    public ApiResponse<WeeklyReportSummaryResponse> getMonthly(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        return ApiResponse.onSuccess(monthlyReportService.get(userDetails.getMember().getPhoneNumber(), year, month));
+    }
+
+    @Operation(summary = "월간 리포트 기간 목록 조회")
+    @GetMapping("/months")
+    public ApiResponse<List<MonthlyReportPeriodResponse>> getMonthlyPeriods(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ApiResponse.onSuccess(monthlyReportService.getPeriods(userDetails.getMember().getPhoneNumber()));
+    }
+
+    @Operation(summary = "월간 리포트 재생성")
+    @PostMapping("/monthly/{reportId}/regenerate")
+    public ApiResponse<GenerateWeeklyReportResponse> regenerateMonthly(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reportId
+    ) {
+        return ApiResponse.onSuccess(monthlyReportService.regenerate(userDetails.getMember().getPhoneNumber(), reportId));
     }}

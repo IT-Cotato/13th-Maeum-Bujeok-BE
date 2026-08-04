@@ -50,5 +50,8 @@ class ReportOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/emotion-stats'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/burnings'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/talismans'].get").exists())
-                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/next-week-flow'].get").exists());
+                .andExpect(jsonPath("$.paths['/api/reports/weekly/{reportId}/next-week-flow'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/monthly'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/months'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/reports/monthly/generate'].post").exists());
     }}
