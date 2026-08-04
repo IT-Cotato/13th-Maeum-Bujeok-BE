@@ -1,6 +1,7 @@
 package com.maumbujeok.backend.domain.talisman.controller;
 
 import com.maumbujeok.backend.domain.talisman.dto.TalismanListResponse;
+import com.maumbujeok.backend.domain.talisman.dto.TalismanItemResponse;
 import com.maumbujeok.backend.domain.talisman.service.TalismanService;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
@@ -14,6 +15,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,4 +57,27 @@ public class TalismanController {
                 talismanService.getTalismans(userDetails.getMember().getPhoneNumber(), cursor, size)
         );
     }
-}
+    @Operation(summary = "부적 상세 조회", description = "부적 이미지 URL, 문구, 제목, 디자인 정보 등 부적 상세를 조회합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = TalismanSwaggerSchemas.TalismanDetailApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "본인의 부적을 찾을 수 없음", content = @Content(schema = @Schema(implementation = TalismanSwaggerSchemas.TalismanErrorApiResponse.class)))
+    })
+    @GetMapping("/{talismanId}")
+    public ApiResponse<TalismanItemResponse> getTalisman(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+                                                          @Parameter(description = "부적 ID", example = "101", required = true) @PathVariable Long talismanId) {
+        return ApiResponse.onSuccess(talismanService.getTalisman(userDetails.getMember().getPhoneNumber(), talismanId));
+    }
+
+    @Operation(summary = "부적 삭제", description = "본인의 부적을 삭제합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "삭제 성공", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "본인의 부적을 찾을 수 없음", content = @Content(schema = @Schema(implementation = TalismanSwaggerSchemas.TalismanErrorApiResponse.class)))
+    })
+    @DeleteMapping("/{talismanId}")
+    public ResponseEntity<Void> deleteTalisman(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+                                                @Parameter(description = "부적 ID", example = "101", required = true) @PathVariable Long talismanId) {
+        talismanService.deleteTalisman(userDetails.getMember().getPhoneNumber(), talismanId);
+        return ResponseEntity.noContent().build();
+    }}

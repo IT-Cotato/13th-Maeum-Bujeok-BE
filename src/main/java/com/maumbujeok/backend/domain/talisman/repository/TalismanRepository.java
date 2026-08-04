@@ -12,6 +12,5 @@ public interface TalismanRepository extends JpaRepository<Talisman, Long>, Talis
     void deleteByMemberPhoneNumber(String memberPhoneNumber);
     boolean existsByBurnRitualId(Long burnRitualId);
     Optional<Talisman> findByBurnRitualIdAndMemberPhoneNumber(Long burnRitualId, String memberPhoneNumber);
+    Optional<Talisman> findByIdAndMemberPhoneNumber(Long id, String memberPhoneNumber);
 }
-
-

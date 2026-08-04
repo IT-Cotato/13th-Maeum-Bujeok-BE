@@ -41,6 +41,7 @@ public enum ErrorCode {
     DIARY_ALREADY_BURNED(HttpStatus.CONFLICT, "BURN_409", "Diary has already been burned."),
     BURNING_ANALYSIS_NOT_COMPLETED(HttpStatus.CONFLICT, "BURN_410", "Burning analysis has not completed."),
     TALISMAN_ALREADY_EXISTS(HttpStatus.CONFLICT, "TALISMAN_409", "Talisman has already been created."),
+    TALISMAN_NOT_FOUND(HttpStatus.NOT_FOUND, "TALISMAN_404", "Talisman not found."),
 
     // Report
     INVALID_REPORT_REQUEST(HttpStatus.BAD_REQUEST, "REPORT_400", "?域밸Ŧ肉ョ쳥????釉먯뒜???????筌?? ?????????덊렡."),
