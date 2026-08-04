@@ -38,13 +38,6 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(summary = "SMS 인증번호 발송 API", description = "입력한 전화번호로 6자리 인증번호를 생성하여 Mock 발송하고 3분간 저장합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증번호 발송 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 파라미터가 유효하지 않거나 잘못된 요청 목적(SmsPurpose)"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "비밀번호 재설정 목적의 요청 시 존재하지 않는 회원"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "회원가입 목적의 요청 시 이미 가입된 회원"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "SMS 발송 실패")
-    })
     @PostMapping("/sms/send")
     public ApiResponse<String> sendSmsCode(@jakarta.validation.Valid @RequestBody SmsSendRequest request) {
         smsService.sendVerificationCode(request.getPhoneNumber(), request.getPurpose());
@@ -52,10 +45,6 @@ public class AuthController {
     }
 
     @Operation(summary = "SMS 인증번호 검증 API", description = "발송된 인증번호의 유효성을 검증합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "인증코드가 없거나 인증번호가 일치하지 않거나 만료됨")
-    })
     @PostMapping("/sms/verify")
     public ApiResponse<String> verifySmsCode(@RequestBody SmsVerifyRequest request) {
         smsService.verifyCode(request.getPhoneNumber(), request.getCode());
@@ -63,16 +52,11 @@ public class AuthController {
     }
 
     @Operation(summary = "회원가입 API", description = "전화번호 본인 인증 완료 후 회원 정보(약관 동의 내역, 이름, 비밀번호, 생년월일 등)를 받아 가입 처리합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원가입 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "SMS 본인 인증이 되지 않았거나 필수 동의 미동의 및 잘못된 요청 규격"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 가입된 전화번호")
-    })
     @PostMapping("/signup")
     public ApiResponse<String> signup(@jakarta.validation.Valid @RequestBody SignUpRequest request) {
         // 1. 전화번호 중복 체크
-        if (memberRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new CustomException(ErrorCode.ALREADY_REGISTERED_PHONE);
+        if (memberRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
+            throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);
         }
 
         // 2. 전화번호 본인 인증 여부 체크
@@ -103,12 +87,6 @@ public class AuthController {
     }
 
     @Operation(summary = "로그인 API", description = "전화번호와 비밀번호로 로그인하여 Access Token 및 Refresh Token을 발급받습니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "소셜 계정으로 가입된 사용자가 일반 로그인을 시도함"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "비밀번호 불일치"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않는 회원")
-    })
     @Transactional
     @PostMapping("/login")
     public ApiResponse<TokenResponse> login(@RequestBody LoginRequest request) {
@@ -146,11 +124,6 @@ public class AuthController {
     }
 
     @Operation(summary = "토큰 재발급 API", description = "유효한 Refresh Token을 제출하여 새로운 Access Token 및 Refresh Token을 발급(RTR)받습니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "재발급 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "만료되거나 유효하지 않은 Refresh Token"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "토큰의 소유자(사용자) 정보를 찾을 수 없음")
-    })
     @Transactional
     @PostMapping("/reissue")
     public ApiResponse<TokenResponse> reissue(@RequestBody TokenReissueRequest request) {
@@ -190,9 +163,6 @@ public class AuthController {
     }
 
     @Operation(summary = "로그아웃 API", description = "제출된 Refresh Token을 DB에서 삭제하여 무효화 처리합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그아웃 성공")
-    })
     @Transactional
     @PostMapping("/logout")
     public ApiResponse<String> logout(@RequestBody LogoutRequest request) {
@@ -204,11 +174,6 @@ public class AuthController {
     }
 
     @Operation(summary = "비밀번호 재설정 API", description = "SMS 본인 인증 완료 후 전화번호와 새 비밀번호를 받아 비밀번호를 변경합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "비밀번호 재설정 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "SMS 본인 인증이 완료되지 않았거나 소셜 로그인 가입자임"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않는 회원")
-    })
     @Transactional
     @PostMapping("/password/reset")
     public ApiResponse<String> resetPassword(@RequestBody PasswordResetRequest request) {
@@ -233,28 +198,5 @@ public class AuthController {
         member.updatePasswordHash(passwordEncoder.encode(request.getNewPassword()));
 
         return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
-    }
-
-    @Operation(summary = "구글 소셜 로그인 API", description = "프론트엔드에서 수신한 구글 OAuth 토큰을 검증하고, 서비스 전용 JWT 토큰을 발급합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 구글 토큰")
-    })
-    @PostMapping("/google/login")
-    public ApiResponse<TokenResponse> googleLogin(@jakarta.validation.Valid @RequestBody GoogleLoginRequest request) {
-        // [MOCK] 구글 OAuth 토큰 유효성 검증 로직
-        // 실제 운영 환경에서는 GoogleIdTokenVerifier 등을 사용하여 토큰 서명과 클라이언트 ID를 검증합니다.
-        if ("invalid-token".equals(request.getGoogleToken())) {
-            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN); // 401 Unauthorized
-        }
-
-        // [MOCK] 구글 회원 가입/로그인 처리
-        // 1. 토큰에서 sub (구글 고유 ID), email, name 등 추출
-        // 2. MemberRepository에서 Provider.GOOGLE 과 providerId로 기가입 회원인지 조회
-        // 3. 미가입 회원인 경우 신규 회원 정보 저장 후 JWT 토큰 발행, 기가입 회원이면 바로 토큰 발행
-        String mockAccessToken = jwtTokenProvider.createToken("GOOGLE_MOCK_USER", Member.Role.ROLE_USER.name());
-        String mockRefreshToken = jwtTokenProvider.createRefreshToken("GOOGLE_MOCK_USER");
-
-        return ApiResponse.onSuccess(new TokenResponse(mockAccessToken, mockRefreshToken));
     }
 }
