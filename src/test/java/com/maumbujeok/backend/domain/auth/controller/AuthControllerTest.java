@@ -80,12 +80,12 @@ class AuthControllerTest {
                 .marketingAgreed(false)
                 .build();
 
-        // When & Then: 중복된 번호로 가입 시 400 Bad Request 및 AUTH_004 리턴 검증
+        // When & Then: 중복된 번호로 가입 시 409 Conflict 및 AUTH_009 리턴 검증
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("AUTH_004"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("AUTH_009"));
     }
 
     @Test
@@ -250,5 +250,84 @@ class AuthControllerTest {
         SmsAuthCode code = smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01099999999")
                 .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
+    }
+
+    @Test
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    void signUpConcurrencyTest() throws Exception {
+        String targetPhoneNumber = "01088887777";
+        
+        // Clean up any stale data first
+        memberRepository.findById(targetPhoneNumber).ifPresent(memberRepository::delete);
+        smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc(targetPhoneNumber)
+                .ifPresent(smsAuthCodeRepository::delete);
+
+        // Pre-save a verified SmsAuthCode (committed immediately because NOT_SUPPORTED propagation is used)
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber(targetPhoneNumber)
+                .code("123456")
+                .expiredAt(LocalDateTime.now().plusMinutes(3))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.saveAndFlush(smsAuthCode);
+
+        SignUpRequest request = SignUpRequest.builder()
+                .phoneNumber(targetPhoneNumber)
+                .name("홍길동")
+                .password("Password123!")
+                .birthDate("19990101")
+                .termsAgreed(true)
+                .privacyAgreed(true)
+                .sensitiveDataAgreed(true)
+                .marketingAgreed(false)
+                .build();
+
+        int threadCount = 3;
+        java.util.concurrent.ExecutorService executorService = java.util.concurrent.Executors.newFixedThreadPool(threadCount);
+        java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(threadCount);
+
+        java.util.List<java.util.concurrent.Future<org.springframework.test.web.servlet.MvcResult>> futures = new java.util.ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            futures.add(executorService.submit(() -> {
+                try {
+                    latch.await();
+                    return mockMvc.perform(post("/api/auth/signup")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(request)))
+                            .andReturn();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            }));
+        }
+
+        latch.countDown();
+        doneLatch.await();
+        executorService.shutdown();
+
+        int successCount = 0;
+        int conflictCount = 0;
+
+        for (java.util.concurrent.Future<org.springframework.test.web.servlet.MvcResult> future : futures) {
+            org.springframework.test.web.servlet.MvcResult result = future.get();
+            int status = result.getResponse().getStatus();
+            String responseBody = result.getResponse().getContentAsString();
+            if (status == 200) {
+                successCount++;
+            } else if (status == 409 && responseBody.contains("AUTH_009")) {
+                conflictCount++;
+            }
+        }
+
+        // Clean up created resources after validation
+        memberRepository.findById(targetPhoneNumber).ifPresent(memberRepository::delete);
+        smsAuthCodeRepository.delete(smsAuthCode);
+
+        org.junit.jupiter.api.Assertions.assertEquals(1, successCount, "단 하나의 요청만 가입 성공해야 합니다.");
+        org.junit.jupiter.api.Assertions.assertEquals(threadCount - 1, conflictCount, "나머지 요청은 중복 가입 에러(409)를 받아야 합니다.");
     }
 }

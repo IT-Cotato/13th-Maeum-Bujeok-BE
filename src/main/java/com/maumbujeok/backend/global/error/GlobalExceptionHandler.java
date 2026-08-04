@@ -31,6 +31,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure("COMMON_400", defaultMessage, null));
     }
 
+    // DB Unique 제약 조건 위반 예외 처리 (동시성 가입 방어용)
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException e) {
+        ErrorCode errorCode = ErrorCode.ALREADY_REGISTERED_PHONE;
+        log.error("DataIntegrityViolationException: [Code: {}, Message: {}]", errorCode.getCode(), errorCode.getMessage(), e);
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
+    }
+
     // 예측하지 못한 서버 내부 예외 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {

@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class Member extends BaseTimeEntity {
 
     @Id
-    @Column(name = "phone_number", nullable = false, length = 50)
+    @Column(name = "phone_number", nullable = false, length = 50, unique = true)
     private String phoneNumber;
 
     @Column(name = "name")
