@@ -22,6 +22,10 @@ public class NotificationService {
     private final MemberRepository memberRepository;
     private final MemberNotificationSettingRepository notificationSettingRepository;
 
+    public NotificationSettingsResponse getNotificationSettings(String memberPhoneNumber) {
+        return NotificationSettingsResponse.from(getOrCreateSetting(memberPhoneNumber));
+    }
+
     @Transactional
     public NotificationSettingsResponse updateNotificationSettings(
             String memberPhoneNumber,
@@ -37,6 +41,10 @@ public class NotificationService {
 
         saveIfNew(setting);
         return NotificationSettingsResponse.from(setting);
+    }
+
+    public NotificationDaysResponse getNotificationDays(String memberPhoneNumber) {
+        return NotificationDaysResponse.from(getOrCreateSetting(memberPhoneNumber));
     }
 
     @Transactional

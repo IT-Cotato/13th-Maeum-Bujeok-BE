@@ -2,10 +2,14 @@ package com.maumbujeok.backend.domain.member.domain;
 
 import com.maumbujeok.backend.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +17,7 @@ import java.time.LocalDateTime;
 @Table(name = "members")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member extends BaseTimeEntity {
+public class Member extends BaseTimeEntity implements Persistable<String> {
 
     @Id
     @Column(name = "phone_number", nullable = false, length = 50)
@@ -54,6 +58,9 @@ public class Member extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Transient
+    private boolean newMember = true;
+
     @Builder
     public Member(String name, String email, String phoneNumber, String passwordHash, String birthDate,
                   Provider provider, String providerId,
@@ -71,6 +78,22 @@ public class Member extends BaseTimeEntity {
         this.sensitiveDataAgreedAt = sensitiveDataAgreedAt;
         this.marketingAgreedAt = marketingAgreedAt;
         this.role = role != null ? role : Role.ROLE_USER;
+    }
+
+    @Override
+    public String getId() {
+        return phoneNumber;
+    }
+
+    @Override
+    public boolean isNew() {
+        return newMember;
+    }
+
+    @PostPersist
+    @PostLoad
+    void markNotNew() {
+        this.newMember = false;
     }
 
     public void updatePasswordHash(String newPasswordHash) {
