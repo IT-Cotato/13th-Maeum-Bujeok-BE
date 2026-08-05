@@ -32,8 +32,8 @@ final class ReportSwaggerExamples {
                 "periodEnd": "2026-07-19",
                 "generationStatus": "COMPLETED",
                 "insightSummary": "이번 주는 마음님에게 꽤 괜찮은 한 주였어요!\\n\\n이번 주 마음님의 기록에는 따뜻한 기운이 가득했어요.\\n\\n66.7%가 긍정적인 감정으로 채워진 한 주였네요. 작은 일상 속에서 스스로를 다독이며 안정감을 회복해 간 흐름이 느껴졌어요.",
-                "modelName": "gpt-4o-mini",
-                "reportVersion": "v1.0",
+                "modelName": "gpt-5.5",
+                "reportVersion": "weekly-report-v1",
                 "generatedAt": "2026-07-19T23:10:00+09:00"
               }
             }
@@ -52,7 +52,7 @@ final class ReportSwaggerExamples {
                 "generationStatus": "PENDING",
                 "insightSummary": null,
                 "modelName": null,
-                "reportVersion": "v1.0",
+                "reportVersion": "weekly-report-v1",
                 "generatedAt": null
               }
             }
@@ -71,7 +71,7 @@ final class ReportSwaggerExamples {
                 "generationStatus": "FAILED",
                 "insightSummary": null,
                 "modelName": null,
-                "reportVersion": "v1.0",
+                "reportVersion": "weekly-report-v1",
                 "generatedAt": "2026-07-19T23:10:00+09:00"
               }
             }

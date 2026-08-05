@@ -16,6 +16,6 @@ public class ReportExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handle(ReportRequestException exception) {
         ErrorCode errorCode = exception.getErrorCode();
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(ApiResponse.onFailure(errorCode.getCode(), exception.getMessage(), null));
+                .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
     }
 }

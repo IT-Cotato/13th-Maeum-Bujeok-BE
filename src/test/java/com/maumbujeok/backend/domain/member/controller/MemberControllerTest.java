@@ -78,4 +78,28 @@ class MemberControllerTest {
         assertEquals(MemberSajuProfile.CalendarType.SOLAR, sajuProfile.getCalendarType());
         assertEquals("14:30", sajuProfile.getBirthTime().toString());
     }
+    @Test
+    void onboardingRejectsNonexistentBirthDate() throws Exception {
+        Member member = memberRepository.save(Member.builder()
+                .phoneNumber("01098765432")
+                .name("tester")
+                .provider(Member.Provider.LOCAL)
+                .role(Member.Role.ROLE_USER)
+                .build());
+
+        mockMvc.perform(post("/api/members/onboarding")
+                        .header("Authorization", "Bearer " + jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "birthDate": "19990230",
+                                  "gender": "FEMALE",
+                                  "calendarType": "SOLAR",
+                                  "termsAgreed": true,
+                                  "privacyAgreed": true
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_400"));
+    }
 }

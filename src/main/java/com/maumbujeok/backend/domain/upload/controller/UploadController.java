@@ -44,13 +44,13 @@ public class UploadController {
                       -H "Content-Type: application/json" \
                       -d '{"contentType":"image/png","fileSize":1024}'
                     ```
-                    2. **파일 바이트 PUT**: 응답 `result.uploadUrl`에 파일 원본을 PUT합니다. 이 URL은 S3 등의 외부 스토리지 URL이거나 로컬 개발 서버 URL일 수 있으므로, API 기본 URL을 덧붙이지 말고 응답값을 그대로 사용합니다. 발급 요청에 사용한 것과 같은 `Content-Type`을 반드시 설정합니다.
+                    2. **파일 바이트 PUT**: 응답 `data.uploadUrl`에 파일 원본을 PUT합니다. 이 URL은 S3 등의 외부 스토리지 URL이거나 로컬 개발 서버 URL일 수 있으므로, API 기본 URL을 덧붙이지 말고 응답값을 그대로 사용합니다. 발급 요청에 사용한 것과 같은 `Content-Type`을 반드시 설정합니다.
                     ```bash
                     curl -X PUT "{uploadUrl}" \
                       -H "Content-Type: image/png" \
                       --data-binary "@image.png"
                     ```
-                    3. PUT이 성공한 경우에만 응답 `result.uploadId`를 일기 생성·수정 요청의 `imageUploadIds`에 넣습니다. URL은 발급 후 10분 동안 유효합니다.
+                    3. PUT이 성공한 경우에만 응답 `data.uploadId`를 일기 생성·수정 요청의 `imageUploadIds`에 넣습니다. URL은 발급 후 10분 동안 유효합니다.
                     """
     )
     @ApiResponses({

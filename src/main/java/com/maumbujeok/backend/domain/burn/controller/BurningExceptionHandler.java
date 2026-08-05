@@ -7,4 +7,4 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 @RestControllerAdvice(assignableTypes=BurningController.class) @Order(Ordered.HIGHEST_PRECEDENCE)
-public class BurningExceptionHandler { @ExceptionHandler(BurningRequestException.class) public ResponseEntity<ApiResponse<Void>> handle(BurningRequestException e){ ErrorCode c=e.getErrorCode(); return ResponseEntity.status(c.getHttpStatus()).body(ApiResponse.onFailure(c.getCode(),e.getMessage(),null)); } }
+public class BurningExceptionHandler { @ExceptionHandler(BurningRequestException.class) public ResponseEntity<ApiResponse<Void>> handle(BurningRequestException e){ ErrorCode c=e.getErrorCode(); return ResponseEntity.status(c.getHttpStatus()).body(ApiResponse.onFailure(c.getCode(),c.getMessage(),null)); } }

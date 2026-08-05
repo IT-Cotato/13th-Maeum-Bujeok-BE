@@ -202,7 +202,10 @@ public class ReportController {
         return ApiResponse.onSuccess(weeklyReportService.regenerate(userDetails.getMember().getPhoneNumber(), reportId));
     }
     @Operation(summary = "주간 리포트 감정 통계 조회")
-    @GetMapping("/weekly/{reportId}/emotion-stats")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportNotFoundApiResponse.class)))
+    })    @GetMapping("/weekly/{reportId}/emotion-stats")
     public ApiResponse<ReportEmotionStatsResponse> getReportEmotionStats(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reportId
@@ -211,7 +214,10 @@ public class ReportController {
     }
 
     @Operation(summary = "주간 리포트 소각 목록 조회")
-    @GetMapping("/weekly/{reportId}/burnings")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportNotFoundApiResponse.class)))
+    })    @GetMapping("/weekly/{reportId}/burnings")
     public ApiResponse<List<ReportBurningItemResponse>> getReportBurnings(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reportId
@@ -220,7 +226,10 @@ public class ReportController {
     }
 
     @Operation(summary = "주간 리포트 부적 목록 조회")
-    @GetMapping("/weekly/{reportId}/talismans")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportNotFoundApiResponse.class)))
+    })    @GetMapping("/weekly/{reportId}/talismans")
     public ApiResponse<ReportTalismansResponse> getReportTalismans(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reportId
@@ -229,7 +238,10 @@ public class ReportController {
     }
 
     @Operation(summary = "주간 리포트 요약 조회")
-    @GetMapping("/weekly/{reportId}/summary")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportNotFoundApiResponse.class)))
+    })    @GetMapping("/weekly/{reportId}/summary")
     public ApiResponse<WeeklyReportSummaryResponse> getReportSummary(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reportId
@@ -238,7 +250,10 @@ public class ReportController {
     }
 
     @Operation(summary = "주간 리포트 다음 주 흐름 조회")
-    @GetMapping("/weekly/{reportId}/next-week-flow")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없거나 FLOW_001: 다음 주 흐름 정보를 찾을 수 없습니다.")
+    })    @GetMapping("/weekly/{reportId}/next-week-flow")
     public ApiResponse<NextWeekFlowQueryResponse> getReportNextWeekFlow(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reportId
@@ -246,7 +261,10 @@ public class ReportController {
         return ApiResponse.onSuccess(reportScreenService.nextWeekFlow(userDetails.getMember().getPhoneNumber(), reportId));
     }
     @Operation(summary = "월간 리포트 생성")
-    @PostMapping("/monthly/generate")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "REPORT_400: 리포트 요청이 올바르지 않습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportInvalidRequestApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요")
+    })    @PostMapping("/monthly/generate")
     public ApiResponse<GenerateWeeklyReportResponse> generateMonthly(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody GenerateMonthlyReportRequest request
@@ -255,7 +273,11 @@ public class ReportController {
     }
 
     @Operation(summary = "월간 리포트 조회")
-    @GetMapping("/monthly")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "REPORT_400: 연도 또는 월이 올바르지 않습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportInvalidRequestApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportNotFoundApiResponse.class)))
+    })    @GetMapping("/monthly")
     public ApiResponse<WeeklyReportSummaryResponse> getMonthly(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam int year,
@@ -273,7 +295,10 @@ public class ReportController {
     }
 
     @Operation(summary = "월간 리포트 재생성")
-    @PostMapping("/monthly/{reportId}/regenerate")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "REPORT_404: 리포트를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportNotFoundApiResponse.class)))
+    })    @PostMapping("/monthly/{reportId}/regenerate")
     public ApiResponse<GenerateWeeklyReportResponse> regenerateMonthly(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reportId

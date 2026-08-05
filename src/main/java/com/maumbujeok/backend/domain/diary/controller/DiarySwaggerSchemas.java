@@ -13,51 +13,35 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 final class DiarySwaggerSchemas {
-    private DiarySwaggerSchemas() {
-    }
+    private DiarySwaggerSchemas() {}
 
-    @Schema(name = "CreateDiaryApiResponse", description = "\uC77C\uAE30 \uC0DD\uC131 \uACF5\uD1B5 \uC751\uB2F5")
-    static final class CreateDiaryApiResponse extends ApiResponse<CreateDiaryResponse> {
-        private CreateDiaryApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
+    @Schema(name = "CreateDiaryApiResponse", description = "일기 생성 공통 응답")
+    static final class CreateDiaryApiResponse extends ApiResponse<CreateDiaryResponse> { private CreateDiaryApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "DiaryCursorPageApiResponse", description = "일기 커서 목록 공통 응답")
+    static final class DiaryCursorPageApiResponse extends ApiResponse<DiaryCursorPageResponse> { private DiaryCursorPageApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "DiaryDateListApiResponse", description = "기록일별 일기 목록 공통 응답")
+    static final class DiaryDateListApiResponse extends ApiResponse<List<DiaryResponse>> { private DiaryDateListApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "DiaryCalendarApiResponse", description = "월별 일기 달력 공통 응답")
+    static final class DiaryCalendarApiResponse extends ApiResponse<DiaryCalendarResponse> { private DiaryCalendarApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "DiaryDetailApiResponse", description = "일기 상세 공통 응답")
+    static final class DiaryDetailApiResponse extends ApiResponse<DiaryDetailResponse> { private DiaryDetailApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "UpdateDiaryApiResponse", description = "일기 수정 공통 응답")
+    static final class UpdateDiaryApiResponse extends ApiResponse<UpdateDiaryResponse> { private UpdateDiaryApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "DiaryEmotionStatsApiResponse", description = "감정 통계 공통 응답")
+    static final class DiaryEmotionStatsApiResponse extends ApiResponse<List<EmotionStatResponse>> { private DiaryEmotionStatsApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
+    @Schema(name = "DiaryAnalysisApiResponse", description = "일기 AI 분석 공통 응답")
+    static final class DiaryAnalysisApiResponse extends ApiResponse<DiaryAnalysisResponse> { private DiaryAnalysisApiResponse() { super(true, "200", "요청이 성공하였습니다.", null); } }
 
-    @Schema(name = "DiaryCursorPageApiResponse", description = "\uC77C\uAE30 \uCEE4\uC11C \uBAA9\uB85D \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryCursorPageApiResponse extends ApiResponse<DiaryCursorPageResponse> {
-        private DiaryCursorPageApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "DiaryDateListApiResponse", description = "\uAE30\uB85D\uC77C\uBCC4 \uC77C\uAE30 \uBAA9\uB85D \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryDateListApiResponse extends ApiResponse<List<DiaryResponse>> {
-        private DiaryDateListApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "DiaryCalendarApiResponse", description = "\uC6D4\uBCC4 \uC77C\uAE30 \uCE98\uB9B0\uB354 \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryCalendarApiResponse extends ApiResponse<DiaryCalendarResponse> {
-        private DiaryCalendarApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "DiaryDetailApiResponse", description = "\uC77C\uAE30 \uC0C1\uC138 \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryDetailApiResponse extends ApiResponse<DiaryDetailResponse> {
-        private DiaryDetailApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "UpdateDiaryApiResponse", description = "\uC77C\uAE30 \uC218\uC815 \uACF5\uD1B5 \uC751\uB2F5")
-    static final class UpdateDiaryApiResponse extends ApiResponse<UpdateDiaryResponse> {
-        private UpdateDiaryApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "DiaryEmotionStatsApiResponse", description = "\uAC10\uC815 \uD1B5\uACC4 \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryEmotionStatsApiResponse extends ApiResponse<List<EmotionStatResponse>> {
-        private DiaryEmotionStatsApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "DiaryAnalysisApiResponse", description = "\uC77C\uAE30 AI \uBD84\uC11D \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryAnalysisApiResponse extends ApiResponse<DiaryAnalysisResponse> {
-        private DiaryAnalysisApiResponse() { super(true, "200", "\uC694\uCCAD\uC774 \uC131\uACF5\uD588\uC2B5\uB2C8\uB2E4.", null); }
-    }
-
-    @Schema(name = "DiaryErrorApiResponse", description = "\uC77C\uAE30 API \uC624\uB958 \uACF5\uD1B5 \uC751\uB2F5")
-    static final class DiaryErrorApiResponse extends ApiResponse<Void> {
-        private DiaryErrorApiResponse() { super(false, "DIARY_400", "\uC77C\uAE30 \uC694\uCCAD\uC774 \uC798\uBABB\uB418\uC5C8\uC2B5\uB2C8\uB2E4.", null); }
-    }
+    @Schema(name = "DiaryInvalidRequestApiResponse", description = "DIARY_400 오류 응답")
+    static final class DiaryInvalidRequestApiResponse extends ApiResponse<Void> { private DiaryInvalidRequestApiResponse() { super(false, "DIARY_400", "일기 요청이 올바르지 않습니다.", null); } }
+    @Schema(name = "DiaryCursorErrorApiResponse", description = "DIARY_CURSOR_400 오류 응답")
+    static final class DiaryCursorErrorApiResponse extends ApiResponse<Void> { private DiaryCursorErrorApiResponse() { super(false, "DIARY_CURSOR_400", "일기 목록 커서가 올바르지 않습니다.", null); } }
+    @Schema(name = "DiaryNotFoundApiResponse", description = "DIARY_404 오류 응답")
+    static final class DiaryNotFoundApiResponse extends ApiResponse<Void> { private DiaryNotFoundApiResponse() { super(false, "DIARY_404", "일기를 찾을 수 없습니다.", null); } }
+    @Schema(name = "UploadInvalidRequestApiResponse", description = "UPLOAD_400 오류 응답")
+    static final class UploadInvalidRequestApiResponse extends ApiResponse<Void> { private UploadInvalidRequestApiResponse() { super(false, "UPLOAD_400", "이미지 업로드 요청이 올바르지 않습니다.", null); } }
+    @Schema(name = "UploadNotFoundApiResponse", description = "UPLOAD_404 오류 응답")
+    static final class UploadNotFoundApiResponse extends ApiResponse<Void> { private UploadNotFoundApiResponse() { super(false, "UPLOAD_404", "업로드 정보를 찾을 수 없습니다.", null); } }
+    @Schema(name = "UploadStorageErrorApiResponse", description = "UPLOAD_500 오류 응답")
+    static final class UploadStorageErrorApiResponse extends ApiResponse<Void> { private UploadStorageErrorApiResponse() { super(false, "UPLOAD_500", "이미지 저장소 처리 중 오류가 발생했습니다.", null); } }
 }

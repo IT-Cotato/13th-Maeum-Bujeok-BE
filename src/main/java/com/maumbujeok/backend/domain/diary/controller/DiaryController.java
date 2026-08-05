@@ -48,9 +48,9 @@ public class DiaryController {
     @Operation(summary = "\uC77C\uAE30 \uC0DD\uC131", description = "\uC77C\uAE30\uC640 \uC120\uD0DD \uAC10\uC815, \uAE30\uB85D\uC77C, \uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0\uB97C \uC800\uC7A5\uD569\uB2C8\uB2E4. \uC751\uB2F5 data\uC5D0\uB294 diaryId, recordedDate, analysisStatus\uAC00 \uD3EC\uD568\uB418\uBA70 AI \uBD84\uC11D\uC740 \uBE44\uB3D9\uAE30\uB85C \uC2DC\uC791\uB429\uB2C8\uB2E4.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC0DD\uC131 \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.CreateDiaryApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC694\uCCAD \uAC80\uC99D \uC2E4\uD328", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC694\uCCAD \uAC80\uC99D \uC2E4\uD328", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryInvalidRequestApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC5F0\uACB0\uD560 \uC5C5\uB85C\uB4DC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC5F0\uACB0\uD560 \uC5C5\uB85C\uB4DC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.UploadNotFoundApiResponse.class)))
     })
     @PostMapping
     public ApiResponse<CreateDiaryResponse> create(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody CreateDiaryRequest request) {
@@ -60,7 +60,7 @@ public class DiaryController {
     @Operation(summary = "\uC77C\uAE30 \uCEE4\uC11C \uBAA9\uB85D \uC870\uD68C", description = "recordedDate\uC640 diaryId\uB97C \uAE30\uC900\uC73C\uB85C \uCD5C\uC2E0 \uC21C\uC11C\uC758 \uC77C\uAE30\uB97C \uC870\uD68C\uD569\uB2C8\uB2E4. \uC751\uB2F5 data\uB294 items, nextCursor, hasNext\uB85C \uAD6C\uC131\uB429\uB2C8\uB2E4.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC870\uD68C \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryCursorPageApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uCEE4\uC11C \uB610\uB294 \uD398\uC774\uC9C0 \uD06C\uAE30 \uC624\uB958", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uCEE4\uC11C \uB610\uB294 \uD398\uC774\uC9C0 \uD06C\uAE30 \uC624\uB958", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryCursorErrorApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694")
     })
     @GetMapping
@@ -81,7 +81,7 @@ public class DiaryController {
     @Operation(summary = "\uC6D4\uBCC4 \uC77C\uAE30 \uCE98\uB9B0\uB354 \uC870\uD68C", description = "\uC77C\uAE30\uAC00 \uC874\uC7AC\uD558\uB294 \uB0A0\uC9DC\uC640 \uBCF4\uAD00 \uC0C1\uD0DC(STORED/BURNED)\uB97C \uBC18\uD658\uD569\uB2C8\uB2E4.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC870\uD68C \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryCalendarApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC5F0\uB3C4 \uB610\uB294 \uC6D4 \uBC94\uC704 \uC624\uB958", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC5F0\uB3C4 \uB610\uB294 \uC6D4 \uBC94\uC704 \uC624\uB958", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryInvalidRequestApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694")
     })
     @GetMapping("/calendar")
@@ -93,7 +93,7 @@ public class DiaryController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC870\uD68C \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryDetailApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uBCF8\uC778 \uC18C\uC720 \uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uBCF8\uC778 \uC18C\uC720 \uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryNotFoundApiResponse.class)))
     })
     @GetMapping("/{diaryId}")
     public ApiResponse<DiaryDetailResponse> get(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails, @Parameter(description = "\uC77C\uAE30 ID", example = "42", required = true) @PathVariable Long diaryId) {
@@ -103,9 +103,9 @@ public class DiaryController {
     @Operation(summary = "\uC77C\uAE30 \uC218\uC815", description = "\uC77C\uAE30 \uBCF8\uBB38, \uC120\uD0DD \uAC10\uC815, \uCCA8\uBD80 \uC774\uBBF8\uC9C0\uB97C \uC218\uC815\uD569\uB2C8\uB2E4. \uBCF8\uBB38 \uB610\uB294 \uAC10\uC815\uC774 \uBCC0\uACBD\uB418\uBA74 AI \uBD84\uC11D\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC218\uC815 \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.UpdateDiaryApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC694\uCCAD \uAC80\uC99D \uC2E4\uD328", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC694\uCCAD \uAC80\uC99D \uC2E4\uD328", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryInvalidRequestApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryNotFoundApiResponse.class)))
     })
     @PatchMapping("/{diaryId}")
     public ApiResponse<UpdateDiaryResponse> update(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails, @Parameter(description = "\uC77C\uAE30 ID", example = "42", required = true) @PathVariable Long diaryId, @RequestBody UpdateDiaryRequest request) {
@@ -116,7 +116,7 @@ public class DiaryController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "\uC0AD\uC81C \uC131\uACF5", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryNotFoundApiResponse.class)))
     })
     @DeleteMapping("/{diaryId}")
     public ResponseEntity<Void> delete(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails, @Parameter(description = "\uC77C\uAE30 ID", example = "42", required = true) @PathVariable Long diaryId) {
@@ -127,7 +127,7 @@ public class DiaryController {
     @Operation(summary = "\uAE30\uAC04\uBCC4 \uAC10\uC815 \uD1B5\uACC4 \uC870\uD68C", description = "\uC9C0\uC815\uD55C \uAE30\uAC04\uC5D0 \uBD84\uC11D\uC774 \uC644\uB8CC\uB41C \uC77C\uAE30\uC758 \uAC10\uC815\uBCC4 \uAC1C\uC218\uB97C \uBC18\uD658\uD569\uB2C8\uB2E4.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC870\uD68C \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryEmotionStatsApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC870\uD68C \uAE30\uAC04 \uC624\uB958", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "\uC870\uD68C \uAE30\uAC04 \uC624\uB958", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryInvalidRequestApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694")
     })
     @GetMapping("/emotion-stats")
@@ -139,7 +139,7 @@ public class DiaryController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "\uC870\uD68C \uC131\uACF5", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryAnalysisApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "\uC778\uC99D \uD544\uC694"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryErrorApiResponse.class)))
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "\uC77C\uAE30\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C", content = @Content(schema = @Schema(implementation = DiarySwaggerSchemas.DiaryNotFoundApiResponse.class)))
     })
     @GetMapping("/{diaryId}/analysis")
     public ApiResponse<DiaryAnalysisResponse> getAnalysis(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails, @Parameter(description = "\uC77C\uAE30 ID", example = "42", required = true) @PathVariable Long diaryId) {

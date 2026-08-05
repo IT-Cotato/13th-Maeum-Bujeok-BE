@@ -21,4 +21,25 @@ final class MemberSwaggerSchemas {
             super(true, "200", "온보딩 정보가 등록되었습니다.", "온보딩 정보가 등록되었습니다.");
         }
     }
+
+    @Schema(name = "OnboardingValidationErrorApiResponse", description = "온보딩 검증 실패 공통 응답")
+    static final class OnboardingValidationErrorApiResponse extends ApiResponse<Void> {
+        private OnboardingValidationErrorApiResponse() {
+            super(false, "COMMON_400", "생년월일은 yyyyMMdd 형식의 실제 날짜여야 합니다.", null);
+        }
+    }
+    @Schema(name = "MemberForbiddenErrorResponse", description = "인증되지 않은 회원 API 요청의 Spring Security 기본 오류 응답")
+    static final class MemberForbiddenErrorResponse {
+        @Schema(example = "2026-08-05T11:45:37.735+09:00")
+        public String timestamp;
+
+        @Schema(example = "403")
+        public int status;
+
+        @Schema(example = "Forbidden")
+        public String error;
+
+        @Schema(example = "/api/members/me")
+        public String path;
+    }
 }

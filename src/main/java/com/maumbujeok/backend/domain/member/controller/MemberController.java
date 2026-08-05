@@ -17,6 +17,7 @@ import com.maumbujeok.backend.global.common.ApiResponse;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -51,7 +52,17 @@ public class MemberController {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberProfileApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "JWT가 없거나 유효하지 않아 인증되지 않은 요청")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
+                    content = @Content(
+                            schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증 실패",
+                                    value = "{\"timestamp\":\"2026-08-05T11:45:37.735+09:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/members/me\"}"
+                            )
+                    )
+            )
     })    @GetMapping("/me")
     public ApiResponse<MemberProfileResponse> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -70,9 +81,39 @@ public class MemberController {
             security = @SecurityRequirement(name = "JWT_TOKEN")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "생년월일·사주·동의 정보 저장 성공", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberOnboardingApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "필수값 누락, 생년월일 공백 또는 필수 약관·개인정보 처리방침 미동의"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "JWT가 없거나 유효하지 않아 인증되지 않은 요청")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "온보딩 정보 저장 성공",
+                    content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberOnboardingApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "COMMON_400: 필수값, 약관 동의 또는 생년월일 검증 실패",
+                    content = @Content(
+                            schema = @Schema(implementation = MemberSwaggerSchemas.OnboardingValidationErrorApiResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "존재하지 않는 생년월일",
+                                            value = "{\"success\":false,\"code\":\"COMMON_400\",\"message\":\"생년월일은 yyyyMMdd 형식의 실제 날짜여야 합니다.\",\"data\":null}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "필수 약관 미동의",
+                                            value = "{\"success\":false,\"code\":\"COMMON_400\",\"message\":\"필수 서비스 이용약관에 동의해야 합니다.\",\"data\":null}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
+                    content = @Content(
+                            schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증 실패",
+                                    value = "{\"timestamp\":\"2026-08-05T11:45:37.735+09:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/members/onboarding\"}"
+                            )
+                    )
+            )
     })    @PostMapping("/onboarding")
     @Transactional
     public ApiResponse<String> completeOnboarding(
@@ -114,7 +155,17 @@ public class MemberController {
     @Transactional
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원 및 소유 데이터 삭제 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "JWT가 없거나 유효하지 않아 인증되지 않은 요청")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
+                    content = @Content(
+                            schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증 실패",
+                                    value = "{\"timestamp\":\"2026-08-05T11:45:37.735+09:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/members/withdraw\"}"
+                            )
+                    )
+            )
     })    @DeleteMapping("/withdraw")
     public ApiResponse<String> withdrawMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
         if (userDetails == null) {
