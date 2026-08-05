@@ -35,7 +35,7 @@ public class NextWeekFlowController {
             description = "사용자의 사주 정보와 해당 주차 감정 흐름 데이터를 바탕으로 다음 주 흐름 분석을 시작합니다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "생성 시작 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "생성 시작 성공", content = @Content(schema = @Schema(implementation = NextWeekFlowStartResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "REPORT_400: 완료된 주간 리포트가 없거나 weekStart가 올바르지 않습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportInvalidRequestApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_001: 회원 또는 REPORT_404: 주간 리포트를 찾을 수 없습니다."),
@@ -55,7 +55,7 @@ public class NextWeekFlowController {
             description = "생성 요청한 다음 주 흐름 분석 상태와 조언 텍스트를 조회합니다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = NextWeekFlowQueryResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "COMMON_403: 본인 소유 흐름이 아닙니다."),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "FLOW_001: 다음 주 흐름 정보를 찾을 수 없습니다.")
     })    @GetMapping("/next-week-flow/{flowId}")
