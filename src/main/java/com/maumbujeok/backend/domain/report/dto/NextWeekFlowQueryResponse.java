@@ -15,11 +15,11 @@ public record NextWeekFlowQueryResponse(
         @Schema(description = "연관된 주간 감정 리포트 ID", example = "10")
         Long emotionReportId,
 
-        @Schema(description = "대상 주간 시작일", example = "2026-08-10")
+        @Schema(description = "대상 주간 시작일", example = "2026-08-17")
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate periodStart,
 
-        @Schema(description = "대상 주간 종료일", example = "2026-08-16")
+        @Schema(description = "대상 주간 종료일", example = "2026-08-23")
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate periodEnd,
 

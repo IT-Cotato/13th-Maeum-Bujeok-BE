@@ -14,6 +14,7 @@ import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +31,7 @@ public class HomeSummaryService {
     private final HomeSummaryAiProvider aiProvider;
     private final HomeSummaryComposer fallbackComposer;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public HomeSummaryResponse getTodaySummary(String phoneNumber) {
         LocalDate today = LocalDate.now();
         return homeSummaryRepository.findByMemberPhoneNumberAndSummaryDate(phoneNumber, today)
@@ -93,6 +94,12 @@ public class HomeSummaryService {
                 .reportVersion("v1")
                 .build();
 
-        return homeSummaryRepository.save(homeSummary);
+        try {
+            return homeSummaryRepository.save(homeSummary);
+        } catch (DataIntegrityViolationException e) {
+            log.info("Concurrent home summary creation detected for member={}. Re-querying existing summary.", member.getPhoneNumber());
+            return homeSummaryRepository.findByMemberPhoneNumberAndSummaryDate(member.getPhoneNumber(), date)
+                    .orElseThrow(() -> e);
+        }
     }
 }

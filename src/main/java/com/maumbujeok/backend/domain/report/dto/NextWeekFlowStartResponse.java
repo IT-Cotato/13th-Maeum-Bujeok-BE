@@ -18,7 +18,7 @@ public record NextWeekFlowStartResponse(
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate weekStart,
 
-        @Schema(description = "생성 진행 상태 (PENDING, IN_PROGRESS, COMPLETED, FAILED)", example = "IN_PROGRESS")
+        @Schema(description = "생성 진행 상태 (PENDING, PROCESSING, COMPLETED, FAILED)", example = "PROCESSING")
         NextWeekFlowGenerationStatus generationStatus,
 
         @Schema(description = "안내 메시지", example = "다음 주 흐름 분석 생성이 시작되었습니다.")

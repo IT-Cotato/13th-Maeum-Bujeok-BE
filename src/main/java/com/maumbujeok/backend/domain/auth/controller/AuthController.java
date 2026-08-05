@@ -106,7 +106,7 @@ public class AuthController {
         })
         @Transactional
         @PostMapping("/login")
-        public ApiResponse<TokenResponse> login(@RequestBody LoginRequest request) {
+        public ApiResponse<TokenResponse> login(@jakarta.validation.Valid @RequestBody LoginRequest request) {
                 Member member = memberRepository.findByPhoneNumber(request.getPhoneNumber())
                                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
