@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/mypage/notifications")
 @RequiredArgsConstructor
 public class MypageNotificationController {
-
     private final NotificationService notificationService;
 
     @Operation(
@@ -46,14 +45,10 @@ public class MypageNotificationController {
             security = @SecurityRequirement(name = "JWT_TOKEN")
     )
     @PatchMapping
-    public ApiResponse<NotificationSettingsResponse> updateNotificationSettings(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody NotificationSettingsUpdateRequest request
-    ) {
-        return ApiResponse.onSuccess(
-                notificationService.updateNotificationSettings(userDetails.getMember().getPhoneNumber(), request)
-        );
+    public ApiResponse<NotificationSettingsResponse> updateNotificationSettings(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody NotificationSettingsUpdateRequest request) {
+        return ApiResponse.onSuccess(notificationService.updateNotificationSettings(userDetails.getMember().getPhoneNumber(), request));
     }
+
 
     @Operation(
             summary = "요일별 알림 설정 조회 API",
@@ -75,12 +70,7 @@ public class MypageNotificationController {
             security = @SecurityRequirement(name = "JWT_TOKEN")
     )
     @PatchMapping("/days")
-    public ApiResponse<NotificationDaysResponse> updateNotificationDays(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody NotificationDaysUpdateRequest request
-    ) {
-        return ApiResponse.onSuccess(
-                notificationService.updateNotificationDays(userDetails.getMember().getPhoneNumber(), request)
-        );
+    public ApiResponse<NotificationDaysResponse> updateNotificationDays(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody NotificationDaysUpdateRequest request) {
+        return ApiResponse.onSuccess(notificationService.updateNotificationDays(userDetails.getMember().getPhoneNumber(), request));
     }
 }

@@ -35,6 +35,9 @@ public class NextWeekFlowService {
 
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
+        if (request == null || request.weekStart() == null) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
         LocalDate weekStart = request.weekStart();
 
         Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)

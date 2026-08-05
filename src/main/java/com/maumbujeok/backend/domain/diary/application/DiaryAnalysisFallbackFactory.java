@@ -25,7 +25,8 @@ public class DiaryAnalysisFallbackFactory {
                 );
         String summary = fitSummary(input.selectedEmotion() + " 감정을 중심으로 오늘의 마음을 차분히 돌아본 하루");
         return new DiaryAiResult(
-                empathy,
+                                null,
+empathy,
                 summary,
                 50,
                 List.of(new EmotionKeywordCandidate(input.selectedEmotion(), 1.0)),

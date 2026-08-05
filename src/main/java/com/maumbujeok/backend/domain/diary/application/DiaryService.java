@@ -129,7 +129,7 @@ public class DiaryService {
         YearMonth target = parseYearMonth(year, month);
         List<DiaryCalendarDayResponse> days = findMonth(phoneNumber, target).stream()
                 .map(diary -> new DiaryCalendarDayResponse(
-                        diary.getRecordedDate(), "STORED", diary.getId(), null))
+                        diary.getRecordedDate(), diary.isBurned() ? "BURNED" : "STORED", diary.getId(), diary.getBurningId()))
                 .toList();
         return new DiaryCalendarResponse(target.getYear(), target.getMonthValue(), days);
     }
@@ -140,6 +140,7 @@ public class DiaryService {
         DiaryAnalysis analysis = analysisRepository.findOwnedByDiaryIdForUpdate(diaryId, phoneNumber)
                 .orElseThrow(this::diaryNotFound);
         Diary diary = analysis.getDiary();
+        if (diary.isBurned()) throw new DiaryRequestException(ErrorCode.INVALID_DIARY_REQUEST, "Burned diary cannot be updated");
         String content = request.content() == null ? diary.getContent() : request.content().trim();
         DiaryEmotion emotion = request.selectedEmotion() == null
                 ? diary.getSelectedEmotion() : parseEmotion(request.selectedEmotion());
@@ -161,6 +162,7 @@ public class DiaryService {
         DiaryAnalysis analysis = analysisRepository.findOwnedByDiaryIdForUpdate(diaryId, phoneNumber)
                 .orElseThrow(this::diaryNotFound);
         Diary diary = analysis.getDiary();
+        if (diary.isBurned()) throw new DiaryRequestException(ErrorCode.INVALID_DIARY_REQUEST, "Burned diary cannot be deleted");
         uploadService.markDiaryImagesForDeletion(diaryId);
         analysisRepository.delete(analysis);
         diaryRepository.delete(diary);
@@ -253,3 +255,5 @@ public class DiaryService {
         return phoneNumber.substring(phoneNumber.length() - 4);
     }
 }
+
+

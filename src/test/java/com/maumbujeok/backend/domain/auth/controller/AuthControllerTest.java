@@ -1,8 +1,10 @@
 package com.maumbujeok.backend.domain.auth.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maumbujeok.backend.domain.auth.domain.RefreshToken;
@@ -73,11 +75,6 @@ class AuthControllerTest {
                 .phoneNumber("01012345678")
                 .name("홍길동")
                 .password("Password123!")
-                .birthDate("19990101")
-                .termsAgreed(true)
-                .privacyAgreed(true)
-                .sensitiveDataAgreed(true)
-                .marketingAgreed(false)
                 .build();
 
         // When & Then: 중복된 번호로 가입 시 400 Bad Request 및 AUTH_004 리턴 검증
@@ -102,11 +99,6 @@ class AuthControllerTest {
                 .phoneNumber("01012345679")
                 .name("홍길동")
                 .password("Password123!")
-                .birthDate("19990101")
-                .termsAgreed(true)
-                .privacyAgreed(true)
-                .sensitiveDataAgreed(true)
-                .marketingAgreed(false)
                 .build();
 
         // When & Then: 가입 시 400 Bad Request 및 SMS_003 리턴 검증
@@ -148,25 +140,26 @@ class AuthControllerTest {
     }
 
     @Test
-    void signUpWithMandatoryTermsFalseShouldBeBlockedByValidation() throws Exception {
+    void signUpWithoutOnboardingFieldsSucceedsAfterSmsVerification() throws Exception {
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber("01012345678")
+                .code("123456")
+                .expiredAt(LocalDateTime.now().plusMinutes(3))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.save(smsAuthCode);
+
         SignUpRequest request = SignUpRequest.builder()
                 .phoneNumber("01012345678")
                 .name("홍길동")
                 .password("Password123!")
-                .birthDate("19990101")
-                .termsAgreed(false) // 필수 동의 미동의
-                .privacyAgreed(true)
-                .sensitiveDataAgreed(true)
-                .marketingAgreed(false)
                 .build();
 
-        // When & Then: @Valid에 의해 400 Bad Request 반환 검증
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
     }
-
     @Test
     void reissueWithLoggedOutRefreshTokenShouldBeBlocked() throws Exception {
         // Given: 유효한 Refresh Token 및 DB 존재
@@ -251,4 +244,10 @@ class AuthControllerTest {
                 .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
     }
-}
+
+    @Test
+    void googleLoginStartsOAuthAuthorization() throws Exception {
+        mockMvc.perform(get("/api/auth/google"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/oauth2/authorization/google"));
+    }}

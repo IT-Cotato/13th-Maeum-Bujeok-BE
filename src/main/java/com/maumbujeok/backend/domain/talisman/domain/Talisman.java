@@ -19,7 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "talismans")
+@Table(name = "talismans", uniqueConstraints = @jakarta.persistence.UniqueConstraint(name = "uk_talismans_burn_ritual", columnNames = "burn_ritual_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Talisman extends BaseTimeEntity {

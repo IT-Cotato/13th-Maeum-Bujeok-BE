@@ -18,7 +18,8 @@ public class FakeAiProvider implements AiProvider {
                 ? "지금의 힘든 마음을 혼자 감당하지 않아도 괜찮아요."
                 : "오늘 그런 마음을 느끼느라 많이 힘들었겠어요. 그 감정은 당신의 잘못이 아니에요.";
         DiaryAiResult result = new DiaryAiResult(
-                empathy,
+                                null,
+empathy,
                 summary,
                 score,
                 List.of(new EmotionKeywordCandidate(request.selectedEmotion(), 0.8)),
