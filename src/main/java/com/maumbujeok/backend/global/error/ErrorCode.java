@@ -1,4 +1,3 @@
-// src/main/java/com/maumbujeok/backend/global/error/ErrorCode.java
 package com.maumbujeok.backend.global.error;
 
 import lombok.AllArgsConstructor;
@@ -9,58 +8,56 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
 
-    INVALID_DIARY_CURSOR(HttpStatus.BAD_REQUEST, "DIARY_CURSOR_400", "Invalid diary cursor."),
+    INVALID_DIARY_CURSOR(HttpStatus.BAD_REQUEST, "DIARY_CURSOR_400", "일기 목록 커서가 올바르지 않습니다."),
 
-    INVALID_UPLOAD_REQUEST(HttpStatus.BAD_REQUEST, "UPLOAD_400", "Invalid upload request."),
-    UPLOAD_NOT_FOUND(HttpStatus.NOT_FOUND, "UPLOAD_404", "Upload not found."),
-    UPLOAD_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "UPLOAD_500", "Object storage operation failed."),
-    
+    INVALID_UPLOAD_REQUEST(HttpStatus.BAD_REQUEST, "UPLOAD_400", "이미지 업로드 요청이 올바르지 않습니다."),
+    UPLOAD_NOT_FOUND(HttpStatus.NOT_FOUND, "UPLOAD_404", "업로드 정보를 찾을 수 없습니다."),
+    UPLOAD_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "UPLOAD_500", "이미지 저장소 처리 중 오류가 발생했습니다."),
+
     // Auth
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_001", "?釉뚰????? ????낆툗 ???????????덊렡."),
-    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "AUTH_002", "?????類????癒?씀? ??繹먮봾萸??? ?????????덊렡."),
-    DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "AUTH_004", "???? ??좊읈?????놁땍 ??ш낄援??용탶?⑤베??????낇돲??"),
-    ALREADY_REGISTERED_PHONE(HttpStatus.CONFLICT, "AUTH_009", "???? ??좊읈?????놁땍 ??ш낄援??용탶?⑤베??????낇돲??"),
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_010", "?釉뚰????? ????낆툗 ????????낇돲??"),
-    INVALID_SMS_PURPOSE(HttpStatus.BAD_REQUEST, "AUTH_012", "????筌?? ??? SMS ??釉먯뒜??癲ル슢?꾤땟?????낇돲??"),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_001", "회원 정보를 찾을 수 없습니다."),
+    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "AUTH_002", "비밀번호가 일치하지 않습니다."),
+    DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "AUTH_004", "이미 가입된 전화번호입니다."),
+    ALREADY_REGISTERED_PHONE(HttpStatus.CONFLICT, "AUTH_009", "이미 가입된 전화번호입니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_010", "가입되지 않은 전화번호입니다."),
+    INVALID_SMS_PURPOSE(HttpStatus.BAD_REQUEST, "AUTH_012", "지원하지 않는 SMS 인증 목적입니다."),
 
     // Member
-    INVALID_NOTIFICATION_SETTINGS(HttpStatus.BAD_REQUEST, "MEMBER_001", "????????源놁젳 ??좊즴???????筌?? ?????????덊렡."),
-    INVALID_NOTIFICATION_DAYS(HttpStatus.BAD_REQUEST, "MEMBER_002", "??釉먯뒭?앗낆녃?????????源놁젳 ??좊즴???????筌?? ?????????덊렡."),
-    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "???レ챺???? ??熬곥룊源??癲ル슢???彛??Refresh Token????낇돲??"),
-    PHONE_NUMBER_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_006", "??????嶺뚮㉡?€쾮????ш낄援??용탶?⑤베???? ??繹먮봾萸??? ?????????덊렡."),
-    SOCIAL_USER_CANNOT_RESET_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_008", "??????棺??짆?????좊읈????怨멸껑???????類????誘⒲걫?????嶺뚮쮳?녹춵 ?????⑤８?????덊렡."),
-    SOCIAL_USER_MUST_LOGIN_WITH_OAUTH(HttpStatus.BAD_REQUEST, "AUTH_011", "??????棺??짆??嶺뚮ㅎ?댐쭗?쒖뒙???좊읈?????놁땍 ??節뚮쳮?????낇돲?? ??? ?棺??짆??嶺뚮ㅎ?닺キ????⑤챶裕????낆뒩??뗫빝??"),
+    INVALID_NOTIFICATION_SETTINGS(HttpStatus.BAD_REQUEST, "MEMBER_001", "알림 설정 값이 올바르지 않습니다."),
+    INVALID_NOTIFICATION_DAYS(HttpStatus.BAD_REQUEST, "MEMBER_002", "요일별 알림 설정 값이 올바르지 않습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "유효하지 않거나 만료된 Refresh Token입니다."),
+    PHONE_NUMBER_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_006", "회원 정보의 전화번호와 일치하지 않습니다."),
+    SOCIAL_USER_CANNOT_RESET_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_008", "소셜 로그인 가입자는 비밀번호를 재설정할 수 없습니다."),
+    SOCIAL_USER_MUST_LOGIN_WITH_OAUTH(HttpStatus.BAD_REQUEST, "AUTH_011", "소셜 로그인으로 가입된 계정입니다. 구글 로그인을 이용해 주세요."),
 
     // Diary
-    INVALID_DIARY_REQUEST(HttpStatus.BAD_REQUEST, "DIARY_400", "????뀀탿 ??釉먯뒜???????筌?? ?????????덊렡."),
-    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "DIARY_404", "????뀀탿??癲ル슓??젆???????⑤８?????덊렡."),
+    INVALID_DIARY_REQUEST(HttpStatus.BAD_REQUEST, "DIARY_400", "일기 요청이 올바르지 않습니다."),
+    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "DIARY_404", "일기를 찾을 수 없습니다."),
 
     // Burning
-    INVALID_BURNING_REQUEST(HttpStatus.BAD_REQUEST, "BURN_400", "Invalid burning request."),
-    BURNING_NOT_FOUND(HttpStatus.NOT_FOUND, "BURN_404", "Burning record not found."),
-    DIARY_ALREADY_BURNED(HttpStatus.CONFLICT, "BURN_409", "Diary has already been burned."),
-    BURNING_ANALYSIS_NOT_COMPLETED(HttpStatus.CONFLICT, "BURN_410", "Burning analysis has not completed."),
-    TALISMAN_ALREADY_EXISTS(HttpStatus.CONFLICT, "TALISMAN_409", "Talisman has already been created."),
-    TALISMAN_NOT_FOUND(HttpStatus.NOT_FOUND, "TALISMAN_404", "Talisman not found."),
+    INVALID_BURNING_REQUEST(HttpStatus.BAD_REQUEST, "BURN_400", "소각 요청이 올바르지 않습니다."),
+    BURNING_NOT_FOUND(HttpStatus.NOT_FOUND, "BURN_404", "소각 기록을 찾을 수 없습니다."),
+    DIARY_ALREADY_BURNED(HttpStatus.CONFLICT, "BURN_409", "이미 소각된 일기입니다."),
+    BURNING_ANALYSIS_NOT_COMPLETED(HttpStatus.CONFLICT, "BURN_410", "소각 분석이 아직 완료되지 않았습니다."),
+    TALISMAN_ALREADY_EXISTS(HttpStatus.CONFLICT, "TALISMAN_409", "이미 부적이 생성되었습니다."),
+    TALISMAN_NOT_FOUND(HttpStatus.NOT_FOUND, "TALISMAN_404", "부적을 찾을 수 없습니다."),
 
     // Report
-    INVALID_REPORT_REQUEST(HttpStatus.BAD_REQUEST, "REPORT_400", "?域밸Ŧ肉ョ쳥????釉먯뒜???????筌?? ?????????덊렡."),
-    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_404", "?域밸Ŧ肉ョ쳥?嶺? 癲ル슓??젆???????⑤８?????덊렡."),
-    FLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FLOW_001", "???源낆쓱 ????????癲ル슓??젆???????⑤８?????덊렡."),
-    
+    INVALID_REPORT_REQUEST(HttpStatus.BAD_REQUEST, "REPORT_400", "리포트 요청이 올바르지 않습니다."),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_404", "리포트를 찾을 수 없습니다."),
+    FLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FLOW_001", "다음 주 흐름 정보를 찾을 수 없습니다."),
+
     // SMS Auth
-    SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "?嶺뚮ㅎ?댐ℓ袁ㅻ탶?⑤베???癒?씀? ?釉뚰????? ??熬곥룊源????繹먮봾萸??? ?????????덊렡."),
-    SMS_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "SMS_002", "癲ル슢???彛???嶺뚮ㅎ?댐ℓ袁ㅻ탶?⑤베??????낇돲??"),
-    SMS_CODE_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "SMS_003", "??ш낄援??용탶?⑤베????嶺뚮ㅎ?댐ℓ????ш끽維???? ????⒱봼??????"),
-    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SMS_004", "?嶺뚮ㅎ?댐ℓ袁ㅻ탶?⑤베?????ш끽維뽬땻??????됰꽡???怨?????덊렡."),
-    
+    SMS_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "SMS_001", "인증번호를 찾을 수 없습니다."),
+    SMS_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "SMS_002", "인증번호가 만료되었습니다."),
+    SMS_CODE_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "SMS_003", "인증번호가 확인되지 않았습니다."),
+    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SMS_004", "인증번호 전송에 실패했습니다."),
+
     // Common
-    UNAUTHORIZED_ACCESS(HttpStatus.FORBIDDEN, "COMMON_403", "??援????????⑤８?????덊렡."),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "??筌먦끉裕?????濡?쨬??쎛 ?袁⑸즵獒뺣뎾????怨?????덊렡.");
+    UNAUTHORIZED_ACCESS(HttpStatus.FORBIDDEN, "COMMON_403", "인증이 필요합니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
 }
-
-
