@@ -54,6 +54,9 @@ public class Member extends BaseTimeEntity implements Persistable<String> {
     @Column(name = "marketing_agreed_at")
     private LocalDateTime marketingAgreedAt;
 
+    @Column(name = "onboarding_completed_at")
+    private LocalDateTime onboardingCompletedAt;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
@@ -65,7 +68,7 @@ public class Member extends BaseTimeEntity implements Persistable<String> {
     public Member(String name, String email, String phoneNumber, String passwordHash, String birthDate,
                   Provider provider, String providerId,
                   LocalDateTime termsAgreedAt, LocalDateTime privacyAgreedAt,
-                  LocalDateTime sensitiveDataAgreedAt, LocalDateTime marketingAgreedAt, Role role) {
+                  LocalDateTime sensitiveDataAgreedAt, LocalDateTime marketingAgreedAt, LocalDateTime onboardingCompletedAt, Role role) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -77,6 +80,7 @@ public class Member extends BaseTimeEntity implements Persistable<String> {
         this.privacyAgreedAt = privacyAgreedAt;
         this.sensitiveDataAgreedAt = sensitiveDataAgreedAt;
         this.marketingAgreedAt = marketingAgreedAt;
+        this.onboardingCompletedAt = onboardingCompletedAt;
         this.role = role != null ? role : Role.ROLE_USER;
     }
 
@@ -98,6 +102,19 @@ public class Member extends BaseTimeEntity implements Persistable<String> {
 
     public void updatePasswordHash(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+    }
+
+    public void completeOnboarding(String birthDate, LocalDateTime termsAgreedAt,
+                                   LocalDateTime privacyAgreedAt, LocalDateTime sensitiveDataAgreedAt,
+                                   LocalDateTime marketingAgreedAt) {
+        this.birthDate = birthDate;
+        this.termsAgreedAt = termsAgreedAt;
+        this.privacyAgreedAt = privacyAgreedAt;
+        this.sensitiveDataAgreedAt = sensitiveDataAgreedAt;
+        this.marketingAgreedAt = marketingAgreedAt;
+        if (this.onboardingCompletedAt == null) {
+            this.onboardingCompletedAt = termsAgreedAt;
+        }
     }
 
     public enum Provider {

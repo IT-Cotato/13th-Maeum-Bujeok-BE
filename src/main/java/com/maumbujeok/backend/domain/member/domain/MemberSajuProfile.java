@@ -43,6 +43,12 @@ public class MemberSajuProfile extends BaseTimeEntity {
         this.birthTime = birthTime;
     }
 
+    public void update(Gender gender, CalendarType calendarType, LocalTime birthTime) {
+        this.gender = gender;
+        this.calendarType = calendarType;
+        this.birthTime = birthTime;
+    }
+
     public enum Gender {
         MALE, FEMALE, NONE
     }

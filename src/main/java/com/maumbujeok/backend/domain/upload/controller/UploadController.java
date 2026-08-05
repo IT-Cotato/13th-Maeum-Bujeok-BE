@@ -33,8 +33,25 @@ public class UploadController {
     private final UploadService uploadService;
 
     @Operation(
-            summary = "\uC77C\uAE30 \uC774\uBBF8\uC9C0 \uC5C5\uB85C\uB4DC URL \uBC1C\uAE09",
-            description = "\uC694\uCCAD \uD30C\uC77C\uC758 \uD0C0\uC785\uACFC \uD06C\uAE30\uB97C \uAC80\uC99D\uD55C \uD6C4 presigned PUT URL\uC744 \uBC18\uD658\uD569\uB2C8\uB2E4. \uC751\uB2F5 data\uB294 uploadId, uploadUrl, expiresAt\uC785\uB2C8\uB2E4. \uBC1C\uAE09 \uD6C4 \uBC18\uD658\uB41C uploadUrl\uC5D0 \uC9C0\uC815\uB41C Content-Type\uC73C\uB85C PUT\uC5D0 \uC131\uACF5\uD574\uC57C \uC77C\uAE30 \uC694\uCCAD\uC758 imageUploadIds\uC5D0 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+            summary = "일기 이미지 업로드 URL 발급",
+            description = """
+                    이미지는 multipart/form-data로 이 API에 직접 전송하지 않습니다. 아래 2단계를 순서대로 수행하세요.
+
+                    1. **업로드 URL 발급**: `POST {API_BASE_URL}/api/uploads/presigned-url`에 Bearer 토큰과 이미지의 실제 MIME 타입·바이트 크기를 JSON으로 보냅니다.
+                    ```bash
+                    curl -X POST "{API_BASE_URL}/api/uploads/presigned-url" \
+                      -H "Authorization: Bearer {ACCESS_TOKEN}" \
+                      -H "Content-Type: application/json" \
+                      -d '{"contentType":"image/png","fileSize":1024}'
+                    ```
+                    2. **파일 바이트 PUT**: 응답 `result.uploadUrl`에 파일 원본을 PUT합니다. 이 URL은 S3 등의 외부 스토리지 URL이거나 로컬 개발 서버 URL일 수 있으므로, API 기본 URL을 덧붙이지 말고 응답값을 그대로 사용합니다. 발급 요청에 사용한 것과 같은 `Content-Type`을 반드시 설정합니다.
+                    ```bash
+                    curl -X PUT "{uploadUrl}" \
+                      -H "Content-Type: image/png" \
+                      --data-binary "@image.png"
+                    ```
+                    3. PUT이 성공한 경우에만 응답 `result.uploadId`를 일기 생성·수정 요청의 `imageUploadIds`에 넣습니다. URL은 발급 후 10분 동안 유효합니다.
+                    """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

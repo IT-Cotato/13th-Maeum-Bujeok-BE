@@ -1,0 +1,49 @@
+package com.maumbujeok.backend.domain.member.dto;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalTime;
+
+@Getter
+@NoArgsConstructor
+@Schema(description = "회원 온보딩 요청")
+public class OnboardingRequest {
+    @NotBlank
+    @Schema(description = "생년월일 (yyyyMMdd)", example = "19990101", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String birthDate;
+
+    @NotNull
+    @Schema(description = "성별", allowableValues = {"MALE", "FEMALE", "NONE"}, requiredMode = Schema.RequiredMode.REQUIRED)
+    private MemberSajuProfile.Gender gender;
+
+    @NotNull
+    @Schema(description = "달력 유형", allowableValues = {"SOLAR", "LUNAR", "LUNAR_LEAP"}, requiredMode = Schema.RequiredMode.REQUIRED)
+    private MemberSajuProfile.CalendarType calendarType;
+
+    @Schema(description = "태어난 시간 (HH:mm 형식, 모르는 경우 null)", nullable = true, example = "14:30")
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime birthTime;
+
+    @NotNull
+    @AssertTrue(message = "필수 서비스 이용약관에 동의해야 합니다")
+    @Schema(description = "필수 서비스 이용약관 동의", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Boolean termsAgreed;
+
+    @NotNull
+    @AssertTrue(message = "필수 개인정보 처리방침 동의가 필요합니다")
+    @Schema(description = "필수 개인정보 처리방침 동의", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Boolean privacyAgreed;
+
+    @Schema(description = "민감정보 처리 동의 여부", nullable = true)
+    private Boolean sensitiveDataAgreed;
+
+    @Schema(description = "마케팅 정보 수신 동의 여부", nullable = true)
+    private Boolean marketingAgreed;
+}

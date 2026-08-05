@@ -55,7 +55,7 @@ public class AuthController {
         return ApiResponse.onSuccess("전화번호 인증이 완료되었습니다.");
     }
 
-    @Operation(summary = "회원가입 API", description = "전화번호 본인 인증 완료 후 회원 정보(약관 동의 내역, 이름, 비밀번호, 생년월일 등)를 받아 가입 처리합니다.")
+    @Operation(summary = "회원가입 API", description = "전화번호 본인 인증을 완료한 사용자의 이름과 비밀번호로 계정을 생성합니다. 생년월일, 사주 정보 및 약관 동의는 로그인 후 온보딩 API에서 입력합니다.")
     @PostMapping("/signup")
     public ApiResponse<String> signup(@jakarta.validation.Valid @RequestBody SignUpRequest request) {
         // 1. 전화번호 중복 체크
@@ -72,17 +72,11 @@ public class AuthController {
         }
 
         // 3. 회원 저장
-        LocalDateTime now = LocalDateTime.now();
         Member member = Member.builder()
                 .name(request.getName())
                 .phoneNumber(request.getPhoneNumber())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .birthDate(request.getBirthDate())
                 .provider(Member.Provider.LOCAL)
-                .termsAgreedAt(Boolean.TRUE.equals(request.getTermsAgreed()) ? now : null)
-                .privacyAgreedAt(Boolean.TRUE.equals(request.getPrivacyAgreed()) ? now : null)
-                .sensitiveDataAgreedAt(Boolean.TRUE.equals(request.getSensitiveDataAgreed()) ? now : null)
-                .marketingAgreedAt(Boolean.TRUE.equals(request.getMarketingAgreed()) ? now : null)
                 .role(Member.Role.ROLE_USER)
                 .build();
 
@@ -204,7 +198,17 @@ public class AuthController {
         return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
     }
 
-    @Operation(summary = "Google 로그인 시작", description = "브라우저에서 호출하면 Google 인증 화면으로 이동합니다. Swagger의 Execute(fetch)로 호출하지 말고 브라우저 주소 이동 또는 window.location.assign으로 사용하세요. 인증 성공 후 프런트엔드 /oauth/callback으로 accessToken과 refreshToken이 query parameter로 전달됩니다.")
+    @Operation(
+            summary = "Google 로그인 및 회원가입 시작",
+            description = """
+                    Google OAuth 인증을 시작하는 브라우저 이동용 엔드포인트입니다.
+
+                    1. 프런트엔드에서 `window.location.assign('{API_BASE_URL}/api/auth/google')` 또는 브라우저 주소 이동으로 호출합니다.
+                    2. 이 요청은 Google 동의 화면으로 302 리다이렉트됩니다. Swagger의 **Execute** 또는 `fetch`로 호출하지 마세요.
+                    3. 인증에 성공하면 프런트엔드의 `/oauth/callback`으로 리다이렉트되며, `accessToken`과 `refreshToken`이 query parameter로 전달됩니다.
+                    4. 최초 Google 로그인은 계정만 생성합니다. 토큰을 받은 뒤 `POST /api/members/onboarding`으로 생년월일·사주·약관 동의를 저장해야 합니다.
+                    """
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "Google OAuth 인증 화면으로 리다이렉트"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Google OAuth client 설정 누락 또는 서버 설정 오류", content = @Content)
