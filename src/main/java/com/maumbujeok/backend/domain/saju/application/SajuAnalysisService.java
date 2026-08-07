@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -75,15 +76,29 @@ public class SajuAnalysisService {
 
         List<SajuAnalysis> analyses = sajuAnalysisRepository.findAllByMemberPhoneNumberForUpdate(member.getPhoneNumber());
         SajuAnalysis analysis = selectPrimaryAnalysis(analyses);
+        boolean createdNewAnalysis = false;
         if (analysis == null) {
-            analysis = sajuAnalysisRepository.save(new SajuAnalysis(
-                    member,
-                    member.getBirthDate(),
-                    sajuProfile.getGender(),
-                    sajuProfile.getCalendarType(),
-                    sajuProfile.getBirthTime(),
-                    SajuAiPromptVersion.VALUE
-            ));
+            try {
+                analysis = sajuAnalysisRepository.saveAndFlush(new SajuAnalysis(
+                        member,
+                        member.getBirthDate(),
+                        sajuProfile.getGender(),
+                        sajuProfile.getCalendarType(),
+                        sajuProfile.getBirthTime(),
+                        SajuAiPromptVersion.VALUE
+                ));
+                createdNewAnalysis = true;
+            } catch (DataIntegrityViolationException exception) {
+                analysis = selectPrimaryAnalysis(
+                        sajuAnalysisRepository.findAllByMemberPhoneNumberForUpdate(member.getPhoneNumber())
+                );
+                if (analysis == null) {
+                    throw exception;
+                }
+            }
+        }
+
+        if (createdNewAnalysis) {
             publishAnalysisRequested(analysis, analysis.getRequestSequence());
             return analysis;
         }

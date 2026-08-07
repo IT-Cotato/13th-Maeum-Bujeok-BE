@@ -3,6 +3,7 @@ package com.maumbujeok.backend.domain.saju.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -164,6 +166,31 @@ class SajuAnalysisControllerTest {
                         .header("Authorization", authorization(member)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SAJU_404"));
+    }
+
+    @Test
+    void enforcesSingleAnalysisPerMemberAtDatabaseLevel() {
+        Member member = saveMember("유니크 사용자", "01020000011", "19930722");
+
+        sajuAnalysisRepository.saveAndFlush(new SajuAnalysis(
+                member,
+                member.getBirthDate(),
+                MemberSajuProfile.Gender.FEMALE,
+                MemberSajuProfile.CalendarType.SOLAR,
+                LocalTime.of(9, 0),
+                SajuAiPromptVersion.VALUE
+        ));
+
+        assertThrows(DataIntegrityViolationException.class, () ->
+                sajuAnalysisRepository.saveAndFlush(new SajuAnalysis(
+                        member,
+                        member.getBirthDate(),
+                        MemberSajuProfile.Gender.FEMALE,
+                        MemberSajuProfile.CalendarType.SOLAR,
+                        LocalTime.of(9, 0),
+                        SajuAiPromptVersion.VALUE
+                ))
+        );
     }
 
     @Test
