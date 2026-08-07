@@ -69,7 +69,7 @@ final class MemberSwaggerSchemas {
         @Schema(example = "Forbidden")
         public String error;
 
-        @Schema(example = "/api/members/me")
+        @Schema(example = "/api/mypage/profile")
         public String path;
     }
 }

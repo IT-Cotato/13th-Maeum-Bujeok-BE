@@ -32,12 +32,16 @@ public class MemberProfileService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    @Transactional(readOnly = true)
+    public MemberProfileResponse getMyProfile(String authenticatedPhoneNumber) {
+        Member member = getMember(authenticatedPhoneNumber);
+        return MemberProfileResponse.from(member, getRequiredSajuProfile(member));
+    }
+
     @Transactional
     public MemberProfileUpdateResponse updateMyProfile(String authenticatedPhoneNumber, MemberProfileUpdateRequest request) {
-        Member member = memberRepository.findById(authenticatedPhoneNumber)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        MemberSajuProfile sajuProfile = sajuProfileRepository.findByMember(member)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_SAJU_PROFILE_NOT_FOUND));
+        Member member = getMember(authenticatedPhoneNumber);
+        MemberSajuProfile sajuProfile = getRequiredSajuProfile(member);
 
         String newPhoneNumber = request.normalizedPhoneNumber();
         boolean phoneNumberChanged = !member.getPhoneNumber().equals(newPhoneNumber);
@@ -102,14 +106,22 @@ public class MemberProfileService {
     }
 
     private MemberProfileUpdateResponse buildResponse(String phoneNumber, boolean reauthenticationRequired) {
-        Member updatedMember = memberRepository.findById(phoneNumber)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        MemberSajuProfile updatedSajuProfile = sajuProfileRepository.findByMember(updatedMember)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_SAJU_PROFILE_NOT_FOUND));
+        Member updatedMember = getMember(phoneNumber);
+        MemberSajuProfile updatedSajuProfile = getRequiredSajuProfile(updatedMember);
 
         return MemberProfileUpdateResponse.of(
                 MemberProfileResponse.from(updatedMember, updatedSajuProfile),
                 reauthenticationRequired
         );
+    }
+
+    private Member getMember(String phoneNumber) {
+        return memberRepository.findById(phoneNumber)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private MemberSajuProfile getRequiredSajuProfile(Member member) {
+        return sajuProfileRepository.findByMember(member)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_SAJU_PROFILE_NOT_FOUND));
     }
 }

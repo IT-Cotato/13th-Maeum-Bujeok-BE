@@ -5,14 +5,10 @@ import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
-import com.maumbujeok.backend.domain.member.dto.MemberProfileResponse;
-import com.maumbujeok.backend.domain.member.dto.MemberProfileUpdateRequest;
-import com.maumbujeok.backend.domain.member.dto.MemberProfileUpdateResponse;
 import com.maumbujeok.backend.domain.member.dto.OnboardingRequest;
 import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
-import com.maumbujeok.backend.domain.member.service.MemberProfileService;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
@@ -28,7 +24,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
@@ -47,86 +47,6 @@ public class MemberController {
     private final EmotionReportRepository emotionReportRepository;
     private final DiaryAnalysisRepository diaryAnalysisRepository;
     private final DiaryRepository diaryRepository;
-    private final MemberProfileService memberProfileService;
-
-    @Operation(
-            summary = "내 회원 정보 조회 API",
-            description = "로그인한 사용자의 계정, 온보딩, 사주 및 동의 정보를 조회합니다.",
-            security = @SecurityRequirement(name = "JWT_TOKEN")
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberProfileApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
-                    content = @Content(
-                            schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class),
-                            examples = @ExampleObject(
-                                    name = "인증 실패",
-                                    value = "{\"timestamp\":\"2026-08-05T11:45:37.735+09:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/members/me\"}"
-                            )
-                    )
-            )
-    })    @GetMapping("/me")
-    public ApiResponse<MemberProfileResponse> getMyProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    ) {
-        if (userDetails == null) {
-            return ApiResponse.onFailure("401", "인증 정보가 올바르지 않습니다.", null);
-        }
-
-        Member member = userDetails.getMember();
-        MemberSajuProfile sajuProfile = sajuProfileRepository.findByMember(member).orElse(null);
-        return ApiResponse.onSuccess(MemberProfileResponse.from(member, sajuProfile));
-    }
-
-    @Operation(
-            summary = "내 회원 정보 수정 API",
-            description = "로그인한 사용자의 이름, 생년월일, 태어난 시간, 전화번호, 성별을 수정합니다. 전화번호 변경 시에는 새 번호에 대한 SMS 인증 완료가 필요합니다.",
-            security = @SecurityRequirement(name = "JWT_TOKEN")
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "수정 성공", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberProfileUpdateApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "COMMON_400 또는 SMS_003: 요청 값 검증 실패 또는 새 전화번호 SMS 인증 미완료",
-                    content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberValidationErrorApiResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "AUTH_001 또는 MEMBER_003: 회원 또는 사주 프로필 정보 없음",
-                    content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberSajuProfileNotFoundApiResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409",
-                    description = "AUTH_009: 이미 사용 중인 전화번호",
-                    content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberPhoneConflictApiResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
-                    content = @Content(
-                            schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class),
-                            examples = @ExampleObject(
-                                    name = "인증 실패",
-                                    value = "{\"timestamp\":\"2026-08-05T11:45:37.735+09:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/members/me\"}"
-                            )
-                    )
-            )
-    })
-    @PatchMapping("/me")
-    public ApiResponse<MemberProfileUpdateResponse> updateMyProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @jakarta.validation.Valid @RequestBody MemberProfileUpdateRequest request
-    ) {
-        if (userDetails == null) {
-            return ApiResponse.onFailure("401", "인증 정보가 올바르지 않습니다.", null);
-        }
-
-        return ApiResponse.onSuccess(
-                memberProfileService.updateMyProfile(userDetails.getMember().getPhoneNumber(), request)
-        );
-    }
 
     @Operation(
             summary = "온보딩 완료 API",
