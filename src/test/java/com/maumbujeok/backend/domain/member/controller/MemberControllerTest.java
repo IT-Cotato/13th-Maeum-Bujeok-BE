@@ -5,7 +5,9 @@ import com.maumbujeok.backend.domain.auth.domain.SmsAuthCode;
 import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
 import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
 import com.maumbujeok.backend.domain.burn.domain.Burning;
+import com.maumbujeok.backend.domain.burn.domain.BurningAnalysis;
 import com.maumbujeok.backend.domain.burn.domain.BurningSourceType;
+import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.domain.Diary;
 import com.maumbujeok.backend.domain.diary.domain.DiaryEmotion;
@@ -42,10 +44,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -74,6 +79,7 @@ class MemberControllerTest {
     @Autowired MemberNotificationSettingRepository notificationSettingRepository;
     @Autowired DiaryRepository diaryRepository;
     @Autowired DiaryUploadRepository diaryUploadRepository;
+    @Autowired BurningAnalysisRepository burningAnalysisRepository;
     @Autowired BurningRepository burningRepository;
     @Autowired TalismanRepository talismanRepository;
     @Autowired EmotionReportRepository emotionReportRepository;
@@ -90,6 +96,7 @@ class MemberControllerTest {
         nextWeekFlowRepository.deleteAllInBatch();
         emotionReportRepository.deleteAllInBatch();
         talismanRepository.deleteAllInBatch();
+        burningAnalysisRepository.deleteAllInBatch();
         burningRepository.deleteAllInBatch();
         diaryUploadRepository.deleteAllInBatch();
         diaryRepository.deleteAllInBatch();
@@ -459,6 +466,107 @@ class MemberControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON_400"))
                 .andExpect(jsonPath("$.message").value("전화번호는 하이픈 포함 또는 제외한 10~11자리 숫자여야 합니다."));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void withdrawDeletesAllMemberReferences() throws Exception {
+        Member member = saveMember("탈퇴 사용자", ORIGINAL_PHONE);
+        saveSajuProfile(member);
+        notificationSettingRepository.save(MemberNotificationSetting.create(member));
+
+        Diary diary = diaryRepository.save(new Diary(
+                member,
+                "삭제 대상 일기",
+                DiaryEmotion.SAD,
+                LocalDate.of(2026, 8, 6)
+        ));
+        DiaryUpload upload = new DiaryUpload(
+                UUID.randomUUID(),
+                member,
+                "uploads/withdraw-test.png",
+                "image/png",
+                2_048L
+        );
+        upload.attach(diary, 1);
+        diaryUploadRepository.save(upload);
+
+        Burning burning = burningRepository.save(new Burning(
+                member,
+                BurningSourceType.DIARY,
+                diary.getId(),
+                "태울 내용",
+                LocalDateTime.of(2026, 8, 6, 22, 0)
+        ));
+        burningAnalysisRepository.save(new BurningAnalysis(burning));
+        talismanRepository.save(Talisman.builder()
+                .member(member)
+                .burnRitualId(burning.getId())
+                .designType("moon")
+                .title("정리 부적")
+                .message("마음을 정리해요")
+                .imageUrl("https://example.com/withdraw-talisman.png")
+                .usedSaju("을축년")
+                .generationStatus(TalismanGenerationStatus.COMPLETED)
+                .recordedAt(LocalDate.of(2026, 8, 6))
+                .build());
+        emotionReportRepository.save(new EmotionReport(
+                member,
+                EmotionReportType.WEEKLY,
+                LocalDate.of(2026, 8, 3),
+                LocalDate.of(2026, 8, 9),
+                "weekly-v1"
+        ));
+        nextWeekFlowRepository.save(NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
+                        ORIGINAL_PHONE, EmotionReportType.WEEKLY, LocalDate.of(2026, 8, 3)
+                ).orElseThrow())
+                .weekStart(LocalDate.of(2026, 8, 10))
+                .periodStart(LocalDate.of(2026, 8, 3))
+                .periodEnd(LocalDate.of(2026, 8, 9))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build());
+        homeSummaryRepository.save(HomeSummary.builder()
+                .member(member)
+                .summaryDate(LocalDate.of(2026, 8, 7))
+                .primaryElement(PrimaryElement.WATER)
+                .todayLuck("가볍게 내려놓는 날입니다.")
+                .todayEnergy("정리 정돈이 잘 됩니다.")
+                .modelName("gpt-test")
+                .reportVersion("home-v1")
+                .build());
+        sajuAnalysisRepository.save(new SajuAnalysis(
+                member,
+                member.getBirthDate(),
+                MemberSajuProfile.Gender.MALE,
+                MemberSajuProfile.CalendarType.SOLAR,
+                java.time.LocalTime.of(8, 0),
+                SajuAiPromptVersion.VALUE
+        ));
+        refreshTokenRepository.save(RefreshToken.builder()
+                .userKey(member.getPhoneNumber())
+                .token("refresh-token-for-withdraw")
+                .expiredAt(LocalDateTime.now().plusDays(7))
+                .build());
+
+        mockMvc.perform(delete("/api/members/withdraw")
+                        .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole())))
+                .andExpect(status().isOk());
+
+        assertFalse(memberRepository.findById(ORIGINAL_PHONE).isPresent());
+        assertFalse(notificationSettingRepository.findByMemberPhoneNumber(ORIGINAL_PHONE).isPresent());
+        assertTrue(diaryRepository.findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(ORIGINAL_PHONE).isEmpty());
+        assertTrue(diaryUploadRepository.findAllByIdInAndMemberPhoneNumber(List.of(upload.getId()), ORIGINAL_PHONE).isEmpty());
+        assertTrue(burningRepository.findAllByMemberPhoneNumberAndBurnedAtBetween(
+                ORIGINAL_PHONE,
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 8, 31, 0, 0)
+        ).isEmpty());
+        assertTrue(burningAnalysisRepository.findAll().isEmpty());
+        assertFalse(homeSummaryRepository.existsByMemberPhoneNumberAndSummaryDate(ORIGINAL_PHONE, LocalDate.of(2026, 8, 7)));
+        assertTrue(sajuAnalysisRepository.findAllByMemberPhoneNumberOrderByCreatedAtDescIdDesc(ORIGINAL_PHONE).isEmpty());
+        assertFalse(refreshTokenRepository.findByUserKey(ORIGINAL_PHONE).isPresent());
     }
 
     private Member saveMember(String name, String phoneNumber) {

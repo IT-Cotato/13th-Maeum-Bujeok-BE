@@ -58,16 +58,9 @@ public class MemberIdentityMigrationRepository {
                 .setParameter("updatedAt", updatedAt)
                 .executeUpdate();
 
-        moveMemberReference("member_saju_profiles", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("member_notification_settings", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("diaries", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("diary_uploads", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("burnings", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("talismans", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("emotion_reports", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("next_week_flows", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("home_summaries", oldPhoneNumber, newPhoneNumber, updatedAt);
-        moveMemberReference("saju_analyses", oldPhoneNumber, newPhoneNumber, updatedAt);
+        for (String tableName : MemberReferenceTables.MEMBER_REFERENCE_TABLES) {
+            moveMemberReference(tableName, oldPhoneNumber, newPhoneNumber, updatedAt);
+        }
 
         entityManager.createNativeQuery("""
                 update refresh_tokens

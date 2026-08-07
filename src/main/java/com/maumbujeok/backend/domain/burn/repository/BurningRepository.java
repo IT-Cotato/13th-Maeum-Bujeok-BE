@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 public interface BurningRepository extends JpaRepository<Burning, Long> {
     Optional<Burning> findByIdAndMemberPhoneNumber(Long id, String phoneNumber);
     boolean existsByMemberPhoneNumberAndDiaryId(String phoneNumber, Long diaryId);
+    void deleteByMemberPhoneNumber(String phoneNumber);
 
     @Query("select b from Burning b where b.member.phoneNumber=:phoneNumber and b.burnedAt >= :from and b.burnedAt < :to order by b.burnedAt desc, b.id desc")
     List<Burning> findAllByMemberPhoneNumberAndBurnedAtBetween(@Param("phoneNumber") String phoneNumber, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
