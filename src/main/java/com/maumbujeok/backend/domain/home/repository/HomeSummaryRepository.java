@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface HomeSummaryRepository extends JpaRepository<HomeSummary, Long> {
     Optional<HomeSummary> findByMemberPhoneNumberAndSummaryDate(String phoneNumber, LocalDate summaryDate);
     boolean existsByMemberPhoneNumberAndSummaryDate(String phoneNumber, LocalDate summaryDate);
+    void deleteByMemberPhoneNumber(String phoneNumber);
 }

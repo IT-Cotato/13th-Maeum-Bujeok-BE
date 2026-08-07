@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -12,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -28,9 +30,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null) {
             io.jsonwebtoken.Claims claims = jwtTokenProvider.parseClaims(token);
             if (claims != null) {
-                // 토큰이 유효하면 인증 객체 생성 후 SecurityContext에 등록
-                Authentication authentication = jwtTokenProvider.getAuthentication(claims);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                try {
+                    // 토큰이 유효하면 인증 객체 생성 후 SecurityContext에 등록
+                    Authentication authentication = jwtTokenProvider.getAuthentication(claims);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } catch (RuntimeException e) {
+                    SecurityContextHolder.clearContext();
+                    log.debug("JWT subject could not be resolved to a member: {}", e.getMessage(), e);
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 package com.maumbujeok.backend.domain.member.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,7 +17,9 @@ public record MemberProfileResponse(
         @Schema(description = "생년월일 (yyyyMMdd)", nullable = true, example = "19990101") String birthDate,
         @Schema(description = "성별", nullable = true) MemberSajuProfile.Gender gender,
         @Schema(description = "달력 유형", nullable = true) MemberSajuProfile.CalendarType calendarType,
-        @Schema(description = "태어난 시간 (HH:mm)", nullable = true, example = "14:30") LocalTime birthTime,
+        @Schema(description = "태어난 시간 (HH:mm)", nullable = true, example = "14:30")
+        @JsonFormat(pattern = "HH:mm")
+        LocalTime birthTime,
         @Schema(description = "필수 서비스 이용약관 동의 여부") boolean termsAgreed,
         @Schema(description = "필수 개인정보 처리방침 동의 여부") boolean privacyAgreed,
         @Schema(description = "민감정보 처리 동의 여부") boolean sensitiveDataAgreed,
