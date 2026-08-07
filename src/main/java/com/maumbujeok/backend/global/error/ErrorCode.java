@@ -26,6 +26,11 @@ public enum ErrorCode {
     INVALID_NOTIFICATION_SETTINGS(HttpStatus.BAD_REQUEST, "MEMBER_001", "알림 설정 값이 올바르지 않습니다."),
     INVALID_NOTIFICATION_DAYS(HttpStatus.BAD_REQUEST, "MEMBER_002", "요일별 알림 설정 값이 올바르지 않습니다."),
     MEMBER_SAJU_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_003", "사주 프로필 정보를 찾을 수 없습니다. 먼저 온보딩을 완료해주세요."),
+
+    // Saju
+    INVALID_SAJU_ANALYSIS_REQUEST(HttpStatus.BAD_REQUEST, "SAJU_400", "사주 분석 요청이 올바르지 않습니다."),
+    SAJU_ANALYSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "SAJU_404", "사주 분석 요청을 찾을 수 없습니다."),
+
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "유효하지 않거나 만료된 Refresh Token입니다."),
     PHONE_NUMBER_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_006", "회원 정보의 전화번호와 일치하지 않습니다."),
     SOCIAL_USER_CANNOT_RESET_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_008", "소셜 로그인 가입자는 비밀번호를 재설정할 수 없습니다."),

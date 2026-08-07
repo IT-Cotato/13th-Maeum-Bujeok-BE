@@ -67,6 +67,7 @@ public class MemberIdentityMigrationRepository {
         moveMemberReference("emotion_reports", oldPhoneNumber, newPhoneNumber, updatedAt);
         moveMemberReference("next_week_flows", oldPhoneNumber, newPhoneNumber, updatedAt);
         moveMemberReference("home_summaries", oldPhoneNumber, newPhoneNumber, updatedAt);
+        moveMemberReference("saju_analyses", oldPhoneNumber, newPhoneNumber, updatedAt);
 
         entityManager.createNativeQuery("""
                 update refresh_tokens

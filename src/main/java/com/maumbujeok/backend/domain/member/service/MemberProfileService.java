@@ -10,6 +10,7 @@ import com.maumbujeok.backend.domain.member.dto.MemberProfileUpdateResponse;
 import com.maumbujeok.backend.domain.member.repository.MemberIdentityMigrationRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
+import com.maumbujeok.backend.domain.saju.application.SajuAnalysisService;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import jakarta.persistence.EntityManager;
@@ -28,6 +29,7 @@ public class MemberProfileService {
     private final MemberSajuProfileRepository sajuProfileRepository;
     private final SmsAuthCodeRepository smsAuthCodeRepository;
     private final MemberIdentityMigrationRepository memberIdentityMigrationRepository;
+    private final SajuAnalysisService sajuAnalysisService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -56,6 +58,7 @@ public class MemberProfileService {
 
         member.updateProfile(request.trimmedName(), request.getBirthDate());
         sajuProfile.update(request.getGender(), sajuProfile.getCalendarType(), request.getBirthTime());
+        sajuAnalysisService.refreshLatestAnalysis(member, sajuProfile);
 
         return MemberProfileUpdateResponse.of(
                 MemberProfileResponse.from(member, sajuProfile),
@@ -103,6 +106,7 @@ public class MemberProfileService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_SAJU_PROFILE_NOT_FOUND));
 
         migratedSajuProfile.update(request.getGender(), sajuProfile.getCalendarType(), request.getBirthTime());
+        sajuAnalysisService.refreshLatestAnalysis(migratedMember, migratedSajuProfile);
     }
 
     private MemberProfileUpdateResponse buildResponse(String phoneNumber, boolean reauthenticationRequired) {

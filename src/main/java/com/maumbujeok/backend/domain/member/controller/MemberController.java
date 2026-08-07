@@ -9,6 +9,8 @@ import com.maumbujeok.backend.domain.member.dto.OnboardingRequest;
 import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
+import com.maumbujeok.backend.domain.saju.application.SajuAnalysisService;
+import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
@@ -47,6 +49,8 @@ public class MemberController {
     private final EmotionReportRepository emotionReportRepository;
     private final DiaryAnalysisRepository diaryAnalysisRepository;
     private final DiaryRepository diaryRepository;
+    private final SajuAnalysisRepository sajuAnalysisRepository;
+    private final SajuAnalysisService sajuAnalysisService;
 
     @Operation(
             summary = "온보딩 완료 API",
@@ -107,16 +111,19 @@ public class MemberController {
 
         Member savedMember = memberRepository.save(member);
 
-        sajuProfileRepository.findByMember(savedMember)
-                .ifPresentOrElse(
-                        existing -> existing.update(request.getGender(), request.getCalendarType(), request.getBirthTime()),
-                        () -> sajuProfileRepository.save(MemberSajuProfile.builder()
-                                .member(savedMember)
-                                .gender(request.getGender())
-                                .calendarType(request.getCalendarType())
-                                .birthTime(request.getBirthTime())
-                                .build())
-                );
+        MemberSajuProfile savedSajuProfile = sajuProfileRepository.findByMember(savedMember)
+                .map(existing -> {
+                    existing.update(request.getGender(), request.getCalendarType(), request.getBirthTime());
+                    return existing;
+                })
+                .orElseGet(() -> sajuProfileRepository.save(MemberSajuProfile.builder()
+                        .member(savedMember)
+                        .gender(request.getGender())
+                        .calendarType(request.getCalendarType())
+                        .birthTime(request.getBirthTime())
+                        .build()));
+
+        sajuAnalysisService.refreshLatestAnalysis(savedMember, savedSajuProfile);
 
         return ApiResponse.onSuccess("온보딩 정보가 등록되었습니다.");
     }
@@ -175,9 +182,12 @@ public class MemberController {
 
             // 7. 사주 프로필 삭제
             sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);
+
+            // 8. 사주 분석 삭제
+            sajuAnalysisRepository.deleteByMemberPhoneNumber(phoneNumber);
         }
 
-        // 8. Member 삭제
+        // 9. Member 삭제
         memberRepository.delete(member);
 
         return ApiResponse.onSuccess("회원 탈퇴가 완료되었습니다.");

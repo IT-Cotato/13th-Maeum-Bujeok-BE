@@ -25,6 +25,9 @@ import com.maumbujeok.backend.domain.report.domain.NextWeekFlow;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlowGenerationStatus;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
+import com.maumbujeok.backend.domain.saju.ai.SajuAiPromptVersion;
+import com.maumbujeok.backend.domain.saju.domain.SajuAnalysis;
+import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
 import com.maumbujeok.backend.domain.talisman.domain.Talisman;
 import com.maumbujeok.backend.domain.talisman.domain.TalismanGenerationStatus;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
@@ -76,12 +79,14 @@ class MemberControllerTest {
     @Autowired EmotionReportRepository emotionReportRepository;
     @Autowired NextWeekFlowRepository nextWeekFlowRepository;
     @Autowired HomeSummaryRepository homeSummaryRepository;
+    @Autowired SajuAnalysisRepository sajuAnalysisRepository;
     @Autowired RefreshTokenRepository refreshTokenRepository;
     @Autowired SmsAuthCodeRepository smsAuthCodeRepository;
     @Autowired JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach
     void setUp() {
+        sajuAnalysisRepository.deleteAllInBatch();
         nextWeekFlowRepository.deleteAllInBatch();
         emotionReportRepository.deleteAllInBatch();
         talismanRepository.deleteAllInBatch();
@@ -161,6 +166,26 @@ class MemberControllerTest {
     }
 
     @Test
+    void getProfileReturnsMemberAndSajuProfile() throws Exception {
+        Member member = saveMember("조회 사용자", ORIGINAL_PHONE);
+        sajuProfileRepository.save(MemberSajuProfile.builder()
+                .member(member)
+                .gender(MemberSajuProfile.Gender.FEMALE)
+                .calendarType(MemberSajuProfile.CalendarType.SOLAR)
+                .birthTime(java.time.LocalTime.of(14, 30))
+                .build());
+
+        mockMvc.perform(get("/api/mypage/profile")
+                        .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("조회 사용자"))
+                .andExpect(jsonPath("$.data.phoneNumber").value(ORIGINAL_PHONE))
+                .andExpect(jsonPath("$.data.birthDate").value("19900101"))
+                .andExpect(jsonPath("$.data.gender").value("FEMALE"))
+                .andExpect(jsonPath("$.data.birthTime").value("14:30:00"));
+    }
+
+    @Test
     void updateProfileMovesReferencesWhenPhoneNumberChanges() throws Exception {
         Member member = saveMember("기존 이름", ORIGINAL_PHONE);
         sajuProfileRepository.save(MemberSajuProfile.builder()
@@ -226,6 +251,14 @@ class MemberControllerTest {
                 .modelName("gpt-test")
                 .reportVersion("home-v1")
                 .build());
+        SajuAnalysis sajuAnalysis = sajuAnalysisRepository.save(new SajuAnalysis(
+                member,
+                member.getBirthDate(),
+                MemberSajuProfile.Gender.MALE,
+                MemberSajuProfile.CalendarType.SOLAR,
+                java.time.LocalTime.of(9, 15),
+                SajuAiPromptVersion.VALUE
+        ));
         refreshTokenRepository.save(RefreshToken.builder()
                 .userKey(member.getPhoneNumber())
                 .token("refresh-token-for-profile-update")
@@ -240,7 +273,7 @@ class MemberControllerTest {
         smsAuthCode.verify();
         smsAuthCodeRepository.save(smsAuthCode);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -284,14 +317,16 @@ class MemberControllerTest {
         assertTrue(homeSummaryRepository.findByMemberPhoneNumberAndSummaryDate(
                 UPDATED_PHONE, LocalDate.of(2026, 8, 7)
         ).isPresent());
+        assertTrue(sajuAnalysisRepository.findByIdAndMemberPhoneNumber(sajuAnalysis.getId(), UPDATED_PHONE).isPresent());
+        assertFalse(sajuAnalysisRepository.findByIdAndMemberPhoneNumber(sajuAnalysis.getId(), ORIGINAL_PHONE).isPresent());
         assertTrue(refreshTokenRepository.findByUserKey(UPDATED_PHONE).isPresent());
         assertFalse(refreshTokenRepository.findByUserKey(ORIGINAL_PHONE).isPresent());
 
-        mockMvc.perform(get("/api/members/me")
+        mockMvc.perform(get("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(ORIGINAL_PHONE, member.getRole())))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(get("/api/members/me")
+        mockMvc.perform(get("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(UPDATED_PHONE, member.getRole())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.phoneNumber").value(UPDATED_PHONE));
@@ -303,7 +338,7 @@ class MemberControllerTest {
         saveSajuProfile(member);
         saveMember("기존 가입자", UPDATED_PHONE);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -324,7 +359,7 @@ class MemberControllerTest {
         Member member = saveMember("수정 대상", ORIGINAL_PHONE);
         saveSajuProfile(member);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -345,7 +380,7 @@ class MemberControllerTest {
         Member member = saveMember("수정 대상", ORIGINAL_PHONE);
         saveSajuProfile(member);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -367,7 +402,7 @@ class MemberControllerTest {
         Member member = saveMember("수정 대상", ORIGINAL_PHONE);
         saveSajuProfile(member);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -388,7 +423,7 @@ class MemberControllerTest {
     void updateProfileFailsWhenSajuProfileDoesNotExist() throws Exception {
         Member member = saveMember("수정 대상", ORIGINAL_PHONE);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -409,7 +444,7 @@ class MemberControllerTest {
         Member member = saveMember("수정 대상", ORIGINAL_PHONE);
         saveSajuProfile(member);
 
-        mockMvc.perform(patch("/api/members/me")
+        mockMvc.perform(patch("/api/mypage/profile")
                         .header("Authorization", "Bearer " + token(member.getPhoneNumber(), member.getRole()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
