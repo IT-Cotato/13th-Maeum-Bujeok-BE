@@ -326,6 +326,7 @@ class MemberControllerTest {
         ).isPresent());
         assertTrue(sajuAnalysisRepository.findByIdAndMemberPhoneNumber(sajuAnalysis.getId(), UPDATED_PHONE).isPresent());
         assertFalse(sajuAnalysisRepository.findByIdAndMemberPhoneNumber(sajuAnalysis.getId(), ORIGINAL_PHONE).isPresent());
+        assertFalse(smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc(UPDATED_PHONE).isPresent());
         assertTrue(refreshTokenRepository.findByUserKey(UPDATED_PHONE).isPresent());
         assertFalse(refreshTokenRepository.findByUserKey(ORIGINAL_PHONE).isPresent());
 

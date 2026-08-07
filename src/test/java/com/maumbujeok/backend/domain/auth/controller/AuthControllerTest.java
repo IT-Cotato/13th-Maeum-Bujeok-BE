@@ -1,5 +1,7 @@
 package com.maumbujeok.backend.domain.auth.controller;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -159,6 +161,66 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
+
+        assertTrue(memberRepository.findByPhoneNumber("01012345678").isPresent());
+        assertFalse(smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01012345678").isPresent());
+    }
+
+    @Test
+    void signUpWithExpiredVerifiedSmsCodeShouldBeBlocked() throws Exception {
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber("01012340000")
+                .code("123456")
+                .expiredAt(LocalDateTime.now().minusMinutes(1))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.save(smsAuthCode);
+
+        SignUpRequest request = SignUpRequest.builder()
+                .phoneNumber("01012340000")
+                .name("홍길동")
+                .password("Password123!")
+                .build();
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("SMS_003"));
+    }
+
+    @Test
+    void resetPasswordConsumesVerifiedSmsCodeAfterSuccess() throws Exception {
+        Member member = Member.builder()
+                .phoneNumber("01088887777")
+                .name("홍길동")
+                .passwordHash(passwordEncoder.encode("OldPassword123!"))
+                .provider(Member.Provider.LOCAL)
+                .role(Member.Role.ROLE_USER)
+                .build();
+        memberRepository.save(member);
+
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber("01088887777")
+                .code("123456")
+                .expiredAt(LocalDateTime.now().plusMinutes(3))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.save(smsAuthCode);
+
+        mockMvc.perform(post("/api/auth/password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phoneNumber": "01088887777",
+                                  "newPassword": "NewPassword123!"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        Member updatedMember = memberRepository.findByPhoneNumber("01088887777").orElseThrow();
+        assertTrue(passwordEncoder.matches("NewPassword123!", updatedMember.getPasswordHash()));
+        assertFalse(smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01088887777").isPresent());
     }
     @Test
     void reissueWithLoggedOutRefreshTokenShouldBeBlocked() throws Exception {

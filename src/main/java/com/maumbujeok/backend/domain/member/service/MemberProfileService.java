@@ -48,10 +48,11 @@ public class MemberProfileService {
         String newPhoneNumber = request.normalizedPhoneNumber();
         boolean phoneNumberChanged = !member.getPhoneNumber().equals(newPhoneNumber);
 
-        validatePhoneNumberChange(member.getPhoneNumber(), newPhoneNumber, phoneNumberChanged);
+        SmsAuthCode smsAuthCode = validatePhoneNumberChange(member.getPhoneNumber(), newPhoneNumber, phoneNumberChanged);
 
         if (phoneNumberChanged) {
             migrateMemberIdentity(member, request, sajuProfile, newPhoneNumber);
+            smsAuthCodeRepository.delete(smsAuthCode);
             boolean reauthenticationRequired = member.getProvider() == Member.Provider.LOCAL;
             return buildResponse(newPhoneNumber, reauthenticationRequired);
         }
@@ -66,9 +67,9 @@ public class MemberProfileService {
         );
     }
 
-    private void validatePhoneNumberChange(String currentPhoneNumber, String newPhoneNumber, boolean phoneNumberChanged) {
+    private SmsAuthCode validatePhoneNumberChange(String currentPhoneNumber, String newPhoneNumber, boolean phoneNumberChanged) {
         if (!phoneNumberChanged) {
-            return;
+            return null;
         }
 
         memberRepository.findByPhoneNumber(newPhoneNumber)
@@ -84,6 +85,8 @@ public class MemberProfileService {
         if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified()) || smsAuthCode.isExpired()) {
             throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
         }
+
+        return smsAuthCode;
     }
 
     private void migrateMemberIdentity(Member member, MemberProfileUpdateRequest request, MemberSajuProfile sajuProfile,
