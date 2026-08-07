@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "ai.provider", havingValue = "fake", matchIfMissing = true)
+@ConditionalOnProperty(name = "ai.provider", havingValue = "fake")
 public class FakeSajuAiProvider implements SajuAiProvider {
     @Override
     public SajuAiCallResult analyze(SajuAiRequest request) {
