@@ -189,7 +189,7 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data.phoneNumber").value(ORIGINAL_PHONE))
                 .andExpect(jsonPath("$.data.birthDate").value("19900101"))
                 .andExpect(jsonPath("$.data.gender").value("FEMALE"))
-                .andExpect(jsonPath("$.data.birthTime").value("14:30:00"));
+                .andExpect(jsonPath("$.data.birthTime").value("14:30"));
     }
 
     @Test
