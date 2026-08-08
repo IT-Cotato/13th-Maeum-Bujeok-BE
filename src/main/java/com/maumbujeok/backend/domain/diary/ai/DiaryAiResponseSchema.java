@@ -22,6 +22,7 @@ public final class DiaryAiResponseSchema {
                 "type", "object",
                 "additionalProperties", false,
                 "properties", Map.of(
+                        "title", Map.of("type", "string", "minLength", 1, "maxLength", 100),
                         "empathyResponse", Map.of("type", "string", "minLength", 1, "maxLength", 500),
                         "summary", Map.of("type", "string", "minLength", 10, "maxLength", 40),
                         "negativeIntensity", Map.of("type", "integer", "minimum", 0, "maximum", 100),
@@ -30,7 +31,7 @@ public final class DiaryAiResponseSchema {
                         "safetyLevel", Map.of("type", "string", "enum", List.of("NORMAL", "CAUTION", "CRISIS"))
                 ),
                 "required", List.of(
-                        "empathyResponse", "summary", "negativeIntensity", "emotionKeywords", "reportEmotion", "safetyLevel"
+                        "title", "empathyResponse", "summary", "negativeIntensity", "emotionKeywords", "reportEmotion", "safetyLevel"
                 )
         );
     }

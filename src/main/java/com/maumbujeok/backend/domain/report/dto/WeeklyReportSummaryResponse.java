@@ -21,9 +21,9 @@ public record WeeklyReportSummaryResponse(
         EmotionReportGenerationStatus generationStatus,
         @Schema(description = "주간 요약 본문. 생성 중이거나 실패한 경우 null", example = "이번 주에는 행복과 평온의 감정이 주로 나타났습니다. 전반적으로 안정적이었지만 일부 상황에서 불안한 감정이 함께 나타났습니다.", nullable = true)
         String insightSummary,
-        @Schema(description = "생성에 사용한 AI 모델명. 처리 전/실패 시 null", example = "gpt-4o-mini", nullable = true)
+        @Schema(description = "생성에 사용한 AI 모델명. 처리 전/실패 시 null", example = "gpt-5.5", nullable = true)
         String modelName,
-        @Schema(description = "리포트 버전", example = "v1.0", nullable = true)
+        @Schema(description = "리포트 버전", example = "weekly-report-v1", nullable = true)
         String reportVersion,
         @Schema(description = "생성 완료 또는 실패 시각", example = "2026-07-19T23:10:00+09:00", type = "string", format = "date-time", nullable = true)
         OffsetDateTime generatedAt

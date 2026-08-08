@@ -1,8 +1,12 @@
 package com.maumbujeok.backend.domain.auth.controller;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maumbujeok.backend.domain.auth.domain.RefreshToken;
@@ -73,11 +77,6 @@ class AuthControllerTest {
                 .phoneNumber("01012345678")
                 .name("홍길동")
                 .password("Password123!")
-                .birthDate("19990101")
-                .termsAgreed(true)
-                .privacyAgreed(true)
-                .sensitiveDataAgreed(true)
-                .marketingAgreed(false)
                 .build();
 
         // When & Then: 중복된 번호로 가입 시 400 Bad Request 및 AUTH_004 리턴 검증
@@ -102,11 +101,6 @@ class AuthControllerTest {
                 .phoneNumber("01012345679")
                 .name("홍길동")
                 .password("Password123!")
-                .birthDate("19990101")
-                .termsAgreed(true)
-                .privacyAgreed(true)
-                .sensitiveDataAgreed(true)
-                .marketingAgreed(false)
                 .build();
 
         // When & Then: 가입 시 400 Bad Request 및 SMS_003 리턴 검증
@@ -148,25 +142,86 @@ class AuthControllerTest {
     }
 
     @Test
-    void signUpWithMandatoryTermsFalseShouldBeBlockedByValidation() throws Exception {
+    void signUpWithoutOnboardingFieldsSucceedsAfterSmsVerification() throws Exception {
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber("01012345678")
+                .code("123456")
+                .expiredAt(LocalDateTime.now().plusMinutes(3))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.save(smsAuthCode);
+
         SignUpRequest request = SignUpRequest.builder()
                 .phoneNumber("01012345678")
                 .name("홍길동")
                 .password("Password123!")
-                .birthDate("19990101")
-                .termsAgreed(false) // 필수 동의 미동의
-                .privacyAgreed(true)
-                .sensitiveDataAgreed(true)
-                .marketingAgreed(false)
                 .build();
 
-        // When & Then: @Valid에 의해 400 Bad Request 반환 검증
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
+
+        assertTrue(memberRepository.findByPhoneNumber("01012345678").isPresent());
+        assertFalse(smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01012345678").isPresent());
     }
 
+    @Test
+    void signUpWithExpiredVerifiedSmsCodeShouldBeBlocked() throws Exception {
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber("01012340000")
+                .code("123456")
+                .expiredAt(LocalDateTime.now().minusMinutes(1))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.save(smsAuthCode);
+
+        SignUpRequest request = SignUpRequest.builder()
+                .phoneNumber("01012340000")
+                .name("홍길동")
+                .password("Password123!")
+                .build();
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("SMS_003"));
+    }
+
+    @Test
+    void resetPasswordConsumesVerifiedSmsCodeAfterSuccess() throws Exception {
+        Member member = Member.builder()
+                .phoneNumber("01088887777")
+                .name("홍길동")
+                .passwordHash(passwordEncoder.encode("OldPassword123!"))
+                .provider(Member.Provider.LOCAL)
+                .role(Member.Role.ROLE_USER)
+                .build();
+        memberRepository.save(member);
+
+        SmsAuthCode smsAuthCode = SmsAuthCode.builder()
+                .phoneNumber("01088887777")
+                .code("123456")
+                .expiredAt(LocalDateTime.now().plusMinutes(3))
+                .build();
+        smsAuthCode.verify();
+        smsAuthCodeRepository.save(smsAuthCode);
+
+        mockMvc.perform(post("/api/auth/password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phoneNumber": "01088887777",
+                                  "newPassword": "NewPassword123!"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        Member updatedMember = memberRepository.findByPhoneNumber("01088887777").orElseThrow();
+        assertTrue(passwordEncoder.matches("NewPassword123!", updatedMember.getPasswordHash()));
+        assertFalse(smsAuthCodeRepository.findTopByPhoneNumberOrderByCreatedAtDesc("01088887777").isPresent());
+    }
     @Test
     void reissueWithLoggedOutRefreshTokenShouldBeBlocked() throws Exception {
         // Given: 유효한 Refresh Token 및 DB 존재
@@ -251,4 +306,10 @@ class AuthControllerTest {
                 .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("123456", code.getCode());
     }
-}
+
+    @Test
+    void googleLoginStartsOAuthAuthorization() throws Exception {
+        mockMvc.perform(get("/api/auth/google"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/oauth2/authorization/google"));
+    }}
