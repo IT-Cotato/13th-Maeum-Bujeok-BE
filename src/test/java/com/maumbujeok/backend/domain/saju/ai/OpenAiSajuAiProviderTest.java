@@ -51,7 +51,7 @@ class OpenAiSajuAiProviderTest {
         verify(aiGateway).generateStructured(requestCaptor.capture(), any());
         AiStructuredRequest captured = requestCaptor.getValue();
         assertEquals("saju-analysis", captured.taskName());
-        assertEquals(500, captured.maxOutputTokens());
+        assertEquals(25000, captured.maxOutputTokens());
         assertEquals(SajuAiPromptVersion.VALUE, captured.promptVersion());
         assertEquals(20, result.result().woodPercentage());
         assertEquals("gpt-5.5", result.result().modelName());
