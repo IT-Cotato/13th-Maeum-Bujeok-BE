@@ -48,7 +48,7 @@ ai:
     api-key: ${OPENAI_API_KEY:}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
     model: ${OPENAI_MODEL:gpt-5.5}
-    timeout: ${OPENAI_TIMEOUT:5s}
+    timeout: ${OPENAI_TIMEOUT:120s}
     max-attempts: ${OPENAI_MAX_ATTEMPTS:2}
   analysis:
     negative-threshold: ${AI_NEGATIVE_THRESHOLD:70}

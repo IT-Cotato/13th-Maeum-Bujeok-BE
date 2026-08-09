@@ -28,7 +28,7 @@ public class AiProperties {
         private String apiKey;
         private String baseUrl = "https://api.openai.com/v1";
         private String model = "gpt-5.6-terra";
-        private Duration timeout = Duration.ofSeconds(5);
+        private Duration timeout = Duration.ofSeconds(120);
         private int maxAttempts = 2;
 
         public String getApiKey() {
