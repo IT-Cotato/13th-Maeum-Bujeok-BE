@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "ai.provider", havingValue = "openai")
 public class OpenAiSajuAiProvider implements SajuAiProvider {
     // Saju analysis can return incomplete reasoning-only responses when the output budget is too tight.
-    private static final int SAJU_MAX_OUTPUT_TOKENS = 500;
+    private static final int SAJU_MAX_OUTPUT_TOKENS = 25000;
 
     private final AiGateway aiGateway;
     private final SajuAiPromptFactory promptFactory;
