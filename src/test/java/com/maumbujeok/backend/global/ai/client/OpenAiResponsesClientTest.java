@@ -105,6 +105,31 @@ class OpenAiResponsesClientTest {
         server.verify();
     }
 
+    @Test
+    void reportsInvalidResponseWhenOutputTextIsMissing() {
+        server.expect(requestTo("https://api.openai.test/v1/responses"))
+                .andRespond(withSuccess("""
+                        {
+                          "id": "resp_missing_text",
+                          "model": "test-model",
+                          "status": "completed",
+                          "output": [{
+                            "type": "reasoning",
+                            "summary": []
+                          }]
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        AiClientException exception = assertThrows(
+                AiClientException.class,
+                () -> client.generateStructured(request(), TestOutput.class)
+        );
+
+        assertEquals(AiFailureCode.AI_INVALID_RESPONSE, exception.getFailureCode());
+        assertEquals(1, exception.getAttempts());
+        server.verify();
+    }
+
     private AiStructuredRequest request() {
         return new AiStructuredRequest(
                 "test-task",
