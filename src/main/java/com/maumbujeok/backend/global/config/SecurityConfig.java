@@ -65,6 +65,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/diaries/**",
                     "/api/members/**",
+                    "/api/saju/**",
                     "/api/reports/**",
                     "/api/talismans/**",
                     "/api/burnings/**"
@@ -92,5 +93,4 @@ public class SecurityConfig {
         return http.build();
     }
 }
-
 

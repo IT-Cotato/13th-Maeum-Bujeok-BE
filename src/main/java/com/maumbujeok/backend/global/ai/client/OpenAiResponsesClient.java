@@ -5,6 +5,7 @@ import com.maumbujeok.backend.global.ai.dto.AiExecutionResult;
 import com.maumbujeok.backend.global.ai.dto.AiStructuredRequest;
 import com.maumbujeok.backend.global.ai.exception.AiClientException;
 import com.maumbujeok.backend.global.ai.exception.AiFailureCode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,15 @@ public class OpenAiResponsesClient implements AiGateway {
                         .body(createBody(request))
                         .retrieve()
                         .toEntity(String.class);
-                AiExecutionResult<T> result = parse(response.getBody(), responseType, attempt, startedAt);
+                AiExecutionResult<T> result = parse(
+                        response.getBody(),
+                        responseType,
+                        attempt,
+                        startedAt,
+                        request.taskName(),
+                        request.promptVersion(),
+                        model
+                );
                 log.info("AI request completed task={} promptVersion={} model={} responseId={} attempts={} latencyMs={} inputTokens={} outputTokens={}",
                         request.taskName(), request.promptVersion(), result.model(), result.responseId(), result.attempts(),
                         result.latencyMs(), result.inputTokens(), result.outputTokens());
@@ -103,16 +112,52 @@ public class OpenAiResponsesClient implements AiGateway {
                 : request.modelOverride();
     }
 
-    private <T> AiExecutionResult<T> parse(String body, Class<T> responseType, int attempts, long startedAt) {
+    private <T> AiExecutionResult<T> parse(
+            String body,
+            Class<T> responseType,
+            int attempts,
+            long startedAt,
+            String taskName,
+            String promptVersion,
+            String requestedModel
+    ) {
         try {
             JsonNode root = objectMapper.readTree(body);
-            String outputText = extractOutputText(root, attempts);
-            T output = objectMapper.readValue(outputText, responseType);
+            String responseId = root.path("id").asText("unknown");
+            String actualModel = root.path("model").asText("unknown");
+            String outputText;
+            try {
+                outputText = extractOutputText(root, attempts);
+            } catch (AiClientException exception) {
+                if (exception.getFailureCode() == AiFailureCode.AI_INVALID_RESPONSE) {
+                    log.warn("AI response missing output_text task={} promptVersion={} requestedModel={} actualModel={} responseId={} attempt={} summary={}",
+                            taskName, promptVersion, requestedModel, actualModel, responseId, attempts, summarizeResponse(root));
+                }
+                throw exception;
+            }
+
+            T output;
+            try {
+                output = objectMapper.readValue(outputText, responseType);
+            } catch (Exception exception) {
+                log.warn("AI response JSON parse failed task={} promptVersion={} requestedModel={} actualModel={} responseId={} attempt={} causeType={} causeMessage={} outputPreview={} summary={}",
+                        taskName,
+                        promptVersion,
+                        requestedModel,
+                        actualModel,
+                        responseId,
+                        attempts,
+                        exception.getClass().getSimpleName(),
+                        sanitize(exception.getMessage(), 200),
+                        sanitize(outputText, 400),
+                        summarizeResponse(root));
+                throw new AiClientException(AiFailureCode.AI_INVALID_RESPONSE, attempts, exception);
+            }
             JsonNode usage = root.path("usage");
             return new AiExecutionResult<>(
                     output,
-                    root.path("model").asText("unknown"),
-                    root.path("id").asText("unknown"),
+                    actualModel,
+                    responseId,
                     usage.path("input_tokens").asLong(0),
                     usage.path("output_tokens").asLong(0),
                     attempts,
@@ -150,5 +195,44 @@ public class OpenAiResponsesClient implements AiGateway {
 
     private boolean isRetryable(AiFailureCode code) {
         return List.of(AiFailureCode.AI_RATE_LIMITED, AiFailureCode.AI_SERVER_ERROR).contains(code);
+    }
+
+    private String summarizeResponse(JsonNode root) {
+        List<String> outputSummaries = new ArrayList<>();
+        int index = 0;
+        for (JsonNode output : root.path("output")) {
+            if (index++ == 3) {
+                outputSummaries.add("...");
+                break;
+            }
+
+            List<String> contentTypes = new ArrayList<>();
+            int contentIndex = 0;
+            for (JsonNode content : output.path("content")) {
+                if (contentIndex++ == 5) {
+                    contentTypes.add("...");
+                    break;
+                }
+                contentTypes.add(content.path("type").asText("unknown"));
+            }
+
+            outputSummaries.add(output.path("type").asText("unknown") + "(contentTypes=" + contentTypes + ")");
+        }
+
+        return "status=" + root.path("status").asText("unknown")
+                + ", incompleteDetails=" + sanitize(root.path("incomplete_details").toString(), 160)
+                + ", outputCount=" + root.path("output").size()
+                + ", output=" + outputSummaries;
+    }
+
+    private String sanitize(String value, int maxLength) {
+        if (value == null) {
+            return "null";
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        return normalized.substring(0, maxLength) + "...";
     }
 }

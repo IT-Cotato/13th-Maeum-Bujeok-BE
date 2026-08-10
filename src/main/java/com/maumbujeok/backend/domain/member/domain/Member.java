@@ -104,6 +104,11 @@ public class Member extends BaseTimeEntity implements Persistable<String> {
         this.passwordHash = newPasswordHash;
     }
 
+    public void updateProfile(String name, String birthDate) {
+        this.name = name;
+        this.birthDate = birthDate;
+    }
+
     public void completeOnboarding(String birthDate, LocalDateTime termsAgreedAt,
                                    LocalDateTime privacyAgreedAt, LocalDateTime sensitiveDataAgreedAt,
                                    LocalDateTime marketingAgreedAt) {

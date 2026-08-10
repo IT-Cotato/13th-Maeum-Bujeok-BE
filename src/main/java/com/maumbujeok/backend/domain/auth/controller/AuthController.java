@@ -81,6 +81,8 @@ public class AuthController {
                         throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);
                 }
 
+                // 2. 전화번호 본인 인증 여부 체크
+                SmsAuthCode smsAuthCode = getVerifiedSmsAuthCode(request.getPhoneNumber());
                 // 2. 전화번호 본인 인증 여부 및 만료 체크
                 SmsAuthCode smsAuthCode = smsAuthCodeRepository
                                 .findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
@@ -100,10 +102,6 @@ public class AuthController {
                                 .build();
 
                 memberRepository.save(member);
-
-                // 4. 인증 완료 티켓 즉시 소모 (재사용 방지)
-                smsAuthCodeRepository.deleteByPhoneNumber(request.getPhoneNumber());
-
                 return ApiResponse.onSuccess("회원가입이 완료되었습니다.");
         }
 
@@ -220,12 +218,12 @@ public class AuthController {
         @Transactional
         @PostMapping("/password/reset")
         public ApiResponse<String> resetPassword(@RequestBody PasswordResetRequest request) {
-                // 1. 전화번호 본인 인증 여부 및 만료 체크
+                // 1. 전화번호 본인 인증 여부 체크
                 SmsAuthCode smsAuthCode = smsAuthCodeRepository
                                 .findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
                                 .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
 
-                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified()) || smsAuthCode.isExpired()) {
+                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified())) {
                         throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
                 }
 
@@ -241,10 +239,19 @@ public class AuthController {
                 // 3. 비밀번호 업데이트 (Dirty Checking)
                 member.updatePasswordHash(passwordEncoder.encode(request.getNewPassword()));
 
-                // 4. 인증 완료 티켓 즉시 소모 (재사용 방지)
-                smsAuthCodeRepository.deleteByPhoneNumber(request.getPhoneNumber());
-
                 return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
+        }
+
+        private SmsAuthCode getVerifiedSmsAuthCode(String phoneNumber) {
+                SmsAuthCode smsAuthCode = smsAuthCodeRepository
+                                .findTopByPhoneNumberOrderByCreatedAtDesc(phoneNumber)
+                                .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
+
+                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified()) || smsAuthCode.isExpired()) {
+                        throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
+                }
+
+                return smsAuthCode;
         }
 
         @Operation(summary = "Google 로그인 및 회원가입 시작", description = """

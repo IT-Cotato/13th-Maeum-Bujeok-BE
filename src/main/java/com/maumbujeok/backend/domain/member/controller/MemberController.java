@@ -2,17 +2,23 @@ package com.maumbujeok.backend.domain.member.controller;
 
 import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
 import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
+import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
+import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
+import com.maumbujeok.backend.domain.home.repository.HomeSummaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
-import com.maumbujeok.backend.domain.member.dto.OnboardingRequest;
 import com.maumbujeok.backend.domain.member.dto.MemberProfileResponse;
+import com.maumbujeok.backend.domain.member.dto.OnboardingRequest;
 import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
+import com.maumbujeok.backend.domain.member.repository.MemberReferenceTables;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
+import com.maumbujeok.backend.domain.saju.application.SajuAnalysisService;
+import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
 import com.maumbujeok.backend.domain.upload.domain.DiaryUpload;
 import com.maumbujeok.backend.domain.upload.repository.DiaryUploadRepository;
@@ -32,7 +38,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,6 +67,11 @@ public class MemberController {
     private final DiaryRepository diaryRepository;
     private final DiaryUploadRepository diaryUploadRepository;
     private final ObjectStorage objectStorage;
+    private final BurningAnalysisRepository burningAnalysisRepository;
+    private final BurningRepository burningRepository;
+    private final SajuAnalysisRepository sajuAnalysisRepository;
+    private final HomeSummaryRepository homeSummaryRepository;
+    private final SajuAnalysisService sajuAnalysisService;
 
     @Operation(
             summary = "내 회원 정보 조회 API",
@@ -155,16 +171,19 @@ public class MemberController {
 
         Member savedMember = memberRepository.save(member);
 
-        sajuProfileRepository.findByMember(savedMember)
-                .ifPresentOrElse(
-                        existing -> existing.update(request.getGender(), request.getCalendarType(), request.getBirthTime()),
-                        () -> sajuProfileRepository.save(MemberSajuProfile.builder()
-                                .member(savedMember)
-                                .gender(request.getGender())
-                                .calendarType(request.getCalendarType())
-                                .birthTime(request.getBirthTime())
-                                .build())
-                );
+        MemberSajuProfile savedSajuProfile = sajuProfileRepository.findByMember(savedMember)
+                .map(existing -> {
+                    existing.update(request.getGender(), request.getCalendarType(), request.getBirthTime());
+                    return existing;
+                })
+                .orElseGet(() -> sajuProfileRepository.save(MemberSajuProfile.builder()
+                        .member(savedMember)
+                        .gender(request.getGender())
+                        .calendarType(request.getCalendarType())
+                        .birthTime(request.getBirthTime())
+                        .build()));
+
+        sajuAnalysisService.refreshLatestAnalysis(savedMember, savedSajuProfile);
 
         return ApiResponse.onSuccess("온보딩 정보가 등록되었습니다.");
     }
@@ -204,50 +223,68 @@ public class MemberController {
         refreshTokenRepository.deleteByUserKey(userKey);
 
         if (phoneNumber != null) {
-            // 1-1. SMS 인증 이력 및 인증 완료 티켓 삭제
+            // 1-1. SMS 인증 이력 삭제
             smsAuthCodeRepository.deleteByPhoneNumber(phoneNumber);
 
-            // 2. 일기 이미지 S3 파일 및 DiaryUpload DB 데이터 삭제 (외래키 제약 해제 & S3 누수 방지)
-            List<DiaryUpload> uploads = diaryUploadRepository.findAllByMemberPhoneNumber(phoneNumber);
-            for (DiaryUpload upload : uploads) {
-                try {
-                    objectStorage.delete(upload.getObjectKey());
-                } catch (Exception e) {
-                    log.warn("Failed to delete S3 object key={} during withdraw for member={}",
-                            upload.getObjectKey(), phoneNumber, e);
-                }
-            }
-            if (!uploads.isEmpty()) {
-                diaryUploadRepository.deleteAllInBatch(uploads);
-            }
-
-            // 3. 부적 리스트 삭제
-            talismanRepository.deleteByMemberPhoneNumber(phoneNumber);
-
-            // 4. 다음 주 흐름 삭제
-            nextWeekFlowRepository.deleteByMemberPhoneNumber(phoneNumber);
-
-            // 5. 감정 리포트 삭제
-            emotionReportRepository.deleteByMemberPhoneNumber(phoneNumber);
-
-            // 6. 일기 분석 및 일기 삭제
-            java.util.List<com.maumbujeok.backend.domain.diary.domain.Diary> diaries =
-                    diaryRepository.findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(phoneNumber);
-            if (!diaries.isEmpty()) {
-                diaryAnalysisRepository.deleteByDiaryIn(diaries);
-                diaryRepository.deleteAllInBatch(diaries);
-            }
-
-            // 7. 알림 설정 삭제
-            notificationSettingRepository.deleteByMemberPhoneNumber(phoneNumber);
-
-            // 8. 사주 프로필 삭제
-            sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);
+            // 2. 연관 참조 데이터 삭제 (S3 객체 삭제 및 배치 삭제)
+            deleteMemberReferences(phoneNumber, member);
         }
 
-        // 9. Member 삭제
+        // 3. Member 삭제
         memberRepository.delete(member);
 
         return ApiResponse.onSuccess("회원 탈퇴가 완료되었습니다.");
+    }
+
+    private void deleteMemberReferences(String phoneNumber, Member member) {
+        for (String tableName : MemberReferenceTables.MEMBER_REFERENCE_TABLES) {
+            switch (tableName) {
+                case MemberReferenceTables.MEMBER_SAJU_PROFILES ->
+                        sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);
+                case MemberReferenceTables.MEMBER_NOTIFICATION_SETTINGS ->
+                        notificationSettingRepository.deleteByMemberPhoneNumber(phoneNumber);
+                case MemberReferenceTables.DIARY_UPLOADS -> deleteDiaryUploads(phoneNumber);
+                case MemberReferenceTables.DIARIES -> deleteDiaries(phoneNumber);
+                case MemberReferenceTables.TALISMANS ->
+                        talismanRepository.deleteByMemberPhoneNumber(phoneNumber);
+                case MemberReferenceTables.BURNINGS -> deleteBurnings(phoneNumber);
+                case MemberReferenceTables.EMOTION_REPORTS ->
+                        emotionReportRepository.deleteByMemberPhoneNumber(phoneNumber);
+                case MemberReferenceTables.NEXT_WEEK_FLOWS ->
+                        nextWeekFlowRepository.deleteByMemberPhoneNumber(phoneNumber);
+                case MemberReferenceTables.HOME_SUMMARIES ->
+                        homeSummaryRepository.deleteByMemberPhoneNumber(phoneNumber);
+                case MemberReferenceTables.SAJU_ANALYSES ->
+                        sajuAnalysisRepository.deleteByMemberPhoneNumber(phoneNumber);
+                default -> throw new IllegalStateException("Unsupported member reference table: " + tableName);
+            }
+        }
+    }
+
+    private void deleteDiaryUploads(String phoneNumber) {
+        List<DiaryUpload> uploads = diaryUploadRepository.findAllByMemberPhoneNumber(phoneNumber);
+        for (DiaryUpload upload : uploads) {
+            try {
+                objectStorage.delete(upload.getObjectKey());
+            } catch (Exception e) {
+                log.warn("Failed to delete S3 object key={} during withdraw for member={}",
+                        upload.getObjectKey(), phoneNumber, e);
+            }
+        }
+        diaryUploadRepository.deleteByMemberPhoneNumber(phoneNumber);
+    }
+
+    private void deleteDiaries(String phoneNumber) {
+        List<com.maumbujeok.backend.domain.diary.domain.Diary> diaries =
+                diaryRepository.findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(phoneNumber);
+        if (!diaries.isEmpty()) {
+            diaryAnalysisRepository.deleteByDiaryIn(diaries);
+            diaryRepository.deleteAllInBatch(diaries);
+        }
+    }
+
+    private void deleteBurnings(String phoneNumber) {
+        burningAnalysisRepository.deleteByBurningMemberPhoneNumber(phoneNumber);
+        burningRepository.deleteByMemberPhoneNumber(phoneNumber);
     }
 }
