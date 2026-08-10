@@ -94,6 +94,7 @@ public class AuthController {
                                 .build();
 
                 memberRepository.save(member);
+                smsAuthCodeRepository.delete(smsAuthCode);
                 return ApiResponse.onSuccess("회원가입이 완료되었습니다.");
         }
 
@@ -230,6 +231,7 @@ public class AuthController {
 
                 // 3. 비밀번호 업데이트 (Dirty Checking)
                 member.updatePasswordHash(passwordEncoder.encode(request.getNewPassword()));
+                smsAuthCodeRepository.delete(smsAuthCode);
 
                 return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
         }
