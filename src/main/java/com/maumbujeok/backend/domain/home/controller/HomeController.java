@@ -37,12 +37,16 @@ public class HomeController {
                     content = @Content(schema = @Schema(implementation = HomeSwaggerSchemas.HomeSummaryApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "COMMON_401: 인증 정보가 올바르지 않거나 인증 토큰이 존재하지 않습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
-                    description = "인증 토큰이 없거나 유효하지 않음"
+                    description = "COMMON_403: 접근 권한이 없거나 유효하지 않은 토큰 요청"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "AUTH_001: 사용자를 찾을 수 없음",
+                    description = "AUTH_001: 가입되지 않은 회원의 요청입니다.",
                     content = @Content(schema = @Schema(implementation = HomeSwaggerSchemas.HomeErrorApiResponse.class))
             )
     })

@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface DiaryUploadRepository extends JpaRepository<DiaryUpload, UUID> {
     Optional<DiaryUpload> findByIdAndMemberPhoneNumber(UUID id, String phoneNumber);
 
+    List<DiaryUpload> findAllByMemberPhoneNumber(String phoneNumber);
+
     List<DiaryUpload> findAllByIdInAndMemberPhoneNumber(List<UUID> ids, String phoneNumber);
 
     List<DiaryUpload> findAllByDiaryIdAndStateOrderBySortOrderAsc(Long diaryId, UploadState state);

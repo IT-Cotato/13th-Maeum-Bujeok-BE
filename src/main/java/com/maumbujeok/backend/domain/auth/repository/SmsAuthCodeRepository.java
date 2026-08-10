@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface SmsAuthCodeRepository extends JpaRepository<SmsAuthCode, Long> {
     Optional<SmsAuthCode> findByPhoneNumberAndCode(String phoneNumber, String code);
     Optional<SmsAuthCode> findTopByPhoneNumberOrderByCreatedAtDesc(String phoneNumber);
+    void deleteByPhoneNumber(String phoneNumber);
 }

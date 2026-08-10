@@ -31,6 +31,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure("COMMON_400", defaultMessage, null));
     }
 
+    // HttpMessageNotReadableException 처리 (JSON 역직렬화 및 파싱 실패)
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(org.springframework.http.converter.HttpMessageNotReadableException e) {
+        log.error("HttpMessageNotReadableException: {}", e.getMessage(), e);
+        return ResponseEntity
+                .status(org.springframework.http.HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.onFailure("COMMON_400", "요청 데이터 형식이 올바르지 않습니다.", null));
+    }
+
     // 예측하지 못한 서버 내부 예외 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {

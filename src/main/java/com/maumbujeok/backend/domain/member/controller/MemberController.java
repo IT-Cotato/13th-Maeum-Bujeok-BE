@@ -1,6 +1,7 @@
 package com.maumbujeok.backend.domain.member.controller;
 
 import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
+import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
@@ -13,7 +14,12 @@ import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileReposito
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
+import com.maumbujeok.backend.domain.upload.domain.DiaryUpload;
+import com.maumbujeok.backend.domain.upload.repository.DiaryUploadRepository;
+import com.maumbujeok.backend.domain.upload.storage.ObjectStorage;
 import com.maumbujeok.backend.global.common.ApiResponse;
+import com.maumbujeok.backend.global.error.CustomException;
+import com.maumbujeok.backend.global.error.ErrorCode;
 import com.maumbujeok.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,12 +29,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+@Slf4j
 @Tag(name = "회원 관련 API", description = "회원 사주 정보 관리 및 회원 탈퇴 등 사용자 관련 API")
 @RestController
 @RequestMapping("/api/members")
@@ -37,6 +46,7 @@ public class MemberController {
 
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final SmsAuthCodeRepository smsAuthCodeRepository;
     private final MemberSajuProfileRepository sajuProfileRepository;
     private final MemberNotificationSettingRepository notificationSettingRepository;
     private final TalismanRepository talismanRepository;
@@ -44,6 +54,8 @@ public class MemberController {
     private final EmotionReportRepository emotionReportRepository;
     private final DiaryAnalysisRepository diaryAnalysisRepository;
     private final DiaryRepository diaryRepository;
+    private final DiaryUploadRepository diaryUploadRepository;
+    private final ObjectStorage objectStorage;
 
     @Operation(
             summary = "내 회원 정보 조회 API",
@@ -52,6 +64,7 @@ public class MemberController {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberProfileApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "COMMON_401: 인증 정보가 올바르지 않거나 인증 토큰이 존재하지 않습니다.", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
@@ -63,7 +76,8 @@ public class MemberController {
                             )
                     )
             )
-    })    @GetMapping("/me")
+    })
+    @GetMapping("/me")
     public ApiResponse<MemberProfileResponse> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
@@ -75,6 +89,7 @@ public class MemberController {
         MemberSajuProfile sajuProfile = sajuProfileRepository.findByMember(member).orElse(null);
         return ApiResponse.onSuccess(MemberProfileResponse.from(member, sajuProfile));
     }
+
     @Operation(
             summary = "온보딩 완료 API",
             description = "로그인된 회원의 생년월일, 사주 정보와 약관 동의 내역을 저장합니다.",
@@ -103,6 +118,7 @@ public class MemberController {
                             }
                     )
             ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "COMMON_401: 인증 정보가 올바르지 않거나 인증 토큰이 존재하지 않습니다.", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
@@ -113,8 +129,10 @@ public class MemberController {
                                     value = "{\"timestamp\":\"2026-08-05T11:45:37.735+09:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/members/onboarding\"}"
                             )
                     )
-            )
-    })    @PostMapping("/onboarding")
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "AUTH_009: 이미 온보딩을 완료한 회원입니다.", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.OnboardingValidationErrorApiResponse.class)))
+    })
+    @PostMapping("/onboarding")
     @Transactional
     public ApiResponse<String> completeOnboarding(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -125,6 +143,9 @@ public class MemberController {
         }
 
         Member member = userDetails.getMember();
+        if (member.getOnboardingCompletedAt() != null) {
+            throw new CustomException(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
+        }
         LocalDateTime now = LocalDateTime.now();
         member.completeOnboarding(
                 request.getBirthDate(), now, now,
@@ -147,6 +168,7 @@ public class MemberController {
 
         return ApiResponse.onSuccess("온보딩 정보가 등록되었습니다.");
     }
+
     @Operation(
             summary = "회원 탈퇴 API",
             description = "현재 로그인된 사용자의 모든 관련 데이터(부적, 다음주흐름, 감정리포트, 일기, 알림설정, 사주프로필, Refresh Token) 및 회원 본인 정보를 DB에서 완전히 삭제(Hard Delete)합니다.",
@@ -155,6 +177,7 @@ public class MemberController {
     @Transactional
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원 및 소유 데이터 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "COMMON_401: 인증 정보가 올바르지 않거나 인증 토큰이 존재하지 않습니다.", content = @Content(schema = @Schema(implementation = MemberSwaggerSchemas.MemberForbiddenErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "인증 토큰이 없거나 유효하지 않은 요청. Spring Security 기본 오류 응답",
@@ -166,7 +189,8 @@ public class MemberController {
                             )
                     )
             )
-    })    @DeleteMapping("/withdraw")
+    })
+    @DeleteMapping("/withdraw")
     public ApiResponse<String> withdrawMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
         if (userDetails == null) {
             return ApiResponse.onFailure("401", "인증 정보가 올바르지 않습니다.", null);
@@ -180,16 +204,33 @@ public class MemberController {
         refreshTokenRepository.deleteByUserKey(userKey);
 
         if (phoneNumber != null) {
-            // 2. 부적 리스트 삭제
+            // 1-1. SMS 인증 이력 및 인증 완료 티켓 삭제
+            smsAuthCodeRepository.deleteByPhoneNumber(phoneNumber);
+
+            // 2. 일기 이미지 S3 파일 및 DiaryUpload DB 데이터 삭제 (외래키 제약 해제 & S3 누수 방지)
+            List<DiaryUpload> uploads = diaryUploadRepository.findAllByMemberPhoneNumber(phoneNumber);
+            for (DiaryUpload upload : uploads) {
+                try {
+                    objectStorage.delete(upload.getObjectKey());
+                } catch (Exception e) {
+                    log.warn("Failed to delete S3 object key={} during withdraw for member={}",
+                            upload.getObjectKey(), phoneNumber, e);
+                }
+            }
+            if (!uploads.isEmpty()) {
+                diaryUploadRepository.deleteAllInBatch(uploads);
+            }
+
+            // 3. 부적 리스트 삭제
             talismanRepository.deleteByMemberPhoneNumber(phoneNumber);
 
-            // 3. 다음 주 흐름 삭제
+            // 4. 다음 주 흐름 삭제
             nextWeekFlowRepository.deleteByMemberPhoneNumber(phoneNumber);
 
-            // 4. 감정 리포트 삭제
+            // 5. 감정 리포트 삭제
             emotionReportRepository.deleteByMemberPhoneNumber(phoneNumber);
 
-            // 5. 일기 분석 및 일기 삭제
+            // 6. 일기 분석 및 일기 삭제
             java.util.List<com.maumbujeok.backend.domain.diary.domain.Diary> diaries =
                     diaryRepository.findAllByMemberPhoneNumberOrderByRecordedDateDescCreatedAtDescIdDesc(phoneNumber);
             if (!diaries.isEmpty()) {
@@ -197,14 +238,14 @@ public class MemberController {
                 diaryRepository.deleteAllInBatch(diaries);
             }
 
-            // 6. 알림 설정 삭제
+            // 7. 알림 설정 삭제
             notificationSettingRepository.deleteByMemberPhoneNumber(phoneNumber);
 
-            // 7. 사주 프로필 삭제
+            // 8. 사주 프로필 삭제
             sajuProfileRepository.findByMember(member).ifPresent(sajuProfileRepository::delete);
         }
 
-        // 8. Member 삭제
+        // 9. Member 삭제
         memberRepository.delete(member);
 
         return ApiResponse.onSuccess("회원 탈퇴가 완료되었습니다.");

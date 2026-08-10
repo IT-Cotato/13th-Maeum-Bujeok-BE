@@ -46,7 +46,10 @@ public class AuthController {
         @Operation(summary = "SMS 인증번호 발송 API", description = "입력한 전화번호로 6자리 인증번호를 생성하여 Mock 발송하고 3분간 저장합니다.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증번호 발송 성공", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthStringApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "COMMON_400: 잘못된 요청 또는 전화번호 형식 오류", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_012: 지원하지 않는 SMS 인증 목적입니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_010: 가입되지 않은 전화번호입니다. (비밀번호 재설정 목적 시)", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "AUTH_009: 이미 가입된 전화번호입니다. (회원가입 목적 시)", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "SMS_004: 인증번호 전송에 실패했습니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
         })
         @PostMapping("/sms/send")
         public ApiResponse<String> sendSmsCode(@jakarta.validation.Valid @RequestBody SmsSendRequest request) {
@@ -57,7 +60,7 @@ public class AuthController {
         @Operation(summary = "SMS 인증번호 검증 API", description = "발송된 인증번호의 유효성을 검증합니다.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "전화번호 인증 성공", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthStringApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_003: 인증번호 불일치 또는 만료", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "SMS_001: 인증번호를 찾을 수 없거나 이미 인증된 번호 / SMS_002: 인증번호가 만료되었습니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
         })
         @PostMapping("/sms/verify")
         public ApiResponse<String> verifySmsCode(@RequestBody SmsVerifyRequest request) {
@@ -68,8 +71,9 @@ public class AuthController {
         @Operation(summary = "회원가입 API", description = "전화번호 본인 인증을 완료한 사용자의 이름과 비밀번호로 계정을 생성합니다. 생년월일, 사주 정보 및 약관 동의는 로그인 후 온보딩 API에서 입력합니다.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원가입 성공", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthStringApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_002: 전화번호 중복 또는 인증되지 않은 번호", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_004: 이미 가입된 전화번호입니다. / SMS_003: 전화번호 인증이 완료되지 않았습니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
         })
+        @Transactional
         @PostMapping("/signup")
         public ApiResponse<String> signup(@jakarta.validation.Valid @RequestBody SignUpRequest request) {
                 // 1. 전화번호 중복 체크
@@ -77,12 +81,12 @@ public class AuthController {
                         throw new CustomException(ErrorCode.DUPLICATE_PHONE_NUMBER);
                 }
 
-                // 2. 전화번호 본인 인증 여부 체크
+                // 2. 전화번호 본인 인증 여부 및 만료 체크
                 SmsAuthCode smsAuthCode = smsAuthCodeRepository
                                 .findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
                                 .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
 
-                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified())) {
+                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified()) || smsAuthCode.isExpired()) {
                         throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
                 }
 
@@ -96,13 +100,19 @@ public class AuthController {
                                 .build();
 
                 memberRepository.save(member);
+
+                // 4. 인증 완료 티켓 즉시 소모 (재사용 방지)
+                smsAuthCodeRepository.deleteByPhoneNumber(request.getPhoneNumber());
+
                 return ApiResponse.onSuccess("회원가입이 완료되었습니다.");
         }
 
         @Operation(summary = "로그인 API", description = "전화번호와 비밀번호로 로그인하여 Access Token 및 Refresh Token을 발급받습니다.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthTokenApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_001: 유저를 찾을 수 없거나 비밀번호 불일치 또는 소셜 전용 계정", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_011: 소셜 로그인으로 가입된 계정입니다. 구글 로그인을 이용해 주세요.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "AUTH_002: 비밀번호가 일치하지 않습니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_001: 가입되지 않은 회원입니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
         })
         @Transactional
         @PostMapping("/login")
@@ -143,7 +153,8 @@ public class AuthController {
         @Operation(summary = "토큰 재발급 API", description = "유효한 Refresh Token을 제출하여 새로운 Access Token 및 Refresh Token을 발급(RTR)받습니다.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "토큰 재발급 성공", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthTokenApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_004: Refresh Token이 유효하지 않거나 만료됨", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "AUTH_005: 유효하지 않거나 만료된 Refresh Token입니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_001: 가입된 회원을 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
         })
         @Transactional
         @PostMapping("/reissue")
@@ -203,17 +214,18 @@ public class AuthController {
         @Operation(summary = "비밀번호 재설정 API", description = "SMS 본인 인증 완료 후 전화번호와 새 비밀번호를 받아 비밀번호를 변경합니다.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "비밀번호 재설정 성공", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthStringApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "AUTH_003: 본인 인증 미완료 또는 소셜 로그인 사용자", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "SMS_003: 전화번호 인증이 완료되지 않았습니다. / AUTH_008: 소셜 로그인 가입자는 비밀번호를 재설정할 수 없습니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_001: 가입되지 않은 회원입니다.", content = @Content(schema = @Schema(implementation = AuthSwaggerSchemas.AuthErrorApiResponse.class)))
         })
         @Transactional
         @PostMapping("/password/reset")
         public ApiResponse<String> resetPassword(@RequestBody PasswordResetRequest request) {
-                // 1. 전화번호 본인 인증 여부 체크
+                // 1. 전화번호 본인 인증 여부 및 만료 체크
                 SmsAuthCode smsAuthCode = smsAuthCodeRepository
                                 .findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
                                 .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
 
-                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified())) {
+                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified()) || smsAuthCode.isExpired()) {
                         throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
                 }
 
@@ -228,6 +240,9 @@ public class AuthController {
 
                 // 3. 비밀번호 업데이트 (Dirty Checking)
                 member.updatePasswordHash(passwordEncoder.encode(request.getNewPassword()));
+
+                // 4. 인증 완료 티켓 즉시 소모 (재사용 방지)
+                smsAuthCodeRepository.deleteByPhoneNumber(request.getPhoneNumber());
 
                 return ApiResponse.onSuccess("비밀번호가 성공적으로 재설정되었습니다.");
         }
