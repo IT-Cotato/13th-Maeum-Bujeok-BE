@@ -14,6 +14,7 @@ import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @Transactional
 class WeeklyReportServiceIntegrationTest {
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
+
     @Autowired WeeklyReportService weeklyReportService;
     @Autowired DiaryService diaryService;
     @Autowired MemberRepository memberRepository;
@@ -38,8 +41,12 @@ class WeeklyReportServiceIntegrationTest {
                 .passwordHash("encoded-password")
                 .role(Member.Role.ROLE_USER)
                 .build());
-        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest("한 주를 정리하는 기분으로 기록했다", "COMFORTABLE"));
         LocalDate weekStart = currentWeekStart();
+        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest(
+                "한 주를 정리하는 기분으로 기록했다",
+                "COMFORTABLE",
+                weekStart
+        ));
 
         GenerateWeeklyReportResponse first = weeklyReportService.generate(
                 member.getPhoneNumber(),
@@ -57,6 +64,6 @@ class WeeklyReportServiceIntegrationTest {
     }
 
     private LocalDate currentWeekStart() {
-        return LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return LocalDate.now(SERVICE_ZONE).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 }
