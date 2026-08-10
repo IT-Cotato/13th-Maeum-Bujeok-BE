@@ -83,14 +83,6 @@ public class AuthController {
 
                 // 2. 전화번호 본인 인증 여부 체크
                 SmsAuthCode smsAuthCode = getVerifiedSmsAuthCode(request.getPhoneNumber());
-                // 2. 전화번호 본인 인증 여부 및 만료 체크
-                SmsAuthCode smsAuthCode = smsAuthCodeRepository
-                                .findTopByPhoneNumberOrderByCreatedAtDesc(request.getPhoneNumber())
-                                .orElseThrow(() -> new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED));
-
-                if (!Boolean.TRUE.equals(smsAuthCode.getIsVerified()) || smsAuthCode.isExpired()) {
-                        throw new CustomException(ErrorCode.SMS_CODE_NOT_VERIFIED);
-                }
 
                 // 3. 회원 저장
                 Member member = Member.builder()
