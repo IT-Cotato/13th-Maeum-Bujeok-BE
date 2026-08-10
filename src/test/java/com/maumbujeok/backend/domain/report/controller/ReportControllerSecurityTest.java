@@ -19,6 +19,7 @@ import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @Transactional
 class ReportControllerSecurityTest {
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
+
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
     @Autowired DiaryService diaryService;
@@ -57,9 +60,13 @@ class ReportControllerSecurityTest {
     @Test
     void authenticatedMemberStartsWeeklyReportGeneration() throws Exception {
         Member member = saveMember("report-owner", "01010000001");
-        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest("오늘은 기분이 한결 가벼웠다", "HAPPY"));
-        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
         LocalDate weekStart = currentWeekStart();
+        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest(
+                "오늘은 기분이 한결 가벼웠다",
+                "HAPPY",
+                weekStart
+        ));
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(post("/api/reports/weekly/generate")
                         .header("Authorization", "Bearer " + token)
@@ -171,7 +178,7 @@ class ReportControllerSecurityTest {
     }
 
     private LocalDate currentWeekStart() {
-        return LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return LocalDate.now(SERVICE_ZONE).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 
     private Member saveMember(String name, String phoneNumber) {
