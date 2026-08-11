@@ -22,11 +22,11 @@ public record DiaryAnalysisResponse(
         Boolean salpuriRecommended,
         @Schema(description = "안전 단계", example = "NORMAL", nullable = true)
         SafetyLevel safetyLevel,
-        @Schema(description = "생성된 부적 ID. 부적 생성 전에는 null", example = "101", nullable = true)
+        @Schema(description = "생성된 부적 ID. 부적 생성 전에는 null", nullable = true)
         Long amuletId,
-        @Schema(description = "생성된 부적 유형. 부적 생성 전에는 null", example = "CALM", nullable = true)
+        @Schema(description = "생성된 부적 유형. 부적 생성 전에는 null", nullable = true)
         String amuletType,
-        @Schema(description = "생성된 부적 제목. 부적 생성 전에는 null", example = "마음을 고요하게 하는 부적", nullable = true)
+        @Schema(description = "생성된 부적 제목. 부적 생성 전에는 null", nullable = true)
         String title,
         @Schema(description = "분석 생성일 (yyyy.MM.dd)", example = "2026.07.23", pattern = "^\\d{4}\\.\\d{2}\\.\\d{2}$", requiredMode = Schema.RequiredMode.REQUIRED)
         String createdAt,

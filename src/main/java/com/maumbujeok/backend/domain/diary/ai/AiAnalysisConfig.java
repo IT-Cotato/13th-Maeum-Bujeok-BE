@@ -22,6 +22,11 @@ public class AiAnalysisConfig {
         return executor("weekly-report-", 2, 20);
     }
 
+    @Bean(name = "sajuAnalysisExecutor")
+    public Executor sajuAnalysisExecutor() {
+        return executor("saju-analysis-", 2, 20);
+    }
+
     private ThreadPoolTaskExecutor executor(String prefix, int poolSize, int queueCapacity) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setThreadNamePrefix(prefix);

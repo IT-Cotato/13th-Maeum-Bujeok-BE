@@ -13,8 +13,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,10 +26,6 @@ import lombok.NoArgsConstructor;
         indexes = @Index(
                 name = "idx_diaries_member_recorded_created",
                 columnList = "member_phone_number, recorded_date, created_at, id"
-        ),
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_diaries_member_recorded_date",
-                columnNames = {"member_phone_number", "recorded_date"}
         )
 )
 @Getter
@@ -48,12 +44,23 @@ public class Diary extends BaseTimeEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(length = 100)
+    private String title;
+
+    public void setAiTitle(String title) { this.title = title; }
+
     @Column(name = "selected_emotion", nullable = false, length = 30)
     @Convert(converter = DiaryEmotionConverter.class)
     private DiaryEmotion selectedEmotion;
 
     @Column(name = "recorded_date", nullable = false)
     private LocalDate recordedDate;
+
+    @Column(name = "burned_at")
+    private LocalDateTime burnedAt;
+
+    @Column(name = "burning_id")
+    private Long burningId;
 
     public Diary(Member member, String content, DiaryEmotion selectedEmotion) {
         this(member, content, selectedEmotion, LocalDate.now(SERVICE_ZONE));
@@ -74,4 +81,14 @@ public class Diary extends BaseTimeEntity {
         this.selectedEmotion = selectedEmotion;
         return true;
     }
+
+    public boolean isBurned() { return burnedAt != null; }
+
+    public void markBurned(Long burningId, LocalDateTime burnedAt) {
+        this.burningId = burningId;
+        this.burnedAt = burnedAt;
+    }
 }
+
+
+

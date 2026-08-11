@@ -10,11 +10,13 @@ import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportRequest;
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
 import com.maumbujeok.backend.domain.report.dto.WeeklyReportSummaryResponse;
+import com.maumbujeok.backend.domain.report.dto.WeeklyReportPeriodResponse;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -68,6 +70,31 @@ public class WeeklyReportService {
         return WeeklyReportSummaryResponse.from(report);
     }
 
+    @Transactional(readOnly = true)
+    public WeeklyReportSummaryResponse getWeeklyByStartDate(String memberPhoneNumber, LocalDate startDate) {
+        LocalDate periodStart = normalizeWeekStart(startDate);
+        EmotionReport report = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
+                        memberPhoneNumber, EmotionReportType.WEEKLY, periodStart)
+                .orElseThrow(() -> new ReportRequestException(ErrorCode.REPORT_NOT_FOUND, "주간 리포트를 찾을 수 없습니다."));
+        return WeeklyReportSummaryResponse.from(report);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WeeklyReportPeriodResponse> getWeeklyPeriods(String memberPhoneNumber) {
+        return emotionReportRepository.findAllByMemberPhoneNumberAndReportTypeOrderByPeriodStartDesc(
+                        memberPhoneNumber, EmotionReportType.WEEKLY)
+                .stream()
+                .map(WeeklyReportPeriodResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public GenerateWeeklyReportResponse regenerate(String memberPhoneNumber, Long reportId) {
+        EmotionReport report = emotionReportRepository.findByIdAndMemberPhoneNumberAndReportType(
+                        reportId, memberPhoneNumber, EmotionReportType.WEEKLY)
+                .orElseThrow(() -> new ReportRequestException(ErrorCode.REPORT_NOT_FOUND, "주간 리포트를 찾을 수 없습니다."));
+        return generateForWeek(memberPhoneNumber, report.getPeriodStart());
+    }
     private GenerateWeeklyReportResponse generateForWeek(String memberPhoneNumber, LocalDate periodStart) {
         LocalDate periodEnd = periodStart.plusDays(6);
         EmotionReport report = prepareReport(memberPhoneNumber, periodStart, periodEnd);

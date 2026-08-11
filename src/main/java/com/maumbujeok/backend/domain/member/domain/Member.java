@@ -2,10 +2,14 @@ package com.maumbujeok.backend.domain.member.domain;
 
 import com.maumbujeok.backend.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +17,7 @@ import java.time.LocalDateTime;
 @Table(name = "members")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member extends BaseTimeEntity {
+public class Member extends BaseTimeEntity implements Persistable<String> {
 
     @Id
     @Column(name = "phone_number", nullable = false, length = 50)
@@ -50,15 +54,21 @@ public class Member extends BaseTimeEntity {
     @Column(name = "marketing_agreed_at")
     private LocalDateTime marketingAgreedAt;
 
+    @Column(name = "onboarding_completed_at")
+    private LocalDateTime onboardingCompletedAt;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Transient
+    private boolean newMember = true;
 
     @Builder
     public Member(String name, String email, String phoneNumber, String passwordHash, String birthDate,
                   Provider provider, String providerId,
                   LocalDateTime termsAgreedAt, LocalDateTime privacyAgreedAt,
-                  LocalDateTime sensitiveDataAgreedAt, LocalDateTime marketingAgreedAt, Role role) {
+                  LocalDateTime sensitiveDataAgreedAt, LocalDateTime marketingAgreedAt, LocalDateTime onboardingCompletedAt, Role role) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -70,11 +80,46 @@ public class Member extends BaseTimeEntity {
         this.privacyAgreedAt = privacyAgreedAt;
         this.sensitiveDataAgreedAt = sensitiveDataAgreedAt;
         this.marketingAgreedAt = marketingAgreedAt;
+        this.onboardingCompletedAt = onboardingCompletedAt;
         this.role = role != null ? role : Role.ROLE_USER;
+    }
+
+    @Override
+    public String getId() {
+        return phoneNumber;
+    }
+
+    @Override
+    public boolean isNew() {
+        return newMember;
+    }
+
+    @PostPersist
+    @PostLoad
+    void markNotNew() {
+        this.newMember = false;
     }
 
     public void updatePasswordHash(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+    }
+
+    public void updateProfile(String name, String birthDate) {
+        this.name = name;
+        this.birthDate = birthDate;
+    }
+
+    public void completeOnboarding(String birthDate, LocalDateTime termsAgreedAt,
+                                   LocalDateTime privacyAgreedAt, LocalDateTime sensitiveDataAgreedAt,
+                                   LocalDateTime marketingAgreedAt) {
+        this.birthDate = birthDate;
+        this.termsAgreedAt = termsAgreedAt;
+        this.privacyAgreedAt = privacyAgreedAt;
+        this.sensitiveDataAgreedAt = sensitiveDataAgreedAt;
+        this.marketingAgreedAt = marketingAgreedAt;
+        if (this.onboardingCompletedAt == null) {
+            this.onboardingCompletedAt = termsAgreedAt;
+        }
     }
 
     public enum Provider {
