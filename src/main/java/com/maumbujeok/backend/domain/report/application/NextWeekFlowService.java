@@ -38,7 +38,7 @@ public class NextWeekFlowService {
         if (request == null || request.weekStart() == null) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
-        LocalDate weekStart = request.weekStart();
+        LocalDate weekStart = request.parsedWeekStart();
 
         Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

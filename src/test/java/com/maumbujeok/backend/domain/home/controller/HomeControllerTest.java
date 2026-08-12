@@ -21,8 +21,9 @@ class HomeControllerTest {
     void getTodayHomeSummary_success() {
         // given
         HomeSummaryService service = Mockito.mock(HomeSummaryService.class);
-        HomeController controller = new HomeController(service);
-
+        com.maumbujeok.backend.domain.diary.repository.DiaryRepository diaryRepository = Mockito.mock(com.maumbujeok.backend.domain.diary.repository.DiaryRepository.class);
+        com.maumbujeok.backend.domain.talisman.repository.TalismanRepository talismanRepository = Mockito.mock(com.maumbujeok.backend.domain.talisman.repository.TalismanRepository.class);
+        HomeController controller = new HomeController(service, diaryRepository, talismanRepository);
         CustomUserDetails userDetails = Mockito.mock(CustomUserDetails.class);
         com.maumbujeok.backend.domain.member.domain.Member member =
                 Mockito.mock(com.maumbujeok.backend.domain.member.domain.Member.class);

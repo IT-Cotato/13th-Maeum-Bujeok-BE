@@ -46,7 +46,7 @@ public class NextWeekFlowController {
     @PostMapping("/next-week-flow")
     public ApiResponse<NextWeekFlowStartResponse> generateNextWeekFlow(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody NextWeekFlowRequest request
+            @jakarta.validation.Valid @RequestBody NextWeekFlowRequest request
     ) {
         return ApiResponse.onSuccess(
                 nextWeekFlowService.generate(userDetails.getMember().getPhoneNumber(), request)
