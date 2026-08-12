@@ -45,3 +45,6 @@ erd.md
 
 # Harness runtime state (templates under harness/ remain tracked)
 .harness/
+
+# application.yml 제외 설정
+**/application.yml
