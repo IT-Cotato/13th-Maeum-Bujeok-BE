@@ -35,6 +35,7 @@ public enum ErrorCode {
     PHONE_NUMBER_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_006", "회원 정보의 전화번호와 일치하지 않습니다."),
     SOCIAL_USER_CANNOT_RESET_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_008", "소셜 로그인 가입자는 비밀번호를 재설정할 수 없습니다."),
     SOCIAL_USER_MUST_LOGIN_WITH_OAUTH(HttpStatus.BAD_REQUEST, "AUTH_011", "소셜 로그인으로 가입된 계정입니다. 구글 로그인을 이용해 주세요."),
+    ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "AUTH_009", "이미 온보딩을 완료한 회원입니다."),
 
     // Diary
     INVALID_DIARY_REQUEST(HttpStatus.BAD_REQUEST, "DIARY_400", "일기 요청이 올바르지 않습니다."),

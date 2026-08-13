@@ -37,13 +37,16 @@ public class NextWeekFlowController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "생성 시작 성공", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.NextWeekFlowStartApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "REPORT_400: 완료된 주간 리포트가 없거나 weekStart가 올바르지 않습니다.", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.ReportInvalidRequestApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "인증 필요"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_001: 회원 또는 REPORT_404: 주간 리포트를 찾을 수 없습니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "COMMON_500: 다음 주 흐름 작업을 시작할 수 없습니다.")
-    })    @PostMapping("/next-week-flow")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "COMMON_401: 인증 정보가 올바르지 않거나 인증 토큰이 존재하지 않습니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "COMMON_403: 인증이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "AUTH_001: 가입되지 않은 회원입니다. / REPORT_404: 해당 주차 주간 리포트를 찾을 수 없습니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "FLOW_409: 해당 주차 다음 주 흐름 분석 생성이 이미 진행 중입니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "COMMON_500: 다음 주 흐름 비동기 생성 작업을 시작할 수 없습니다.")
+    })
+    @PostMapping("/next-week-flow")
     public ApiResponse<NextWeekFlowStartResponse> generateNextWeekFlow(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody NextWeekFlowRequest request
+            @jakarta.validation.Valid @RequestBody NextWeekFlowRequest request
     ) {
         return ApiResponse.onSuccess(
                 nextWeekFlowService.generate(userDetails.getMember().getPhoneNumber(), request)
@@ -56,7 +59,8 @@ public class NextWeekFlowController {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = ReportSwaggerSchemas.NextWeekFlowQueryApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "COMMON_403: 본인 소유 흐름이 아닙니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "COMMON_401: 인증 정보가 올바르지 않거나 인증 토큰이 존재하지 않습니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "COMMON_403: 본인 소유의 다음 주 흐름이 아닙니다."),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "FLOW_001: 다음 주 흐름 정보를 찾을 수 없습니다.")
     })    @GetMapping("/next-week-flow/{flowId}")
     public ApiResponse<NextWeekFlowQueryResponse> getNextWeekFlow(

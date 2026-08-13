@@ -51,15 +51,13 @@ public class HomeSummaryService {
                     .orElseThrow();
         }
 
-        MemberSajuProfile sajuProfile = sajuProfileRepository.findByMember(member).orElse(null);
+        MemberSajuProfile sajuProfile = sajuProfileRepository.findByMember(member)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_SAJU_PROFILE_NOT_FOUND));
 
-        String gender = sajuProfile != null && sajuProfile.getGender() != null
-                ? sajuProfile.getGender().name() : "NONE";
-        String calendarType = sajuProfile != null && sajuProfile.getCalendarType() != null
-                ? sajuProfile.getCalendarType().name() : "SOLAR";
+        String gender = sajuProfile.getGender() != null ? sajuProfile.getGender().name() : "NONE";
+        String calendarType = sajuProfile.getCalendarType() != null ? sajuProfile.getCalendarType().name() : "SOLAR";
         String birthDate = member.getBirthDate() != null ? member.getBirthDate() : "19950101";
-        String birthTime = sajuProfile != null && sajuProfile.getBirthTime() != null
-                ? sajuProfile.getBirthTime().toString() : null;
+        String birthTime = sajuProfile.getBirthTime() != null ? sajuProfile.getBirthTime().toString() : null;
 
         HomeSummaryAiResponse aiResponse;
         try {

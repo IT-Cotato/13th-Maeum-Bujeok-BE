@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface DiaryUploadRepository extends JpaRepository<DiaryUpload, UUID> {
     Optional<DiaryUpload> findByIdAndMemberPhoneNumber(UUID id, String phoneNumber);
 
+    List<DiaryUpload> findAllByMemberPhoneNumber(String phoneNumber);
+
     @Modifying
     @Query("delete from DiaryUpload upload where upload.member.phoneNumber = :phoneNumber")
     void deleteByMemberPhoneNumber(@Param("phoneNumber") String phoneNumber);
