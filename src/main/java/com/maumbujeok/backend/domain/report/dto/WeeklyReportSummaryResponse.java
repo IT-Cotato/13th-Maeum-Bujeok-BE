@@ -1,11 +1,12 @@
 package com.maumbujeok.backend.domain.report.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
 import com.maumbujeok.backend.domain.report.domain.EmotionReportGenerationStatus;
+import com.maumbujeok.backend.global.util.TimeUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 @Schema(name = "WeeklyReportSummaryResponse", description = "주간 리포트 요약 조회 결과. 생성 진행 중이거나 실패한 경우 일부 필드는 null일 수 있습니다.")
 public record WeeklyReportSummaryResponse(
@@ -26,10 +27,9 @@ public record WeeklyReportSummaryResponse(
         @Schema(description = "리포트 버전", example = "weekly-report-v1", nullable = true)
         String reportVersion,
         @Schema(description = "생성 완료 또는 실패 시각", example = "2026-07-19T23:10:00+09:00", type = "string", format = "date-time", nullable = true)
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
         OffsetDateTime generatedAt
 ) {
-    private static final ZoneOffset SEOUL_OFFSET = ZoneOffset.ofHours(9);
-
     public static WeeklyReportSummaryResponse from(EmotionReport report) {
         return new WeeklyReportSummaryResponse(
                 report.getId(),
@@ -40,7 +40,7 @@ public record WeeklyReportSummaryResponse(
                 report.getInsightSummary(),
                 report.getModelName(),
                 toReportVersion(report.getPromptVersion()),
-                report.getGeneratedAt() == null ? null : report.getGeneratedAt().atOffset(SEOUL_OFFSET)
+                TimeUtils.toSeoulOffset(report.getGeneratedAt())
         );
     }
 

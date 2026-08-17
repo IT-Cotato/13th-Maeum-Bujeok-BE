@@ -1,9 +1,11 @@
 package com.maumbujeok.backend.domain.saju.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.maumbujeok.backend.domain.saju.domain.SajuAnalysis;
 import com.maumbujeok.backend.domain.saju.domain.SajuAnalysisStatus;
+import com.maumbujeok.backend.global.util.TimeUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Schema(description = "사주 분석 상태 및 결과 조회 응답")
 public record SajuAnalysisResponse(
@@ -17,8 +19,9 @@ public record SajuAnalysisResponse(
         String modelName,
         @Schema(description = "최근 분석 실패 코드. 실패하지 않았다면 null", example = "AI_INVALID_RESPONSE", nullable = true)
         String failureCode,
-        @Schema(description = "현재 표시 중인 결과가 생성되었거나 실패가 기록된 시각", nullable = true)
-        LocalDateTime analyzedAt
+        @Schema(description = "현재 표시 중인 결과가 생성되었거나 실패가 기록된 시각", example = "2026-08-03T18:58:35+09:00", nullable = true)
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
+        OffsetDateTime analyzedAt
 ) {
     public static SajuAnalysisResponse from(SajuAnalysis analysis) {
         return new SajuAnalysisResponse(
@@ -27,7 +30,7 @@ public record SajuAnalysisResponse(
                 FiveElementsBalanceResponse.from(analysis),
                 analysis.getModelName(),
                 analysis.getFailureCode(),
-                analysis.getAnalyzedAt()
+                TimeUtils.toSeoulOffset(analysis.getAnalyzedAt())
         );
     }
 }

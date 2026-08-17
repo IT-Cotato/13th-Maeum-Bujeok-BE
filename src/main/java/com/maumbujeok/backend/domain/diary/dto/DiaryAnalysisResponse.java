@@ -3,7 +3,9 @@ package com.maumbujeok.backend.domain.diary.dto;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysisStatus;
 import com.maumbujeok.backend.domain.diary.domain.SafetyLevel;
+import com.maumbujeok.backend.global.util.TimeUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Schema(name = "DiaryAnalysisResponse", description = "일기 AI 분석 결과. 분석 진행 중이거나 실패한 경우 일부 필드는 null일 수 있습니다.")
@@ -40,6 +42,9 @@ public record DiaryAnalysisResponse(
     private static final DateTimeFormatter AMULET_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     public static DiaryAnalysisResponse from(DiaryAnalysis analysis) {
+        OffsetDateTime seoulCreatedAt = TimeUtils.toSeoulOffset(analysis.getCreatedAt());
+        String formattedDate = seoulCreatedAt == null ? null : seoulCreatedAt.format(AMULET_DATE_FORMAT);
+
         return new DiaryAnalysisResponse(
                 analysis.getStatus(),
                 analysis.getSummary(),
@@ -51,7 +56,7 @@ public record DiaryAnalysisResponse(
                 null,
                 null,
                 null,
-                analysis.getCreatedAt().format(AMULET_DATE_FORMAT),
+                formattedDate,
                 analysis.getModelName(),
                 analysis.getFailureCode(),
                 analysis.getAttemptCount()

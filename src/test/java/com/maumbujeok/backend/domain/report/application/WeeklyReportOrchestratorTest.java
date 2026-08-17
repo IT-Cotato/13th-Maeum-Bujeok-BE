@@ -26,6 +26,7 @@ class WeeklyReportOrchestratorTest {
     @Mock WeeklyReportAiClient aiClient;
     @Mock WeeklyReportResponseSafetyGuard safetyGuard;
     @Mock WeeklyReportFallbackFactory fallbackFactory;
+    @Mock NextWeekFlowService nextWeekFlowService;
 
     private WeeklyReportOrchestrator orchestrator;
 
@@ -36,7 +37,8 @@ class WeeklyReportOrchestratorTest {
                 inputLoader,
                 aiClient,
                 safetyGuard,
-                fallbackFactory
+                fallbackFactory,
+                nextWeekFlowService
         );
     }
 

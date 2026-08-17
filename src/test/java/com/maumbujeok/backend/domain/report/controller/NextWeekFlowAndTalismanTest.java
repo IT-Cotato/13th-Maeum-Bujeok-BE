@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.maumbujeok.backend.domain.diary.domain.Diary;
+import com.maumbujeok.backend.domain.diary.domain.DiaryEmotion;
+import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
@@ -20,6 +23,7 @@ import com.maumbujeok.backend.domain.talisman.domain.TalismanGenerationStatus;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +41,7 @@ class NextWeekFlowAndTalismanTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
+    @Autowired DiaryRepository diaryRepository;
     @Autowired EmotionReportRepository emotionReportRepository;
     @Autowired NextWeekFlowRepository nextWeekFlowRepository;
     @Autowired TalismanRepository talismanRepository;
@@ -62,6 +67,7 @@ class NextWeekFlowAndTalismanTest {
     @Test
     void generateNextWeekFlowFailsIfReportNotFound() throws Exception {
         Member member = saveMember("user1", "01099990001");
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 3);
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(post("/api/reports/next-week-flow")
@@ -73,9 +79,26 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void generateNextWeekFlowStartsSuccessfully() throws Exception {
+    void generateNextWeekFlowFailsIfLessThan3Diaries() throws Exception {
+        Member member = saveMember("user1_few", "01099990011");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        // Only 2 diaries
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 2);
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        mockMvc.perform(post("/api/reports/next-week-flow")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStart\":\"2026-07-13\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REPORT_400"));
+    }
+
+    @Test
+    void generateNextWeekFlowStartsSuccessfullyWith3Diaries() throws Exception {
         Member member = saveMember("user2", "01099990002");
         EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 3);
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(post("/api/reports/next-week-flow")
@@ -90,10 +113,31 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
+    void generateNextWeekFlowSucceedsWithBurnedDiariesIncluded() throws Exception {
+        Member member = saveMember("user2_burn", "01099990021");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        // 2 active diaries + 1 burned diary = total 3
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 2);
+        Diary burnedDiary = new Diary(member, "소각된 일기", DiaryEmotion.SAD, LocalDate.of(2026, 7, 14));
+        burnedDiary.markBurned(99L, LocalDateTime.now());
+        diaryRepository.save(burnedDiary);
+
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        mockMvc.perform(post("/api/reports/next-week-flow")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStart\":\"2026-07-13\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
+    }
+
+    @Test
     void generateNextWeekFlowNormalizesNonMondayWeekStart() throws Exception {
         Member member = saveMember("user2_norm", "01099990022");
-        // Completed report saved with Monday 2026-07-13
         EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 3);
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         // Request with Thursday 2026-07-16
@@ -111,6 +155,7 @@ class NextWeekFlowAndTalismanTest {
     @Test
     void generateNextWeekFlowFailsIfReportNotCompleted() throws Exception {
         Member member = saveMember("user2_proc", "01099990023");
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 3);
         // Report still in PROCESSING
         EmotionReport report = new EmotionReport(
                 member,
@@ -202,6 +247,34 @@ class NextWeekFlowAndTalismanTest {
                 .andExpect(jsonPath("$.data.adviceText").value("AI 조언 생성에 실패했습니다. 다음 주 흐름 분석을 다시 요청해 주세요."));
     }
 
+    @Test
+    void getReportNextWeekFlowAutoGeneratesOnDemandWhen3DiariesExist() throws Exception {
+        Member member = saveMember("user_ondemand", "01099990088");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 3);
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        // GET /api/reports/weekly/{reportId}/next-week-flow without calling POST first
+        mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", report.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
+    }
+
+    @Test
+    void getReportNextWeekFlowFailsWhenLessThan3Diaries() throws Exception {
+        Member member = saveMember("user_ondemand_few", "01099990089");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 2); // only 2 diaries
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", report.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("FLOW_001"));
+    }
+
     @Autowired jakarta.persistence.EntityManager entityManager;
 
     @Test
@@ -278,5 +351,16 @@ class NextWeekFlowAndTalismanTest {
                 new com.maumbujeok.backend.domain.report.ai.WeeklyReportAiResult("완료된 주간 요약", "gpt-4o-mini");
         report.complete(result, 1);
         return emotionReportRepository.save(report);
+    }
+
+    private void saveDiaries(Member member, LocalDate startDate, int count) {
+        for (int i = 0; i < count; i++) {
+            diaryRepository.save(new Diary(
+                    member,
+                    "일기 내용 " + (i + 1),
+                    DiaryEmotion.HAPPY,
+                    startDate.plusDays(i)
+            ));
+        }
     }
 }

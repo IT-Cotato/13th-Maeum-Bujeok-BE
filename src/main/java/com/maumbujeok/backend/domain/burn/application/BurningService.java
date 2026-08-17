@@ -59,7 +59,7 @@ public class BurningService {
         }
         BurningAnalysis analysis = analysisRepository.save(new BurningAnalysis(burning));
         eventPublisher.publishEvent(new BurningAnalysisRequestedEvent(analysis.getId(), analysis.getInputRevision()));
-        return new CreateBurningResponse(burning.getId(), burning.getSourceType(), burning.getBurnedAt(), analysis.getStatus());
+        return new CreateBurningResponse(burning.getId(), burning.getSourceType(), com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(burning.getBurnedAt()), analysis.getStatus());
     }
 
     @Transactional
@@ -95,7 +95,7 @@ public class BurningService {
         List<Burning> page = hasNext ? fetched.subList(0, size) : fetched;
         List<BurningListItemResponse> items = page.stream().map(b -> {
             BurningAnalysis a = analysisRepository.findByBurningId(b.getId()).orElseThrow();
-            return new BurningListItemResponse(b.getId(), b.getSourceType(), b.getBurnedAt(), a.getStatus(), talismanRepository.existsByBurnRitualId(b.getId()));
+            return new BurningListItemResponse(b.getId(), b.getSourceType(), com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(b.getBurnedAt()), a.getStatus(), talismanRepository.existsByBurnRitualId(b.getId()));
         }).toList();
         return new BurningListResponse(items, hasNext ? page.get(page.size() - 1).getId() : null, hasNext);
     }
@@ -105,14 +105,14 @@ public class BurningService {
         Burning b = owned(phone, id);
         BurningAnalysis a = analysisRepository.findByBurningId(id).orElseThrow();
         boolean talisman = talismanRepository.existsByBurnRitualId(id);
-        return new BurningDetailResponse(id, b.getTitle(), b.getSourceContent(), a.getGuidance(), b.getSourceType(), b.getBurnedAt(), a.getStatus(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), talisman);
+        return new BurningDetailResponse(id, b.getTitle(), b.getSourceContent(), a.getGuidance(), b.getSourceType(), com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(b.getBurnedAt()), a.getStatus(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), talisman);
     }
 
     @Transactional(readOnly = true)
     public BurningAnalysisResponse getAnalysis(String phone, Long id) {
         owned(phone, id);
         BurningAnalysis a = analysisRepository.findByBurningId(id).orElseThrow();
-        return new BurningAnalysisResponse(id, a.getStatus(), a.getInputRevision(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), a.getCompletedAt());
+        return new BurningAnalysisResponse(id, a.getStatus(), a.getInputRevision(), a.getComment(), BurningTalismanCatalog.number(a.getTalismanType()), a.getTalismanText(), com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(a.getCompletedAt()));
     }
 
     private Burning owned(String phone, Long id) { return burningRepository.findByIdAndMemberPhoneNumber(id, phone).orElseThrow(() -> error(ErrorCode.BURNING_NOT_FOUND, "Burning record not found")); }

@@ -4,8 +4,12 @@ import com.maumbujeok.backend.domain.burn.domain.Burning;
 import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.application.DiaryService;
+import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
+import com.maumbujeok.backend.domain.report.domain.EmotionReportGenerationStatus;
 import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
+import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
+import com.maumbujeok.backend.domain.report.dto.NextWeekFlowRequest;
 import com.maumbujeok.backend.domain.report.dto.ReportBurningItemResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportEmotionStatsResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportTalismansResponse;
@@ -30,6 +34,7 @@ public class ReportScreenService {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private final EmotionReportRepository reportRepository;
     private final DiaryService diaryService;
+    private final DiaryRepository diaryRepository;
     private final BurningRepository burningRepository;
     private final BurningAnalysisRepository burningAnalysisRepository;
     private final TalismanRepository talismanRepository;
@@ -65,12 +70,29 @@ public class ReportScreenService {
         return new ReportTalismansResponse(report.getPeriodStart(), report.getPeriodEnd(), items);
     }
 
-    public com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
+    @Transactional
+    public NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
         EmotionReport report = ownedWeekly(phone, reportId);
-        Long flowId = nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(phone, report.getPeriodStart())
-                .map(flow -> flow.getId())
-                .orElseThrow(() -> new ReportRequestException(ErrorCode.FLOW_NOT_FOUND, "Next week flow not found"));
-        return nextWeekFlowService.getFlow(phone, flowId);
+
+        var optionalFlow = nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(phone, report.getPeriodStart());
+        if (optionalFlow.isPresent()) {
+            return nextWeekFlowService.getFlow(phone, optionalFlow.get().getId());
+        }
+
+        long diaryCount = diaryRepository.countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                phone, report.getPeriodStart(), report.getPeriodEnd().plusDays(1)
+        );
+
+        if (diaryCount >= 3 && (report.getGenerationStatus() == EmotionReportGenerationStatus.COMPLETED
+                || report.getGenerationStatus() == EmotionReportGenerationStatus.FALLBACK_COMPLETED)) {
+            var startResponse = nextWeekFlowService.generate(
+                    phone,
+                    new NextWeekFlowRequest(report.getPeriodStart().toString())
+            );
+            return nextWeekFlowService.getFlow(phone, startResponse.flowId());
+        }
+
+        throw new ReportRequestException(ErrorCode.FLOW_NOT_FOUND, "Next week flow not found or insufficient diaries (less than 3)");
     }
 
     private ReportBurningItemResponse toBurningItem(Burning burning) {
