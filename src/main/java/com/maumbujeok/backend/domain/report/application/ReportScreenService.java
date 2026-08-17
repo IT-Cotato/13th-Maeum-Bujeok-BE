@@ -77,7 +77,7 @@ public class ReportScreenService {
         var analysis = burningAnalysisRepository.findByBurningId(burning.getId()).orElse(null);
         return new ReportBurningItemResponse(
                 burning.getId(), burning.getTitle(), burning.getSourceType(),
-                com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(burning.getBurnedAt()),
+                burning.getBurnedAt(),
                 analysis == null ? null : analysis.getStatus(),
                 analysis != null && analysis.getTalismanType() != null
         );
