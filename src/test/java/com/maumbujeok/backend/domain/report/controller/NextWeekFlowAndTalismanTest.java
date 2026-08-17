@@ -90,6 +90,49 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
+    void generateNextWeekFlowNormalizesNonMondayWeekStart() throws Exception {
+        Member member = saveMember("user2_norm", "01099990022");
+        // Completed report saved with Monday 2026-07-13
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        // Request with Thursday 2026-07-16
+        mockMvc.perform(post("/api/reports/next-week-flow")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStart\":\"2026-07-16\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.emotionReportId").value(report.getId()))
+                .andExpect(jsonPath("$.data.weekStart").value("2026-07-13"))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
+    }
+
+    @Test
+    void generateNextWeekFlowFailsIfReportNotCompleted() throws Exception {
+        Member member = saveMember("user2_proc", "01099990023");
+        // Report still in PROCESSING
+        EmotionReport report = new EmotionReport(
+                member,
+                EmotionReportType.WEEKLY,
+                LocalDate.of(2026, 7, 13),
+                LocalDate.of(2026, 7, 19),
+                "weekly-report-summary-v1"
+        );
+        report.markProcessing();
+        emotionReportRepository.save(report);
+
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        mockMvc.perform(post("/api/reports/next-week-flow")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStart\":\"2026-07-13\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REPORT_400"));
+    }
+
+    @Test
     void getNextWeekFlowReturnsValue() throws Exception {
         Member member = saveMember("user3", "01099990003");
         EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));

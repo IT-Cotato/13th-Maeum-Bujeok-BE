@@ -14,8 +14,9 @@ import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class NextWeekFlowService {
         if (request == null || request.weekStart() == null) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
-        LocalDate weekStart = request.parsedWeekStart();
+        LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
 
         Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -108,18 +109,26 @@ public class NextWeekFlowService {
             adviceText = DEFAULT_FAILED_ADVICE;
         }
 
-        ZoneOffset SEOUL_OFFSET = ZoneOffset.ofHours(9);
-
         return new NextWeekFlowQueryResponse(
                 flow.getId(),
-                flow.getEmotionReport().getId(),
+                flow.getEmotionReport() != null ? flow.getEmotionReport().getId() : null,
                 flow.getPeriodStart(),
                 flow.getPeriodEnd(),
                 flow.getGenerationStatus(),
                 adviceText,
                 flow.getModelName(),
                 flow.getReportVersion(),
-                flow.getGeneratedAt() == null ? null : flow.getGeneratedAt().atOffset(SEOUL_OFFSET)
+                com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(flow.getGeneratedAt())
         );
+    }
+
+    private LocalDate normalizeWeekStart(LocalDate weekStart) {
+        if (weekStart == null) {
+            return null;
+        }
+        if (weekStart.getDayOfWeek() == DayOfWeek.MONDAY) {
+            return weekStart;
+        }
+        return weekStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 }
