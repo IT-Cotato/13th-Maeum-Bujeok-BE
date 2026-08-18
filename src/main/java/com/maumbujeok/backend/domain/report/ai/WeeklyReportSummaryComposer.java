@@ -8,6 +8,16 @@ import org.springframework.stereotype.Component;
 public class WeeklyReportSummaryComposer {
 
     public WeeklyReportAiResult compose(WeeklyReportAiRequest request, String modelName) {
+        if (request == null || request.diaryEntries() == null || request.diaryEntries().isEmpty()
+                || (request.emotionSnapshot() != null && request.emotionSnapshot().totalDiaryCount() == 0)) {
+            String name = (request != null && request.memberDisplayName() != null && !request.memberDisplayName().isBlank())
+                    ? request.memberDisplayName() : "마음님";
+            String emptySummary = "이번 주는 " + name + "의 기록이 아직 없어요.\n\n"
+                    + "이번 주에는 작성된 일기가 없어 감정 분석을 진행하지 않았어요.\n\n"
+                    + "다음 주에는 작은 감정이라도 남겨볼까요? 당신의 소중한 마음 기록을 언제나 기다릴게요.";
+            return new WeeklyReportAiResult(emptySummary, modelName);
+        }
+
         WeeklyEmotionSnapshot snapshot = request.emotionSnapshot();
         SentimentTone tone = resolveTone(snapshot);
 

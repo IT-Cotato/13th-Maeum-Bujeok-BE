@@ -37,9 +37,6 @@ public class NextWeekFlowService {
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
         LocalDate weekStart = request.weekStart();
 
-        Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
         EmotionReport weeklyReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
                 memberPhoneNumber,
                 EmotionReportType.WEEKLY,
@@ -50,6 +47,30 @@ public class NextWeekFlowService {
                 && weeklyReport.getGenerationStatus() != EmotionReportGenerationStatus.FALLBACK_COMPLETED) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
+
+        return generateForReport(memberPhoneNumber, weeklyReport, request);
+    }
+
+    @Transactional
+    public NextWeekFlowQueryResponse getOrGenerateFlowForWeeklyReport(String memberPhoneNumber, EmotionReport weeklyReport) {
+        if (weeklyReport == null) {
+            throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
+        }
+        LocalDate weekStart = weeklyReport.getPeriodStart();
+
+        return nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
+                .map(flow -> getFlow(memberPhoneNumber, flow.getId()))
+                .orElseGet(() -> {
+                    NextWeekFlowRequest request = new NextWeekFlowRequest(weekStart);
+                    NextWeekFlowStartResponse startResponse = generateForReport(memberPhoneNumber, weeklyReport, request);
+                    return getFlow(memberPhoneNumber, startResponse.flowId());
+                });
+    }
+
+    private NextWeekFlowStartResponse generateForReport(String memberPhoneNumber, EmotionReport weeklyReport, NextWeekFlowRequest request) {
+        LocalDate weekStart = request.weekStart();
+        Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // Delete existing next week flow if exists
         nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
