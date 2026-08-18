@@ -86,7 +86,7 @@ public class NextWeekFlowService {
 
     private NextWeekFlowStartResponse generateForReport(String memberPhoneNumber, EmotionReport weeklyReport,
             NextWeekFlowRequest request) {
-        LocalDate weekStart = LocalDate.parse(request.weekStart());
+        LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
         Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
