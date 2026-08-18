@@ -129,6 +129,9 @@ public class WeeklyReportService {
     }
 
     private EmotionReport prepareReport(String memberPhoneNumber, LocalDate periodStart, LocalDate periodEnd) {
+        memberRepository.findByPhoneNumberForUpdate(memberPhoneNumber)
+                .orElseThrow(() -> new ReportRequestException(ErrorCode.USER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+
         EmotionReport existingReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStartForUpdate(
                 memberPhoneNumber,
                 EmotionReportType.WEEKLY,

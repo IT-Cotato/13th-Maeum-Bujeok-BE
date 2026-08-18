@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.maumbujeok.backend.domain.diary.domain.Diary;
 import com.maumbujeok.backend.domain.diary.domain.DiaryEmotion;
-import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
@@ -13,6 +12,8 @@ import com.maumbujeok.backend.domain.report.domain.EmotionReport;
 import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlow;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlowGenerationStatus;
+import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportRequest;
+import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
 import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
@@ -26,25 +27,34 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class NextWeekFlowConcurrencyTest {
+    private static final String[] FIXTURE_PHONE_NUMBERS = {
+            "01099990201", "01099990202", "01099990203", "01099990204"
+    };
+
     @Autowired MemberRepository memberRepository;
     @Autowired DiaryRepository diaryRepository;
-    @Autowired DiaryAnalysisRepository diaryAnalysisRepository;
     @Autowired EmotionReportRepository emotionReportRepository;
     @Autowired NextWeekFlowRepository nextWeekFlowRepository;
     @Autowired NextWeekFlowService nextWeekFlowService;
+    @Autowired WeeklyReportService weeklyReportService;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @AfterEach
     void cleanUpCommittedConcurrencyFixtures() {
-        nextWeekFlowRepository.deleteAllInBatch();
-        emotionReportRepository.deleteAllInBatch();
-        diaryAnalysisRepository.deleteAllInBatch();
-        diaryRepository.deleteAllInBatch();
-        memberRepository.deleteAllInBatch();
+        for (String phoneNumber : FIXTURE_PHONE_NUMBERS) {
+            jdbcTemplate.update("delete from next_week_flows where member_phone_number = ?", phoneNumber);
+            jdbcTemplate.update("delete from emotion_reports where member_phone_number = ?", phoneNumber);
+            jdbcTemplate.update("delete from diary_analysis where diary_id in "
+                    + "(select id from diaries where member_phone_number = ?)", phoneNumber);
+            jdbcTemplate.update("delete from diaries where member_phone_number = ?", phoneNumber);
+            jdbcTemplate.update("delete from members where phone_number = ?", phoneNumber);
+        }
     }
 
     @Test
@@ -217,6 +227,50 @@ class NextWeekFlowConcurrencyTest {
                     .getGenerationSequence());
             assertEquals(1L, nextWeekFlowRepository
                     .countByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void concurrentInitialGenerateAndRefreshCreateOneWeeklyReport() throws Exception {
+        LocalDate weekStart = LocalDate.of(2026, 5, 25);
+        Member member = memberRepository.save(Member.builder()
+                .name("concurrent-weekly-create-user")
+                .phoneNumber("01099990204")
+                .passwordHash("password")
+                .role(Member.Role.ROLE_USER)
+                .build());
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            CompletableFuture<GenerateWeeklyReportResponse> generate = CompletableFuture.supplyAsync(() -> {
+                awaitBarrier(ready, start);
+                return weeklyReportService.generate(
+                        member.getPhoneNumber(), new GenerateWeeklyReportRequest(weekStart));
+            }, executor);
+            CompletableFuture<Void> refresh = CompletableFuture.runAsync(() -> {
+                awaitBarrier(ready, start);
+                weeklyReportService.refreshForDiaryEntry(member.getPhoneNumber(), weekStart);
+            }, executor);
+
+            org.junit.jupiter.api.Assertions.assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+
+            GenerateWeeklyReportResponse response = generate.get(10, TimeUnit.SECONDS);
+            refresh.get(10, TimeUnit.SECONDS);
+            EmotionReport storedReport = emotionReportRepository
+                    .findByMemberPhoneNumberAndReportTypeAndPeriodStart(
+                            member.getPhoneNumber(), EmotionReportType.WEEKLY, weekStart)
+                    .orElseThrow();
+
+            assertEquals(response.emotionReportId(), storedReport.getId());
+            assertEquals(2, storedReport.getGenerationSequence());
+            assertEquals(1L, emotionReportRepository
+                    .countByMemberPhoneNumberAndReportTypeAndPeriodStart(
+                            member.getPhoneNumber(), EmotionReportType.WEEKLY, weekStart));
         } finally {
             executor.shutdownNow();
         }

@@ -99,6 +99,31 @@ class DiaryServiceEventTest {
     }
 
     @Test
+    void publishesWeeklyReportRefreshEventWhenOnlyDiaryEmotionChanges() {
+        Member member = Member.builder()
+                .name("테스터")
+                .phoneNumber("01011115555")
+                .role(Member.Role.ROLE_USER)
+                .build();
+        LocalDate recordedDate = LocalDate.of(2026, 7, 23);
+        Diary diary = new Diary(member, "내용은 그대로", DiaryEmotion.HAPPY, recordedDate);
+        DiaryAnalysis analysis = new DiaryAnalysis(diary, DiaryService.PROMPT_VERSION, DiaryService.POLICY_VERSION);
+        when(analysisRepository.findOwnedByDiaryIdForUpdate(1L, member.getPhoneNumber()))
+                .thenReturn(java.util.Optional.of(analysis));
+
+        diaryService.update(member.getPhoneNumber(), 1L, new UpdateDiaryRequest("내용은 그대로", "SAD"));
+
+        verify(eventPublisher, times(2)).publishEvent(eventCaptor.capture());
+        assertInstanceOf(DiaryAnalysisRequestedEvent.class, eventCaptor.getAllValues().get(0));
+        DiaryWeeklyReportRefreshRequestedEvent refreshEvent = assertInstanceOf(
+                DiaryWeeklyReportRefreshRequestedEvent.class,
+                eventCaptor.getAllValues().get(1)
+        );
+        assertEquals(member.getPhoneNumber(), refreshEvent.memberPhoneNumber());
+        assertEquals(recordedDate, refreshEvent.diaryDate());
+    }
+
+    @Test
     void doesNotPublishRefreshEventsWhenDiaryContentAndEmotionDoNotChange() {
         Member member = Member.builder()
                 .name("테스터")

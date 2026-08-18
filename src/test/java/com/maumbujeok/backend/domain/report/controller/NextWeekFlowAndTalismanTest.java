@@ -525,17 +525,20 @@ class NextWeekFlowAndTalismanTest {
                 periodStart.plusDays(6),
                 "weekly-report-summary-v1"
         );
-        if (status == EmotionReportGenerationStatus.PROCESSING) {
-            report.markProcessing();
-        } else if (status == EmotionReportGenerationStatus.FAILED) {
-            report.fail(1, "TEST_FAILURE");
-        } else if (status == EmotionReportGenerationStatus.FALLBACK_COMPLETED) {
-            report.markProcessing();
-            report.completeWithFallback(
-                    new com.maumbujeok.backend.domain.report.ai.WeeklyReportAiResult("fallback", "fake"),
-                    1,
-                    "TEST_FALLBACK"
-            );
+        switch (status) {
+            case PENDING -> {
+            }
+            case PROCESSING -> report.markProcessing();
+            case FAILED -> report.fail(1, "TEST_FAILURE");
+            case FALLBACK_COMPLETED -> {
+                report.markProcessing();
+                report.completeWithFallback(
+                        new com.maumbujeok.backend.domain.report.ai.WeeklyReportAiResult("fallback", "fake"),
+                        1,
+                        "TEST_FALLBACK"
+                );
+            }
+            default -> throw new IllegalArgumentException("Unsupported test report status: " + status);
         }
         return emotionReportRepository.save(report);
     }
