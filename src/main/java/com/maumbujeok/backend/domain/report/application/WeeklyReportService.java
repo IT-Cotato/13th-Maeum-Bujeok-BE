@@ -129,18 +129,21 @@ public class WeeklyReportService {
     }
 
     private EmotionReport prepareReport(String memberPhoneNumber, LocalDate periodStart, LocalDate periodEnd) {
-        EmotionReport existingReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
+        memberRepository.findByPhoneNumberForUpdate(memberPhoneNumber)
+                .orElseThrow(() -> new ReportRequestException(ErrorCode.USER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+
+        EmotionReport existingReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStartForUpdate(
                 memberPhoneNumber,
                 EmotionReportType.WEEKLY,
                 periodStart
         ).orElse(null);
 
         if (existingReport != null) {
-            Long deletedReportId = existingReport.getId();
-            emotionReportRepository.delete(existingReport);
-            emotionReportRepository.flush();
-            log.info("Weekly report deleted before regeneration reportId={} periodStart={} memberPhoneSuffix={}",
-                    deletedReportId, periodStart, maskPhoneNumber(memberPhoneNumber));
+            existingReport.requestGeneration(periodEnd, WeeklyReportPromptVersion.VALUE);
+            log.info("Weekly report regeneration requested with stable id reportId={} generationSequence={} periodStart={} memberPhoneSuffix={}",
+                    existingReport.getId(), existingReport.getGenerationSequence(), periodStart,
+                    maskPhoneNumber(memberPhoneNumber));
+            return existingReport;
         }
 
         return createReport(memberPhoneNumber, periodStart, periodEnd);

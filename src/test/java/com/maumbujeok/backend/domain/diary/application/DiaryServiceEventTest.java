@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,7 @@ import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysisStatus;
 import com.maumbujeok.backend.domain.diary.domain.DiaryEmotion;
 import com.maumbujeok.backend.domain.diary.dto.CreateDiaryRequest;
+import com.maumbujeok.backend.domain.diary.dto.UpdateDiaryRequest;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
@@ -69,5 +71,72 @@ class DiaryServiceEventTest {
         );
         assertEquals(member.getPhoneNumber(), refreshEvent.memberPhoneNumber());
         assertEquals(recordedDate, refreshEvent.diaryDate());
+    }
+
+    @Test
+    void publishesWeeklyReportRefreshEventWhenDiaryContentChanges() {
+        Member member = Member.builder()
+                .name("테스터")
+                .phoneNumber("01011113333")
+                .role(Member.Role.ROLE_USER)
+                .build();
+        LocalDate recordedDate = LocalDate.of(2026, 7, 21);
+        Diary diary = new Diary(member, "변경 전", DiaryEmotion.HAPPY, recordedDate);
+        DiaryAnalysis analysis = new DiaryAnalysis(diary, DiaryService.PROMPT_VERSION, DiaryService.POLICY_VERSION);
+        when(analysisRepository.findOwnedByDiaryIdForUpdate(1L, member.getPhoneNumber()))
+                .thenReturn(java.util.Optional.of(analysis));
+
+        diaryService.update(member.getPhoneNumber(), 1L, new UpdateDiaryRequest("변경 후", null));
+
+        verify(eventPublisher, times(2)).publishEvent(eventCaptor.capture());
+        assertInstanceOf(DiaryAnalysisRequestedEvent.class, eventCaptor.getAllValues().get(0));
+        DiaryWeeklyReportRefreshRequestedEvent refreshEvent = assertInstanceOf(
+                DiaryWeeklyReportRefreshRequestedEvent.class,
+                eventCaptor.getAllValues().get(1)
+        );
+        assertEquals(member.getPhoneNumber(), refreshEvent.memberPhoneNumber());
+        assertEquals(recordedDate, refreshEvent.diaryDate());
+    }
+
+    @Test
+    void publishesWeeklyReportRefreshEventWhenOnlyDiaryEmotionChanges() {
+        Member member = Member.builder()
+                .name("테스터")
+                .phoneNumber("01011115555")
+                .role(Member.Role.ROLE_USER)
+                .build();
+        LocalDate recordedDate = LocalDate.of(2026, 7, 23);
+        Diary diary = new Diary(member, "내용은 그대로", DiaryEmotion.HAPPY, recordedDate);
+        DiaryAnalysis analysis = new DiaryAnalysis(diary, DiaryService.PROMPT_VERSION, DiaryService.POLICY_VERSION);
+        when(analysisRepository.findOwnedByDiaryIdForUpdate(1L, member.getPhoneNumber()))
+                .thenReturn(java.util.Optional.of(analysis));
+
+        diaryService.update(member.getPhoneNumber(), 1L, new UpdateDiaryRequest("내용은 그대로", "SAD"));
+
+        verify(eventPublisher, times(2)).publishEvent(eventCaptor.capture());
+        assertInstanceOf(DiaryAnalysisRequestedEvent.class, eventCaptor.getAllValues().get(0));
+        DiaryWeeklyReportRefreshRequestedEvent refreshEvent = assertInstanceOf(
+                DiaryWeeklyReportRefreshRequestedEvent.class,
+                eventCaptor.getAllValues().get(1)
+        );
+        assertEquals(member.getPhoneNumber(), refreshEvent.memberPhoneNumber());
+        assertEquals(recordedDate, refreshEvent.diaryDate());
+    }
+
+    @Test
+    void doesNotPublishRefreshEventsWhenDiaryContentAndEmotionDoNotChange() {
+        Member member = Member.builder()
+                .name("테스터")
+                .phoneNumber("01011114444")
+                .role(Member.Role.ROLE_USER)
+                .build();
+        Diary diary = new Diary(member, "그대로", DiaryEmotion.HAPPY, LocalDate.of(2026, 7, 22));
+        DiaryAnalysis analysis = new DiaryAnalysis(diary, DiaryService.PROMPT_VERSION, DiaryService.POLICY_VERSION);
+        when(analysisRepository.findOwnedByDiaryIdForUpdate(1L, member.getPhoneNumber()))
+                .thenReturn(java.util.Optional.of(analysis));
+
+        diaryService.update(member.getPhoneNumber(), 1L, new UpdateDiaryRequest("그대로", "HAPPY"));
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

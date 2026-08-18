@@ -154,6 +154,8 @@ public class DiaryService {
         diaryRepository.flush();
         analysisRepository.flush();
         eventPublisher.publishEvent(new DiaryAnalysisRequestedEvent(analysis.getId(), revision));
+        eventPublisher.publishEvent(
+                new DiaryWeeklyReportRefreshRequestedEvent(phoneNumber, diary.getRecordedDate()));
         return UpdateDiaryResponse.from(diary, analysis.getStatus(), true);
     }
 
@@ -255,5 +257,4 @@ public class DiaryService {
         return phoneNumber.substring(phoneNumber.length() - 4);
     }
 }
-
 

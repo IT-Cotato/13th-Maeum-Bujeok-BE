@@ -1,8 +1,6 @@
 package com.maumbujeok.backend.domain.report.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.maumbujeok.backend.domain.diary.application.DiaryService;
@@ -11,6 +9,7 @@ import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportRequest;
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
+import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -34,7 +33,7 @@ class WeeklyReportServiceIntegrationTest {
     @Autowired EmotionReportRepository emotionReportRepository;
 
     @Test
-    void deletesExistingWeeklyReportAndCreatesNewOneWhenRegeneratedForSameWeek() {
+    void keepsReportIdAndIncrementsSequenceWhenRegeneratedForSameWeek() {
         Member member = memberRepository.save(Member.builder()
                 .name("weekly-user")
                 .phoneNumber("01010000003")
@@ -42,25 +41,35 @@ class WeeklyReportServiceIntegrationTest {
                 .role(Member.Role.ROLE_USER)
                 .build());
         LocalDate weekStart = currentWeekStart();
-        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest(
-                "한 주를 정리하는 기분으로 기록했다",
-                "COMFORTABLE",
-                weekStart
-        ));
+        for (int i = 1; i <= 3; i++) {
+            diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest(
+                    "한 주를 정리하는 기분으로 기록했다 " + i,
+                    "COMFORTABLE",
+                    weekStart
+            ));
+        }
 
         GenerateWeeklyReportResponse first = weeklyReportService.generate(
                 member.getPhoneNumber(),
                 new GenerateWeeklyReportRequest(weekStart)
         );
+        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest(
+                "네 번째 기록을 추가했다",
+                "COMFORTABLE",
+                weekStart.plusDays(1)
+        ));
         GenerateWeeklyReportResponse second = weeklyReportService.generate(
                 member.getPhoneNumber(),
                 new GenerateWeeklyReportRequest(weekStart)
         );
 
-        assertNotEquals(first.emotionReportId(), second.emotionReportId());
-        assertFalse(emotionReportRepository.findById(first.emotionReportId()).isPresent());
+        assertEquals(first.emotionReportId(), second.emotionReportId());
         assertTrue(emotionReportRepository.findById(second.emotionReportId()).isPresent());
-        assertEquals(1, emotionReportRepository.count());
+        assertEquals(2, emotionReportRepository.findById(second.emotionReportId()).orElseThrow()
+                .getGenerationSequence());
+        assertEquals(1, emotionReportRepository
+                .countByMemberPhoneNumberAndReportTypeAndPeriodStart(
+                        member.getPhoneNumber(), EmotionReportType.WEEKLY, weekStart));
     }
 
     private LocalDate currentWeekStart() {

@@ -59,12 +59,11 @@ public class NextWeekFlowService {
                 EmotionReportType.WEEKLY,
                 weekStart).orElseThrow(() -> new CustomException(ErrorCode.REPORT_NOT_FOUND));
 
-        if (weeklyReport.getGenerationStatus() != EmotionReportGenerationStatus.COMPLETED
-                && weeklyReport.getGenerationStatus() != EmotionReportGenerationStatus.FALLBACK_COMPLETED) {
+        if (!isEligibleReportStatus(weeklyReport)) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
 
-        return generateForReport(memberPhoneNumber, weeklyReport, request);
+        return generateForReport(memberPhoneNumber, weeklyReport, request, GenerationMode.FORCE_REPLACE);
     }
 
     @Transactional
@@ -74,36 +73,54 @@ public class NextWeekFlowService {
             throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
         }
         LocalDate weekStart = weeklyReport.getPeriodStart();
-
-        return nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
-                .map(flow -> getFlow(memberPhoneNumber, flow.getId()))
-                .orElseGet(() -> {
-                    NextWeekFlowRequest request = new NextWeekFlowRequest(weekStart.toString());
-                    NextWeekFlowStartResponse startResponse = generateForReport(memberPhoneNumber, weeklyReport,
-                            request);
-                    return getFlow(memberPhoneNumber, startResponse.flowId());
-                });
+        NextWeekFlowRequest request = new NextWeekFlowRequest(weekStart.toString());
+        NextWeekFlowStartResponse startResponse = generateForReport(
+                memberPhoneNumber, weeklyReport, request, GenerationMode.REFRESH_IF_STALE);
+        return getFlow(memberPhoneNumber, startResponse.flowId());
     }
 
     private NextWeekFlowStartResponse generateForReport(String memberPhoneNumber, EmotionReport weeklyReport,
-            NextWeekFlowRequest request) {
+            NextWeekFlowRequest request, GenerationMode generationMode) {
         LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
+        EmotionReport lockedReport = emotionReportRepository.findByIdForUpdate(weeklyReport.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.REPORT_NOT_FOUND));
+        if (!lockedReport.getMember().getPhoneNumber().equals(memberPhoneNumber)
+                || lockedReport.getReportType() != EmotionReportType.WEEKLY
+                || !lockedReport.getPeriodStart().equals(weekStart)) {
+            throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
+        }
+        if (!isEligibleReportStatus(lockedReport)) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
+
+        long diaryCount = diaryRepository
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                        memberPhoneNumber, weekStart, weekStart.plusDays(7));
+        if (diaryCount < 3) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
+
         Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // Delete existing next week flow if exists
-        nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
-                .ifPresent(existing -> {
-                    nextWeekFlowRepository.delete(existing);
-                    nextWeekFlowRepository.flush();
-                });
+        NextWeekFlow existingFlow = nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
+                .orElse(null);
+        if (existingFlow != null) {
+            if (generationMode == GenerationMode.REFRESH_IF_STALE
+                    && isCreatedForCurrentReportGeneration(existingFlow, lockedReport)) {
+                return toStartResponse(existingFlow, lockedReport);
+            }
+            nextWeekFlowRepository.delete(existingFlow);
+            nextWeekFlowRepository.flush();
+        }
 
         LocalDate periodStart = weekStart.plusDays(7);
         LocalDate periodEnd = weekStart.plusDays(13);
 
         NextWeekFlow flow = NextWeekFlow.builder()
                 .member(member)
-                .emotionReport(weeklyReport)
+                .emotionReport(lockedReport)
                 .weekStart(weekStart)
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
@@ -113,14 +130,10 @@ public class NextWeekFlowService {
         NextWeekFlow savedFlow = nextWeekFlowRepository.save(flow);
 
         // Publish event for AFTER_COMMIT execution
-        eventPublisher.publishEvent(new NextWeekFlowGenerationRequestedEvent(savedFlow.getId()));
+        eventPublisher.publishEvent(new NextWeekFlowGenerationRequestedEvent(
+                savedFlow.getId(), lockedReport.getId(), lockedReport.getGenerationSequence()));
 
-        return new NextWeekFlowStartResponse(
-                savedFlow.getId(),
-                weeklyReport.getId(),
-                savedFlow.getWeekStart(),
-                savedFlow.getGenerationStatus(),
-                START_MESSAGE);
+        return toStartResponse(savedFlow, lockedReport);
     }
 
     @Transactional(readOnly = true)
@@ -156,20 +169,51 @@ public class NextWeekFlowService {
             return;
         }
 
+        if (!isEligibleReportStatus(report)) {
+            return;
+        }
+
         String phone = report.getMember().getPhoneNumber();
         LocalDate weekStart = report.getPeriodStart();
-
-        boolean flowExists = nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(phone, weekStart).isPresent();
-        if (flowExists) {
-            try {
-                generate(phone, new NextWeekFlowRequest(weekStart.toString()));
-                log.info("Next week flow auto-refreshed on new diary entry memberPhoneSuffix={} weekStart={}",
-                        maskPhoneNumber(phone), weekStart);
-            } catch (Exception e) {
-                log.warn("Failed to auto-refresh next week flow memberPhoneSuffix={} weekStart={}",
-                        maskPhoneNumber(phone), weekStart, e);
-            }
+        long diaryCount = diaryRepository
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                        phone, weekStart, weekStart.plusDays(7));
+        if (diaryCount < 3) {
+            log.info("Next week flow auto-generation skipped memberPhoneSuffix={} weekStart={} diaryCount={} reason=insufficient_diaries",
+                    maskPhoneNumber(phone), weekStart, diaryCount);
+            return;
         }
+
+        try {
+            generateForReport(phone, report, new NextWeekFlowRequest(weekStart.toString()),
+                    GenerationMode.REFRESH_IF_STALE);
+            log.info("Next week flow auto-generated or refreshed memberPhoneSuffix={} weekStart={} reportId={} generationSequence={}",
+                    maskPhoneNumber(phone), weekStart, report.getId(), report.getGenerationSequence());
+        } catch (Exception e) {
+            log.warn("Failed to auto-generate or refresh next week flow memberPhoneSuffix={} weekStart={}",
+                    maskPhoneNumber(phone), weekStart, e);
+        }
+    }
+
+    private boolean isEligibleReportStatus(EmotionReport report) {
+        return report.getGenerationStatus() == EmotionReportGenerationStatus.COMPLETED
+                || report.getGenerationStatus() == EmotionReportGenerationStatus.FALLBACK_COMPLETED;
+    }
+
+    private boolean isCreatedForCurrentReportGeneration(NextWeekFlow flow, EmotionReport report) {
+        return flow.getEmotionReport().getId().equals(report.getId())
+                && flow.getCreatedAt() != null
+                && report.getGeneratedAt() != null
+                && !flow.getCreatedAt().isBefore(report.getGeneratedAt());
+    }
+
+    private NextWeekFlowStartResponse toStartResponse(NextWeekFlow flow, EmotionReport report) {
+        return new NextWeekFlowStartResponse(
+                flow.getId(),
+                report.getId(),
+                flow.getWeekStart(),
+                flow.getGenerationStatus(),
+                START_MESSAGE);
     }
 
     private LocalDate normalizeWeekStart(LocalDate weekStart) {
@@ -187,5 +231,10 @@ public class NextWeekFlowService {
             return "****";
         }
         return phoneNumber.substring(phoneNumber.length() - 4);
+    }
+
+    private enum GenerationMode {
+        REFRESH_IF_STALE,
+        FORCE_REPLACE
     }
 }
