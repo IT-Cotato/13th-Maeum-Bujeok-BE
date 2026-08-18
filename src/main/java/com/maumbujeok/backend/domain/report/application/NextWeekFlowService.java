@@ -16,10 +16,13 @@ import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,12 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class NextWeekFlowService {
     private static final String DEFAULT_FAILED_ADVICE = "AI 조언 생성에 실패했습니다. 다음 주 흐름 분석을 다시 요청해 주세요.";
     private static final String START_MESSAGE = "다음 주 흐름 생성을 비동기로 시작했습니다.";
+    public static final Duration STALE_PROCESSING_THRESHOLD = Duration.ofSeconds(30);
 
     private final MemberRepository memberRepository;
     private final DiaryRepository diaryRepository;
     private final EmotionReportRepository emotionReportRepository;
     private final NextWeekFlowRepository nextWeekFlowRepository;
-    private final NextWeekFlowAsyncService asyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
@@ -75,13 +79,37 @@ public class NextWeekFlowService {
         LocalDate weekStart = weeklyReport.getPeriodStart();
 
         return nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
-                .map(flow -> getFlow(memberPhoneNumber, flow.getId()))
+                .map(flow -> {
+                    LocalDateTime now = LocalDateTime.now();
+                    LocalDateTime cutoff = now.minus(STALE_PROCESSING_THRESHOLD);
+                    if (isStaleProcessing(flow, cutoff)) {
+                        int acquired = nextWeekFlowRepository.tryAcquireStaleRecovery(
+                                flow.getId(),
+                                NextWeekFlowGenerationStatus.PROCESSING,
+                                cutoff,
+                                now);
+                        if (acquired > 0) {
+                            log.warn("Stale PROCESSING NextWeekFlow acquired for recovery flowId={} weekStart={}",
+                                    flow.getId(), weekStart);
+                            eventPublisher.publishEvent(new NextWeekFlowGenerationRequestedEvent(flow.getId()));
+                        }
+                    }
+                    return getFlow(memberPhoneNumber, flow.getId());
+                })
                 .orElseGet(() -> {
                     NextWeekFlowRequest request = new NextWeekFlowRequest(weekStart.toString());
                     NextWeekFlowStartResponse startResponse = generateForReport(memberPhoneNumber, weeklyReport,
                             request);
                     return getFlow(memberPhoneNumber, startResponse.flowId());
                 });
+    }
+
+    private boolean isStaleProcessing(NextWeekFlow flow, LocalDateTime cutoff) {
+        if (flow.getGenerationStatus() != NextWeekFlowGenerationStatus.PROCESSING || flow.getAdviceText() != null) {
+            return false;
+        }
+        LocalDateTime referenceTime = flow.getUpdatedAt() != null ? flow.getUpdatedAt() : flow.getCreatedAt();
+        return referenceTime != null && referenceTime.isBefore(cutoff);
     }
 
     private NextWeekFlowStartResponse generateForReport(String memberPhoneNumber, EmotionReport weeklyReport,
@@ -111,15 +139,8 @@ public class NextWeekFlowService {
 
         NextWeekFlow savedFlow = nextWeekFlowRepository.save(flow);
 
-        // Run async generation
-        try {
-            asyncService.generate(savedFlow.getId());
-        } catch (org.springframework.core.task.TaskRejectedException e) {
-            log.error("Task rejected for flowId={} due to thread pool saturation", savedFlow.getId(), e);
-            savedFlow.fail();
-            nextWeekFlowRepository.saveAndFlush(savedFlow);
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
+        // Publish event for AFTER_COMMIT execution
+        eventPublisher.publishEvent(new NextWeekFlowGenerationRequestedEvent(savedFlow.getId()));
 
         return new NextWeekFlowStartResponse(
                 savedFlow.getId(),

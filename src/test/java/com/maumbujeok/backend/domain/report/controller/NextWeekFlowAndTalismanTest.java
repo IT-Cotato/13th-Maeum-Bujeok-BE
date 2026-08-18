@@ -46,6 +46,7 @@ class NextWeekFlowAndTalismanTest {
     @Autowired NextWeekFlowRepository nextWeekFlowRepository;
     @Autowired TalismanRepository talismanRepository;
     @Autowired JwtTokenProvider jwtTokenProvider;
+    @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowAsyncService nextWeekFlowAsyncService;
 
     @Test
     void rejectsUnauthenticatedAccessToNextWeekFlow() throws Exception {
@@ -273,6 +274,122 @@ class NextWeekFlowAndTalismanTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("FLOW_001"));
+    }
+
+    @Test
+    void getReportNextWeekFlowDoesNotRecreateIfAlreadyCompleted() throws Exception {
+        Member member = saveMember("user_completed_flow", "01099990090");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 3);
+        NextWeekFlow flow = NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(report)
+                .weekStart(LocalDate.of(2026, 7, 13))
+                .periodStart(LocalDate.of(2026, 7, 20))
+                .periodEnd(LocalDate.of(2026, 7, 26))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        flow.complete("이미 완료된 조언입니다.", "openai", "v1");
+        nextWeekFlowRepository.saveAndFlush(flow);
+
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", report.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").value(flow.getId()))
+                .andExpect(jsonPath("$.data.generationStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.adviceText").value("이미 완료된 조언입니다."));
+    }
+
+    @Test
+    void tryAcquireStaleRecoveryAtomicallyAcquiresOnce() {
+        Member member = saveMember("user_stale_atomic", "01099990091");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        NextWeekFlow flow = NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(report)
+                .weekStart(LocalDate.of(2026, 7, 13))
+                .periodStart(LocalDate.of(2026, 7, 20))
+                .periodEnd(LocalDate.of(2026, 7, 26))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        nextWeekFlowRepository.saveAndFlush(flow);
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime futureCutoff = now.plusMinutes(1);
+
+        // 1. First acquisition on stale PROCESSING flow: affected row == 1
+        int firstAcquire = nextWeekFlowRepository.tryAcquireStaleRecovery(
+                flow.getId(),
+                NextWeekFlowGenerationStatus.PROCESSING,
+                futureCutoff,
+                now
+        );
+        org.junit.jupiter.api.Assertions.assertEquals(1, firstAcquire);
+
+        // 2. Immediate second acquisition with past cutoff: affected row == 0
+        LocalDateTime pastCutoff = now.minusSeconds(10);
+        int secondAcquire = nextWeekFlowRepository.tryAcquireStaleRecovery(
+                flow.getId(),
+                NextWeekFlowGenerationStatus.PROCESSING,
+                pastCutoff,
+                now
+        );
+        org.junit.jupiter.api.Assertions.assertEquals(0, secondAcquire);
+
+        // 3. COMPLETED flow: affected row == 0
+        flow.complete("완료된 조언", "openai", "v1");
+        nextWeekFlowRepository.saveAndFlush(flow);
+        int completedAcquire = nextWeekFlowRepository.tryAcquireStaleRecovery(
+                flow.getId(),
+                NextWeekFlowGenerationStatus.PROCESSING,
+                futureCutoff,
+                now
+        );
+        org.junit.jupiter.api.Assertions.assertEquals(0, completedAcquire);
+    }
+
+    @Test
+    void failFlowOnRejectionMarksProcessingFlowAsFailed() {
+        Member member = saveMember("user_rej_1", "01099990092");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        NextWeekFlow flow = NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(report)
+                .weekStart(LocalDate.of(2026, 7, 13))
+                .periodStart(LocalDate.of(2026, 7, 20))
+                .periodEnd(LocalDate.of(2026, 7, 26))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        nextWeekFlowRepository.saveAndFlush(flow);
+
+        nextWeekFlowAsyncService.failFlowOnRejection(flow.getId());
+
+        NextWeekFlow updated = nextWeekFlowRepository.findById(flow.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.FAILED, updated.getGenerationStatus());
+    }
+
+    @Test
+    void failFlowOnRejectionDoesNotOverwriteCompletedFlow() {
+        Member member = saveMember("user_rej_2", "01099990093");
+        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        NextWeekFlow flow = NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(report)
+                .weekStart(LocalDate.of(2026, 7, 13))
+                .periodStart(LocalDate.of(2026, 7, 20))
+                .periodEnd(LocalDate.of(2026, 7, 26))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        flow.complete("완료된 조언", "openai", "v1");
+        nextWeekFlowRepository.saveAndFlush(flow);
+
+        nextWeekFlowAsyncService.failFlowOnRejection(flow.getId());
+
+        NextWeekFlow updated = nextWeekFlowRepository.findById(flow.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.COMPLETED, updated.getGenerationStatus());
+        org.junit.jupiter.api.Assertions.assertEquals("완료된 조언", updated.getAdviceText());
     }
 
     @Autowired jakarta.persistence.EntityManager entityManager;

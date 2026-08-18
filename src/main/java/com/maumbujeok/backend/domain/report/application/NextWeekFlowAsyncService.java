@@ -5,6 +5,7 @@ import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
 import com.maumbujeok.backend.domain.report.ai.NextWeekFlowAiProvider;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlow;
+import com.maumbujeok.backend.domain.report.domain.NextWeekFlowGenerationStatus;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,11 @@ public class NextWeekFlowAsyncService {
         NextWeekFlow flow = nextWeekFlowRepository.findById(flowId).orElse(null);
         if (flow == null) {
             log.warn("Next week flow not found flowId={}", flowId);
+            return;
+        }
+
+        if (flow.getGenerationStatus() == NextWeekFlowGenerationStatus.COMPLETED) {
+            log.info("Next week flow already completed flowId={}", flowId);
             return;
         }
 
@@ -59,6 +65,15 @@ public class NextWeekFlowAsyncService {
         } catch (Exception e) {
             log.error("Failed to generate next week flow for flowId={}", flowId, e);
             flow.fail();
+        }
+    }
+
+    @Transactional
+    public void failFlowOnRejection(Long flowId) {
+        NextWeekFlow flow = nextWeekFlowRepository.findById(flowId).orElse(null);
+        if (flow != null && flow.getGenerationStatus() == NextWeekFlowGenerationStatus.PROCESSING) {
+            flow.fail();
+            log.warn("Marked next week flow as FAILED due to task rejection flowId={}", flowId);
         }
     }
 }
