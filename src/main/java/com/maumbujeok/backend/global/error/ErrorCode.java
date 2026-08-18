@@ -26,6 +26,7 @@ public enum ErrorCode {
     INVALID_NOTIFICATION_SETTINGS(HttpStatus.BAD_REQUEST, "MEMBER_001", "알림 설정 값이 올바르지 않습니다."),
     INVALID_NOTIFICATION_DAYS(HttpStatus.BAD_REQUEST, "MEMBER_002", "요일별 알림 설정 값이 올바르지 않습니다."),
     MEMBER_SAJU_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_003", "사주 프로필 정보를 찾을 수 없습니다. 먼저 온보딩을 완료해주세요."),
+    TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_004", "이용약관 정보를 찾을 수 없습니다."),
 
     // Saju
     INVALID_SAJU_ANALYSIS_REQUEST(HttpStatus.BAD_REQUEST, "SAJU_400", "사주 분석 요청이 올바르지 않습니다."),

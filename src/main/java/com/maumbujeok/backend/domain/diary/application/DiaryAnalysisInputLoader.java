@@ -21,6 +21,7 @@ public class DiaryAnalysisInputLoader {
         return new DiaryAnalysisInput(
                 analysisId,
                 inputRevision,
+                analysis.getDiary().getMember().getPhoneNumber(),
                 analysis.getDiary().getContent(),
                 analysis.getDiary().getSelectedEmotion().getAnalysisValue()
         );
