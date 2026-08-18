@@ -17,11 +17,12 @@ public class NextWeekFlowGenerationEventListener {
     public void handle(NextWeekFlowGenerationRequestedEvent event) {
         log.info("Next week flow generation event received flowId={}", event.flowId());
         try {
-            asyncService.generate(event.flowId());
+            asyncService.generate(event.flowId(), event.emotionReportId(), event.reportGenerationSequence());
             log.info("Next week flow generation event dispatched flowId={}", event.flowId());
         } catch (TaskRejectedException e) {
             log.error("Task rejected for flowId={} due to thread pool saturation", event.flowId(), e);
-            asyncService.failFlowOnRejection(event.flowId());
+            asyncService.failFlowOnRejection(
+                    event.flowId(), event.emotionReportId(), event.reportGenerationSequence());
         }
     }
 }

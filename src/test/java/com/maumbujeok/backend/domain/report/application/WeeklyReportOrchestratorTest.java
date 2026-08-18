@@ -92,6 +92,34 @@ class WeeklyReportOrchestratorTest {
         verify(stateService, never()).fallback(any(), anyInt(), any(), anyInt(), any());
     }
 
+    @Test
+    void refreshesNextWeekFlowOnlyAfterCurrentWeeklySequenceCompletes() {
+        WeeklyReportGenerationInput input = input();
+        WeeklyReportAiResult completed = result("gpt-test");
+        when(stateService.begin(1L, 2)).thenReturn(true);
+        when(inputLoader.load(1L)).thenReturn(input);
+        when(aiClient.generate(any())).thenReturn(new WeeklyReportAiCallResult(completed, 1));
+        when(stateService.complete(1L, 2, completed, 1)).thenReturn(true);
+
+        orchestrator.generate(1L, 2);
+
+        verify(nextWeekFlowService).refreshIfEligible(1L);
+    }
+
+    @Test
+    void doesNotRefreshNextWeekFlowWhenWeeklyCompletionIsStale() {
+        WeeklyReportGenerationInput input = input();
+        WeeklyReportAiResult completed = result("gpt-test");
+        when(stateService.begin(1L, 2)).thenReturn(true);
+        when(inputLoader.load(1L)).thenReturn(input);
+        when(aiClient.generate(any())).thenReturn(new WeeklyReportAiCallResult(completed, 1));
+        when(stateService.complete(1L, 2, completed, 1)).thenReturn(false);
+
+        orchestrator.generate(1L, 2);
+
+        verify(nextWeekFlowService, never()).refreshIfEligible(any());
+    }
+
     private WeeklyReportGenerationInput input() {
         return new WeeklyReportGenerationInput(
                 1L,
