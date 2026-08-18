@@ -13,6 +13,7 @@ import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
+import com.maumbujeok.backend.domain.report.domain.EmotionReportGenerationStatus;
 import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlow;
 import com.maumbujeok.backend.domain.report.domain.NextWeekFlowGenerationStatus;
@@ -47,6 +48,8 @@ class NextWeekFlowAndTalismanTest {
     @Autowired TalismanRepository talismanRepository;
     @Autowired JwtTokenProvider jwtTokenProvider;
     @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowAsyncService nextWeekFlowAsyncService;
+    @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowService nextWeekFlowService;
+    @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowGenerationStateService nextWeekFlowGenerationStateService;
 
     @Test
     void rejectsUnauthenticatedAccessToNextWeekFlow() throws Exception {
@@ -303,6 +306,95 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
+    void refreshIfEligibleDoesNotCreateFlowWithOneOrTwoDiaries() {
+        Member oneDiaryMember = saveMember("one_diary", "01099990101");
+        EmotionReport oneDiaryReport = saveCompletedReport(oneDiaryMember, LocalDate.of(2026, 7, 13));
+        saveDiaries(oneDiaryMember, LocalDate.of(2026, 7, 13), 1);
+
+        Member twoDiaryMember = saveMember("two_diary", "01099990102");
+        EmotionReport twoDiaryReport = saveCompletedReport(twoDiaryMember, LocalDate.of(2026, 7, 20));
+        saveDiaries(twoDiaryMember, LocalDate.of(2026, 7, 20), 2);
+
+        nextWeekFlowService.refreshIfEligible(oneDiaryReport.getId());
+        nextWeekFlowService.refreshIfEligible(twoDiaryReport.getId());
+
+        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(oneDiaryMember.getPhoneNumber(), LocalDate.of(2026, 7, 13))
+                .isEmpty());
+        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(twoDiaryMember.getPhoneNumber(), LocalDate.of(2026, 7, 20))
+                .isEmpty());
+    }
+
+    @Test
+    void refreshIfEligibleCreatesFlowWithoutGetWhenThreeDiariesShareSameDate() {
+        Member member = saveMember("auto_three_same_day", "01099990103");
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
+        EmotionReport report = saveCompletedReport(member, weekStart);
+        for (int i = 0; i < 3; i++) {
+            diaryRepository.save(new Diary(member, "같은 날 일기 " + i, DiaryEmotion.HAPPY, weekStart));
+        }
+        diaryRepository.flush();
+
+        nextWeekFlowService.refreshIfEligible(report.getId());
+
+        NextWeekFlow flow = nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart)
+                .orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(report.getId(), flow.getEmotionReport().getId());
+        org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.PROCESSING,
+                flow.getGenerationStatus());
+    }
+
+    @Test
+    void refreshIfEligibleCreatesFlowForFallbackCompletedReport() {
+        Member member = saveMember("auto_fallback", "01099990104");
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
+        EmotionReport report = saveReport(member, weekStart, EmotionReportGenerationStatus.FALLBACK_COMPLETED);
+        saveDiaries(member, weekStart, 3);
+
+        nextWeekFlowService.refreshIfEligible(report.getId());
+
+        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart).isPresent());
+    }
+
+    @Test
+    void refreshIfEligibleDoesNotCreateFlowForNonTerminalReportStatuses() {
+        assertNoFlowForStatus("pending", "01099990105", LocalDate.of(2026, 6, 1),
+                EmotionReportGenerationStatus.PENDING);
+        assertNoFlowForStatus("processing", "01099990106", LocalDate.of(2026, 6, 8),
+                EmotionReportGenerationStatus.PROCESSING);
+        assertNoFlowForStatus("failed", "01099990107", LocalDate.of(2026, 6, 15),
+                EmotionReportGenerationStatus.FAILED);
+    }
+
+    @Test
+    void staleNextWeekFlowResultIsIgnoredAfterWeeklySequenceChanges() {
+        Member member = saveMember("stale_flow", "01099990108");
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
+        EmotionReport report = saveCompletedReport(member, weekStart);
+        NextWeekFlow flow = nextWeekFlowRepository.saveAndFlush(NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(report)
+                .weekStart(weekStart)
+                .periodStart(weekStart.plusDays(7))
+                .periodEnd(weekStart.plusDays(13))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build());
+        int staleSequence = report.getGenerationSequence();
+        report.requestGeneration(report.getPeriodEnd(), "weekly-report-summary-v1");
+        emotionReportRepository.flush();
+
+        boolean completed = nextWeekFlowGenerationStateService.completeIfCurrent(
+                flow.getId(), report.getId(), staleSequence, "오래된 결과");
+
+        org.junit.jupiter.api.Assertions.assertFalse(completed);
+        org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.PROCESSING,
+                nextWeekFlowRepository.findById(flow.getId()).orElseThrow().getGenerationStatus());
+    }
+
+    @Test
     void failFlowOnRejectionMarksProcessingFlowAsFailed() {
         Member member = saveMember("user_rej_1", "01099990092");
         EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
@@ -316,7 +408,8 @@ class NextWeekFlowAndTalismanTest {
                 .build();
         nextWeekFlowRepository.saveAndFlush(flow);
 
-        nextWeekFlowAsyncService.failFlowOnRejection(flow.getId());
+        nextWeekFlowAsyncService.failFlowOnRejection(
+                flow.getId(), report.getId(), report.getGenerationSequence());
 
         NextWeekFlow updated = nextWeekFlowRepository.findById(flow.getId()).orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.FAILED, updated.getGenerationStatus());
@@ -337,7 +430,8 @@ class NextWeekFlowAndTalismanTest {
         flow.complete("완료된 조언", "openai", "v1");
         nextWeekFlowRepository.saveAndFlush(flow);
 
-        nextWeekFlowAsyncService.failFlowOnRejection(flow.getId());
+        nextWeekFlowAsyncService.failFlowOnRejection(
+                flow.getId(), report.getId(), report.getGenerationSequence());
 
         NextWeekFlow updated = nextWeekFlowRepository.findById(flow.getId()).orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.COMPLETED, updated.getGenerationStatus());
@@ -420,6 +514,42 @@ class NextWeekFlowAndTalismanTest {
                 new com.maumbujeok.backend.domain.report.ai.WeeklyReportAiResult("완료된 주간 요약", "gpt-4o-mini");
         report.complete(result, 1);
         return emotionReportRepository.save(report);
+    }
+
+    private EmotionReport saveReport(Member member, LocalDate periodStart,
+            EmotionReportGenerationStatus status) {
+        EmotionReport report = new EmotionReport(
+                member,
+                EmotionReportType.WEEKLY,
+                periodStart,
+                periodStart.plusDays(6),
+                "weekly-report-summary-v1"
+        );
+        if (status == EmotionReportGenerationStatus.PROCESSING) {
+            report.markProcessing();
+        } else if (status == EmotionReportGenerationStatus.FAILED) {
+            report.fail(1, "TEST_FAILURE");
+        } else if (status == EmotionReportGenerationStatus.FALLBACK_COMPLETED) {
+            report.markProcessing();
+            report.completeWithFallback(
+                    new com.maumbujeok.backend.domain.report.ai.WeeklyReportAiResult("fallback", "fake"),
+                    1,
+                    "TEST_FALLBACK"
+            );
+        }
+        return emotionReportRepository.save(report);
+    }
+
+    private void assertNoFlowForStatus(String name, String phone, LocalDate weekStart,
+            EmotionReportGenerationStatus status) {
+        Member member = saveMember(name, phone);
+        EmotionReport report = saveReport(member, weekStart, status);
+        saveDiaries(member, weekStart, 3);
+
+        nextWeekFlowService.refreshIfEligible(report.getId());
+
+        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(phone, weekStart).isEmpty());
     }
 
     private void saveDiaries(Member member, LocalDate startDate, int count) {
