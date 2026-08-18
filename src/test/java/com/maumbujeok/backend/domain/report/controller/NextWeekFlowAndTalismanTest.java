@@ -362,5 +362,6 @@ class NextWeekFlowAndTalismanTest {
                     startDate.plusDays(i)
             ));
         }
+        diaryRepository.flush();
     }
 }
