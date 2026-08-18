@@ -44,11 +44,11 @@ public class NextWeekFlowService {
         LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
 
         // 1. 최소 3개 작성 여부 검증 (활성 + 소각 포함)
-        long diaryCount = diaryRepository.countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
-                memberPhoneNumber,
-                weekStart,
-                weekStart.plusDays(7)
-        );
+        long diaryCount = diaryRepository
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                        memberPhoneNumber,
+                        weekStart,
+                        weekStart.plusDays(7));
         if (diaryCount < 3) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
@@ -56,8 +56,7 @@ public class NextWeekFlowService {
         EmotionReport weeklyReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
                 memberPhoneNumber,
                 EmotionReportType.WEEKLY,
-                weekStart
-        ).orElseThrow(() -> new CustomException(ErrorCode.REPORT_NOT_FOUND));
+                weekStart).orElseThrow(() -> new CustomException(ErrorCode.REPORT_NOT_FOUND));
 
         if (weeklyReport.getGenerationStatus() != EmotionReportGenerationStatus.COMPLETED
                 && weeklyReport.getGenerationStatus() != EmotionReportGenerationStatus.FALLBACK_COMPLETED) {
@@ -68,7 +67,8 @@ public class NextWeekFlowService {
     }
 
     @Transactional
-    public NextWeekFlowQueryResponse getOrGenerateFlowForWeeklyReport(String memberPhoneNumber, EmotionReport weeklyReport) {
+    public NextWeekFlowQueryResponse getOrGenerateFlowForWeeklyReport(String memberPhoneNumber,
+            EmotionReport weeklyReport) {
         if (weeklyReport == null) {
             throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
         }
@@ -77,14 +77,16 @@ public class NextWeekFlowService {
         return nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(memberPhoneNumber, weekStart)
                 .map(flow -> getFlow(memberPhoneNumber, flow.getId()))
                 .orElseGet(() -> {
-                    NextWeekFlowRequest request = new NextWeekFlowRequest(weekStart);
-                    NextWeekFlowStartResponse startResponse = generateForReport(memberPhoneNumber, weeklyReport, request);
+                    NextWeekFlowRequest request = new NextWeekFlowRequest(weekStart.toString());
+                    NextWeekFlowStartResponse startResponse = generateForReport(memberPhoneNumber, weeklyReport,
+                            request);
                     return getFlow(memberPhoneNumber, startResponse.flowId());
                 });
     }
 
-    private NextWeekFlowStartResponse generateForReport(String memberPhoneNumber, EmotionReport weeklyReport, NextWeekFlowRequest request) {
-        LocalDate weekStart = request.weekStart();
+    private NextWeekFlowStartResponse generateForReport(String memberPhoneNumber, EmotionReport weeklyReport,
+            NextWeekFlowRequest request) {
+        LocalDate weekStart = LocalDate.parse(request.weekStart());
         Member member = memberRepository.findByPhoneNumber(memberPhoneNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -124,8 +126,7 @@ public class NextWeekFlowService {
                 weeklyReport.getId(),
                 savedFlow.getWeekStart(),
                 savedFlow.getGenerationStatus(),
-                START_MESSAGE
-        );
+                START_MESSAGE);
     }
 
     @Transactional(readOnly = true)
@@ -151,8 +152,7 @@ public class NextWeekFlowService {
                 adviceText,
                 flow.getModelName(),
                 flow.getReportVersion(),
-                com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(flow.getGeneratedAt())
-        );
+                com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(flow.getGeneratedAt()));
     }
 
     @Transactional
