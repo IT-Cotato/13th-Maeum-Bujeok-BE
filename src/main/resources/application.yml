@@ -21,9 +21,9 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:${DB_PORT:3306}/maumbujeok?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:root}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -68,6 +68,6 @@ logging:
 
 # CoolSMS/Solapi 설정
 coolsms:
-  api-key: ${COOLSMS_API_KEY}
-  api-secret: ${COOLSMS_API_SECRET}
-  sender-number: ${COOLSMS_SENDER_NUMBER}
+  api-key: ${COOLSMS_API_KEY:}
+  api-secret: ${COOLSMS_API_SECRET:}
+  sender-number: ${COOLSMS_SENDER_NUMBER:}

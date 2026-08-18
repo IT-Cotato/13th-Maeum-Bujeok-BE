@@ -3,6 +3,7 @@ package com.maumbujeok.backend.domain.diary.application;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -136,6 +137,22 @@ class DiaryAnalysisOrchestratorTest {
                 any(),
                 any()
         );
+    }
+
+    @Test
+    void passesSajuContextToDiaryAiRequest() {
+        DiaryAnalysisInput input = new DiaryAnalysisInput(1L, REVISION, "01000000204", "오늘은 마음이 무거웠다", "슬픔");
+        DiaryAiResult result = result("gpt-test");
+        when(stateService.begin(1L, REVISION)).thenReturn(true);
+        when(inputLoader.load(1L, REVISION)).thenReturn(input);
+        when(sajuContextProvider.getContext("01000000204")).thenReturn("사주 균형 참고 정보: 목 18%, 화 22%, 토 20%, 금 17%, 수 23%. 상대적으로 두드러진 기운은 수(水) 23%입니다.");
+        when(aiClient.analyze(any())).thenReturn(new AiCallResult(result, 1));
+        when(safetyGuard.resolveSafetyLevel(input.content(), SafetyLevel.NORMAL)).thenReturn(SafetyLevel.NORMAL);
+        when(intensityPolicy.calculate(50, input.content(), input.selectedEmotion())).thenReturn(50);
+
+        orchestrator.analyze(1L, REVISION);
+
+        verify(aiClient).analyze(argThat(request -> request.sajuContext().contains("수(水) 23%")));
     }
 
     @Test

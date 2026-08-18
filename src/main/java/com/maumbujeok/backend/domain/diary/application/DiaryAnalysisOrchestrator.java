@@ -45,7 +45,7 @@ public class DiaryAnalysisOrchestrator {
             AiCallResult call = analyzeWithQualityRetry(analysisId, new DiaryAiRequest(
                     input.content(),
                     input.selectedEmotion(),
-                    sajuContextProvider.neutralContext()
+                    sajuContextProvider.getContext(input.memberPhoneNumber())
             ));
             DiaryAiResult result = call.result();
             SafetyLevel safety = safetyGuard.resolveSafetyLevel(input.content(), result.safetyLevel());
