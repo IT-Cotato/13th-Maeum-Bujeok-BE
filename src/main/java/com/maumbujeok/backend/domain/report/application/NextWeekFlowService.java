@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,7 @@ public class NextWeekFlowService {
     private final DiaryRepository diaryRepository;
     private final EmotionReportRepository emotionReportRepository;
     private final NextWeekFlowRepository nextWeekFlowRepository;
-    private final NextWeekFlowAsyncService asyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
@@ -111,15 +112,8 @@ public class NextWeekFlowService {
 
         NextWeekFlow savedFlow = nextWeekFlowRepository.save(flow);
 
-        // Run async generation
-        try {
-            asyncService.generate(savedFlow.getId());
-        } catch (org.springframework.core.task.TaskRejectedException e) {
-            log.error("Task rejected for flowId={} due to thread pool saturation", savedFlow.getId(), e);
-            savedFlow.fail();
-            nextWeekFlowRepository.saveAndFlush(savedFlow);
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
+        // Publish event for AFTER_COMMIT execution
+        eventPublisher.publishEvent(new NextWeekFlowGenerationRequestedEvent(savedFlow.getId()));
 
         return new NextWeekFlowStartResponse(
                 savedFlow.getId(),
