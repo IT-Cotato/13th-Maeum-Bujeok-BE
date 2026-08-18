@@ -15,6 +15,7 @@ import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -36,6 +37,7 @@ public class NextWeekFlowService {
     private final EmotionReportRepository emotionReportRepository;
     private final NextWeekFlowRepository nextWeekFlowRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock serviceClock;
 
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
@@ -43,10 +45,13 @@ public class NextWeekFlowService {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
         LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
+        if (!isCurrentWeek(weekStart)) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
 
-        // 1. 최소 3개 작성 여부 검증 (활성 + 소각 포함)
+        // 1. 소각되지 않은 일기 최소 3개 작성 여부 검증
         long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
                         memberPhoneNumber,
                         weekStart,
                         weekStart.plusDays(7));
@@ -89,12 +94,15 @@ public class NextWeekFlowService {
                 || !lockedReport.getPeriodStart().equals(weekStart)) {
             throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
         }
+        if (!isCurrentWeek(weekStart)) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
         if (!isEligibleReportStatus(lockedReport)) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
 
         long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
                         memberPhoneNumber, weekStart, weekStart.plusDays(7));
         if (diaryCount < 3) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
@@ -169,14 +177,20 @@ public class NextWeekFlowService {
             return;
         }
 
+        String phone = report.getMember().getPhoneNumber();
+        LocalDate weekStart = report.getPeriodStart();
+        if (!isCurrentWeek(weekStart)) {
+            log.info("Next week flow auto-generation skipped memberPhoneSuffix={} weekStart={} reason=not_current_week",
+                    maskPhoneNumber(phone), weekStart);
+            return;
+        }
+
         if (!isEligibleReportStatus(report)) {
             return;
         }
 
-        String phone = report.getMember().getPhoneNumber();
-        LocalDate weekStart = report.getPeriodStart();
         long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
                         phone, weekStart, weekStart.plusDays(7));
         if (diaryCount < 3) {
             log.info("Next week flow auto-generation skipped memberPhoneSuffix={} weekStart={} diaryCount={} reason=insufficient_diaries",
@@ -224,6 +238,11 @@ public class NextWeekFlowService {
             return weekStart;
         }
         return weekStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
+    boolean isCurrentWeek(LocalDate weekStart) {
+        return weekStart != null
+                && normalizeWeekStart(weekStart).equals(normalizeWeekStart(LocalDate.now(serviceClock)));
     }
 
     private String maskPhoneNumber(String phoneNumber) {

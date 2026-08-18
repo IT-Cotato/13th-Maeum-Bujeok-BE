@@ -70,17 +70,26 @@ public class ReportScreenService {
     public NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
         EmotionReport report = ownedWeekly(phone, reportId);
 
+        if (!nextWeekFlowService.isCurrentWeek(report.getPeriodStart())) {
+            return nextWeekFlowRepository
+                    .findByMemberPhoneNumberAndWeekStart(phone, report.getPeriodStart())
+                    .map(flow -> nextWeekFlowService.getFlow(phone, flow.getId()))
+                    .orElseThrow(() -> new ReportRequestException(
+                            ErrorCode.FLOW_NOT_FOUND,
+                            "Next week flow not found for a non-current week"));
+        }
+
         long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
                         phone, report.getPeriodStart(), report.getPeriodEnd().plusDays(1));
 
-        // 1. 일기 개수가 3개 미만이면 기존처럼 404 (FLOW_NOT_FOUND)를 반환하여 프론트에서 대체 텍스트 정상 표시
+        // 현재 주차의 활성 일기가 3개 미만이면 기존처럼 404를 반환한다.
         if (diaryCount < 3) {
             throw new ReportRequestException(ErrorCode.FLOW_NOT_FOUND,
                     "Next week flow not found or insufficient diaries (less than 3)");
         }
 
-        // 2. 3개 이상이면 즉시 PROCESSING 상태를 반환하거나 기존 완료된 흐름 리턴 (프론트 로딩 스피너 및 환각 방지)
+        // 현재 주차만 report lock 경로에서 기존 flow를 판정하거나 On-Demand 생성한다.
         return nextWeekFlowService.getOrGenerateFlowForWeeklyReport(phone, report);
     }
 
