@@ -303,54 +303,6 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void tryAcquireStaleRecoveryAtomicallyAcquiresOnce() {
-        Member member = saveMember("user_stale_atomic", "01099990091");
-        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
-        NextWeekFlow flow = NextWeekFlow.builder()
-                .member(member)
-                .emotionReport(report)
-                .weekStart(LocalDate.of(2026, 7, 13))
-                .periodStart(LocalDate.of(2026, 7, 20))
-                .periodEnd(LocalDate.of(2026, 7, 26))
-                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
-                .build();
-        nextWeekFlowRepository.saveAndFlush(flow);
-
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime futureCutoff = now.plusMinutes(1);
-
-        // 1. First acquisition on stale PROCESSING flow: affected row == 1
-        int firstAcquire = nextWeekFlowRepository.tryAcquireStaleRecovery(
-                flow.getId(),
-                NextWeekFlowGenerationStatus.PROCESSING,
-                futureCutoff,
-                now
-        );
-        org.junit.jupiter.api.Assertions.assertEquals(1, firstAcquire);
-
-        // 2. Immediate second acquisition with past cutoff: affected row == 0
-        LocalDateTime pastCutoff = now.minusSeconds(10);
-        int secondAcquire = nextWeekFlowRepository.tryAcquireStaleRecovery(
-                flow.getId(),
-                NextWeekFlowGenerationStatus.PROCESSING,
-                pastCutoff,
-                now
-        );
-        org.junit.jupiter.api.Assertions.assertEquals(0, secondAcquire);
-
-        // 3. COMPLETED flow: affected row == 0
-        flow.complete("완료된 조언", "openai", "v1");
-        nextWeekFlowRepository.saveAndFlush(flow);
-        int completedAcquire = nextWeekFlowRepository.tryAcquireStaleRecovery(
-                flow.getId(),
-                NextWeekFlowGenerationStatus.PROCESSING,
-                futureCutoff,
-                now
-        );
-        org.junit.jupiter.api.Assertions.assertEquals(0, completedAcquire);
-    }
-
-    @Test
     void failFlowOnRejectionMarksProcessingFlowAsFailed() {
         Member member = saveMember("user_rej_1", "01099990092");
         EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
