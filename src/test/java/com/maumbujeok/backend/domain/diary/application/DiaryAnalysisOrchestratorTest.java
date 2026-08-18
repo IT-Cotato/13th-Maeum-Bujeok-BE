@@ -145,14 +145,14 @@ class DiaryAnalysisOrchestratorTest {
         DiaryAiResult result = result("gpt-test");
         when(stateService.begin(1L, REVISION)).thenReturn(true);
         when(inputLoader.load(1L, REVISION)).thenReturn(input);
-        when(sajuContextProvider.getContext("01000000204")).thenReturn("오행 균형 참고 정보: 목 18%, 화 22%, 토 20%, 금 17%, 수 23%");
+        when(sajuContextProvider.getContext("01000000204")).thenReturn("사주 균형 참고 정보: 목 18%, 화 22%, 토 20%, 금 17%, 수 23%. 상대적으로 두드러진 기운은 수(水) 23%입니다.");
         when(aiClient.analyze(any())).thenReturn(new AiCallResult(result, 1));
         when(safetyGuard.resolveSafetyLevel(input.content(), SafetyLevel.NORMAL)).thenReturn(SafetyLevel.NORMAL);
         when(intensityPolicy.calculate(50, input.content(), input.selectedEmotion())).thenReturn(50);
 
         orchestrator.analyze(1L, REVISION);
 
-        verify(aiClient).analyze(argThat(request -> request.sajuContext().contains("목 18%")));
+        verify(aiClient).analyze(argThat(request -> request.sajuContext().contains("수(水) 23%")));
     }
 
     @Test

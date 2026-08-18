@@ -41,7 +41,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 @Slf4j
 public class DiaryService {
-    static final String PROMPT_VERSION = "diary-v2";
+    static final String PROMPT_VERSION = "diary-v4";
     static final String POLICY_VERSION = "policy-v1";
     private static final int MAX_CONTENT_LENGTH = 5000;
     private static final int DEFAULT_PAGE_SIZE = 20;

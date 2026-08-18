@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "ai.provider", havingValue = "openai")
 public class OpenAiDiaryAnalysisProvider implements AiProvider {
-    static final String PROMPT_VERSION = "diary-v3";
+    static final String PROMPT_VERSION = "diary-v4";
 
     private final AiGateway aiGateway;
     private final DiaryAiPromptFactory promptFactory;

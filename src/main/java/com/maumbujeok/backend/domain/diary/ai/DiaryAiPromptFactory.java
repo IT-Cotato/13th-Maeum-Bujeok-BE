@@ -15,7 +15,7 @@ public class DiaryAiPromptFactory {
     public DiaryAiPromptFactory(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         try {
-            this.instructions = new ClassPathResource("prompts/diary-analysis-v3.txt")
+            this.instructions = new ClassPathResource("prompts/diary-analysis-v4.txt")
                     .getContentAsString(StandardCharsets.UTF_8);
         } catch (IOException exception) {
             throw new IllegalStateException("Diary AI prompt could not be loaded", exception);
