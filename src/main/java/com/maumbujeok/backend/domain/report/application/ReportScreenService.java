@@ -4,8 +4,10 @@ import com.maumbujeok.backend.domain.burn.domain.Burning;
 import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.application.DiaryService;
+import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
 import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
+import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportBurningItemResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportEmotionStatsResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportTalismansResponse;
@@ -14,9 +16,7 @@ import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.domain.talisman.dto.TalismanItemResponse;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
 import com.maumbujeok.backend.global.error.ErrorCode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +30,7 @@ public class ReportScreenService {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private final EmotionReportRepository reportRepository;
     private final DiaryService diaryService;
+    private final DiaryRepository diaryRepository;
     private final BurningRepository burningRepository;
     private final BurningAnalysisRepository burningAnalysisRepository;
     private final TalismanRepository talismanRepository;
@@ -66,8 +67,20 @@ public class ReportScreenService {
     }
 
     @Transactional
-    public com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
+    public NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
         EmotionReport report = ownedWeekly(phone, reportId);
+
+        long diaryCount = diaryRepository
+                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                        phone, report.getPeriodStart(), report.getPeriodEnd().plusDays(1));
+
+        // 1. 일기 개수가 3개 미만이면 기존처럼 404 (FLOW_NOT_FOUND)를 반환하여 프론트에서 대체 텍스트 정상 표시
+        if (diaryCount < 3) {
+            throw new ReportRequestException(ErrorCode.FLOW_NOT_FOUND,
+                    "Next week flow not found or insufficient diaries (less than 3)");
+        }
+
+        // 2. 3개 이상이면 즉시 PROCESSING 상태를 반환하거나 기존 완료된 흐름 리턴 (프론트 로딩 스피너 및 환각 방지)
         return nextWeekFlowService.getOrGenerateFlowForWeeklyReport(phone, report);
     }
 
@@ -76,7 +89,6 @@ public class ReportScreenService {
         return new ReportBurningItemResponse(
                 burning.getId(), burning.getTitle(), burning.getSourceType(), burning.getBurnedAt(),
                 analysis == null ? null : analysis.getStatus(),
-                analysis != null && analysis.getTalismanType() != null
-        );
+                analysis != null && analysis.getTalismanType() != null);
     }
 }

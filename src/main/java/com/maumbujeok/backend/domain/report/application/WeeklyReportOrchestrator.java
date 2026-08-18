@@ -20,6 +20,7 @@ public class WeeklyReportOrchestrator {
     private final WeeklyReportAiClient aiClient;
     private final WeeklyReportResponseSafetyGuard safetyGuard;
     private final WeeklyReportFallbackFactory fallbackFactory;
+    private final NextWeekFlowService nextWeekFlowService;
 
     public void generate(Long reportId, int generationSequence) {
         if (!stateService.begin(reportId, generationSequence)) {
@@ -36,6 +37,9 @@ public class WeeklyReportOrchestrator {
             boolean completed = stateService.complete(reportId, generationSequence, call.result(), call.attempts());
             log.info("Weekly report generation completed reportId={} generationSequence={} attempts={} model={} stored={}",
                     reportId, generationSequence, call.attempts(), call.result().modelName(), completed);
+            if (completed) {
+                nextWeekFlowService.refreshIfEligible(reportId);
+            }
         } catch (RuntimeException exception) {
             String failureCode = exception instanceof WeeklyReportAiException aiException
                     ? aiException.getFailureCode()
@@ -99,6 +103,9 @@ public class WeeklyReportOrchestrator {
             boolean stored = stateService.fallback(reportId, generationSequence, fallback, attempts, code);
             log.warn("Weekly report fallback completed reportId={} generationSequence={} failureCode={} attempts={} stored={}",
                     reportId, generationSequence, code, attempts, stored);
+            if (stored) {
+                nextWeekFlowService.refreshIfEligible(reportId);
+            }
         } catch (RuntimeException fallbackFailure) {
             stateService.fail(reportId, generationSequence, attempts, "FALLBACK_FAILED");
             log.error("Weekly report fallback failed reportId={} generationSequence={} failureCode=FALLBACK_FAILED exceptionType={}",

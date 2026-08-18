@@ -1,0 +1,2 @@
+package com.maumbujeok.backend.domain.burn.ai;
+public class BurningAiAnalysisException extends RuntimeException { public BurningAiAnalysisException(String message,Throwable cause){super(message,cause);} }

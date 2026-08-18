@@ -3,7 +3,9 @@ package com.maumbujeok.backend.domain.diary.dto;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysis;
 import com.maumbujeok.backend.domain.diary.domain.DiaryAnalysisStatus;
 import com.maumbujeok.backend.domain.diary.domain.SafetyLevel;
+import com.maumbujeok.backend.global.util.TimeUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Schema(name = "DiaryAnalysisResponse", description = "일기 AI 분석 결과. 분석 진행 중이거나 실패한 경우 일부 필드는 null일 수 있습니다.")
@@ -22,11 +24,11 @@ public record DiaryAnalysisResponse(
         Boolean salpuriRecommended,
         @Schema(description = "안전 단계", example = "NORMAL", nullable = true)
         SafetyLevel safetyLevel,
-        @Schema(description = "생성된 부적 ID. 부적 생성 전에는 null", example = "101", nullable = true)
+        @Schema(description = "생성된 부적 ID. 부적 생성 전에는 null", nullable = true)
         Long amuletId,
-        @Schema(description = "생성된 부적 유형. 부적 생성 전에는 null", example = "CALM", nullable = true)
+        @Schema(description = "생성된 부적 유형. 부적 생성 전에는 null", nullable = true)
         String amuletType,
-        @Schema(description = "생성된 부적 제목. 부적 생성 전에는 null", example = "마음을 고요하게 하는 부적", nullable = true)
+        @Schema(description = "생성된 부적 제목. 부적 생성 전에는 null", nullable = true)
         String title,
         @Schema(description = "분석 생성일 (yyyy.MM.dd)", example = "2026.07.23", pattern = "^\\d{4}\\.\\d{2}\\.\\d{2}$", requiredMode = Schema.RequiredMode.REQUIRED)
         String createdAt,
@@ -40,6 +42,9 @@ public record DiaryAnalysisResponse(
     private static final DateTimeFormatter AMULET_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     public static DiaryAnalysisResponse from(DiaryAnalysis analysis) {
+        OffsetDateTime seoulCreatedAt = TimeUtils.toSeoulOffset(analysis.getCreatedAt());
+        String formattedDate = seoulCreatedAt == null ? null : seoulCreatedAt.format(AMULET_DATE_FORMAT);
+
         return new DiaryAnalysisResponse(
                 analysis.getStatus(),
                 analysis.getSummary(),
@@ -51,7 +56,7 @@ public record DiaryAnalysisResponse(
                 null,
                 null,
                 null,
-                analysis.getCreatedAt().format(AMULET_DATE_FORMAT),
+                formattedDate,
                 analysis.getModelName(),
                 analysis.getFailureCode(),
                 analysis.getAttemptCount()

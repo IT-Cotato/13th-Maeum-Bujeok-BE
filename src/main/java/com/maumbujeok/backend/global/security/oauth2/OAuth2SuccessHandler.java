@@ -43,7 +43,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // 구글 유저 조회 없으면 즉시 자동 가입 (1-Step), 기존 유저 존재 시 DB의 name을 덮어씌우지 않음!
         Member member = memberRepository.findByProviderAndProviderId(Member.Provider.GOOGLE, providerId)
                 .orElseGet(() -> {
-                    LocalDateTime now = LocalDateTime.now();
 
                     Member newMember = Member.builder()
                             .name(googleName)
@@ -51,9 +50,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                             .phoneNumber("GOOGLE_" + providerId)
                             .provider(Member.Provider.GOOGLE)
                             .providerId(providerId)
-                            .termsAgreedAt(now)
-                            .privacyAgreedAt(now)
-                            .sensitiveDataAgreedAt(now)
                             .role(Member.Role.ROLE_USER)
                             .build();
 

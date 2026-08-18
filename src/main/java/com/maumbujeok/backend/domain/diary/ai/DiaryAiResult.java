@@ -5,7 +5,8 @@ import com.maumbujeok.backend.global.ai.emotion.ReportEmotion;
 import java.util.List;
 
 public record DiaryAiResult(
-        String empathyResponse,
+                String title,
+String empathyResponse,
         String summary,
         int negativeIntensity,
         List<EmotionKeywordCandidate> emotionKeywords,
@@ -13,6 +14,10 @@ public record DiaryAiResult(
         SafetyLevel safetyLevel,
         String modelName
 ) {
+    public DiaryAiResult(String empathyResponse, String summary, int negativeIntensity, List<EmotionKeywordCandidate> emotionKeywords, ReportEmotion reportEmotion, SafetyLevel safetyLevel, String modelName) {
+        this(null, empathyResponse, summary, negativeIntensity, emotionKeywords, reportEmotion, safetyLevel, modelName);
+    }
+
     public DiaryAiResult {
         emotionKeywords = emotionKeywords == null ? List.of() : List.copyOf(emotionKeywords);
     }

@@ -4,6 +4,8 @@ import com.maumbujeok.backend.domain.talisman.domain.Talisman;
 import com.maumbujeok.backend.domain.talisman.dto.TalismanItemResponse;
 import com.maumbujeok.backend.domain.talisman.dto.TalismanListResponse;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
+import com.maumbujeok.backend.global.error.CustomException;
+import com.maumbujeok.backend.global.error.ErrorCode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -47,4 +49,17 @@ public class TalismanService {
 
         return new TalismanListResponse(items, items.size(), hasNext, nextCursor);
     }
-}
+    @Transactional(readOnly = true)
+    public TalismanItemResponse getTalisman(String memberPhoneNumber, Long talismanId) {
+        return TalismanItemResponse.from(findOwned(memberPhoneNumber, talismanId));
+    }
+
+    @Transactional
+    public void deleteTalisman(String memberPhoneNumber, Long talismanId) {
+        talismanRepository.delete(findOwned(memberPhoneNumber, talismanId));
+    }
+
+    private Talisman findOwned(String memberPhoneNumber, Long talismanId) {
+        return talismanRepository.findByIdAndMemberPhoneNumber(talismanId, memberPhoneNumber)
+                .orElseThrow(() -> new CustomException(ErrorCode.TALISMAN_NOT_FOUND));
+    }}

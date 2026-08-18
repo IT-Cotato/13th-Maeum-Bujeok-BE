@@ -1,5 +1,6 @@
 package com.maumbujeok.backend.domain.report.application;
 
+import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
@@ -14,8 +15,9 @@ import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,13 +31,27 @@ public class NextWeekFlowService {
     private static final String START_MESSAGE = "다음 주 흐름 생성을 비동기로 시작했습니다.";
 
     private final MemberRepository memberRepository;
+    private final DiaryRepository diaryRepository;
     private final EmotionReportRepository emotionReportRepository;
     private final NextWeekFlowRepository nextWeekFlowRepository;
     private final NextWeekFlowAsyncService asyncService;
 
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
-        LocalDate weekStart = request.weekStart();
+        if (request == null || request.weekStart() == null) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
+        LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
+
+        // 1. 최소 3개 작성 여부 검증 (활성 + 소각 포함)
+        long diaryCount = diaryRepository.countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+                memberPhoneNumber,
+                weekStart,
+                weekStart.plusDays(7)
+        );
+        if (diaryCount < 3) {
+            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
+        }
 
         EmotionReport weeklyReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
                 memberPhoneNumber,
@@ -126,18 +142,56 @@ public class NextWeekFlowService {
             adviceText = DEFAULT_FAILED_ADVICE;
         }
 
-        ZoneOffset SEOUL_OFFSET = ZoneOffset.ofHours(9);
-
         return new NextWeekFlowQueryResponse(
                 flow.getId(),
-                flow.getEmotionReport().getId(),
+                flow.getEmotionReport() != null ? flow.getEmotionReport().getId() : null,
                 flow.getPeriodStart(),
                 flow.getPeriodEnd(),
                 flow.getGenerationStatus(),
                 adviceText,
                 flow.getModelName(),
                 flow.getReportVersion(),
-                flow.getGeneratedAt() == null ? null : flow.getGeneratedAt().atOffset(SEOUL_OFFSET)
+                com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(flow.getGeneratedAt())
         );
+    }
+
+    @Transactional
+    public void refreshIfEligible(Long emotionReportId) {
+        EmotionReport report = emotionReportRepository.findById(emotionReportId).orElse(null);
+        if (report == null || report.getReportType() != EmotionReportType.WEEKLY) {
+            return;
+        }
+
+        String phone = report.getMember().getPhoneNumber();
+        LocalDate weekStart = report.getPeriodStart();
+
+        boolean flowExists = nextWeekFlowRepository.findByMemberPhoneNumberAndWeekStart(phone, weekStart).isPresent();
+        if (flowExists) {
+            try {
+                generate(phone, new NextWeekFlowRequest(weekStart.toString()));
+                log.info("Next week flow auto-refreshed on new diary entry memberPhoneSuffix={} weekStart={}",
+                        maskPhoneNumber(phone), weekStart);
+            } catch (Exception e) {
+                log.warn("Failed to auto-refresh next week flow memberPhoneSuffix={} weekStart={}",
+                        maskPhoneNumber(phone), weekStart, e);
+            }
+        }
+    }
+
+    private LocalDate normalizeWeekStart(LocalDate weekStart) {
+        if (weekStart == null) {
+            return null;
+        }
+        if (weekStart.getDayOfWeek() == DayOfWeek.MONDAY) {
+            return weekStart;
+        }
+        return weekStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
+    private String maskPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.length() < 4) {
+            return "****";
+        }
+        return phoneNumber.substring(phoneNumber.length() - 4);
     }
 }

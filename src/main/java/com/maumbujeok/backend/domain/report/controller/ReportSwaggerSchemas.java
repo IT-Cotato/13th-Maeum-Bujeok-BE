@@ -2,6 +2,8 @@ package com.maumbujeok.backend.domain.report.controller;
 
 import com.maumbujeok.backend.domain.report.dto.GenerateWeeklyReportResponse;
 import com.maumbujeok.backend.domain.report.dto.WeeklyReportSummaryResponse;
+import com.maumbujeok.backend.domain.report.dto.WeeklyReportPeriodResponse;
+import java.util.List;
 import com.maumbujeok.backend.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -22,4 +24,22 @@ final class ReportSwaggerSchemas {
             super(true, "200", "요청에 성공하였습니다.", null);
         }
     }
-}
+    @Schema(name = "WeeklyReportPeriodsApiResponse", description = "주간 리포트 기간 목록 공통 응답")
+    static final class WeeklyReportPeriodsApiResponse extends ApiResponse<List<WeeklyReportPeriodResponse>> {
+        private WeeklyReportPeriodsApiResponse() { super(true, "200", "요청이 성공했습니다.", null); }
+    }
+
+    @Schema(name = "NextWeekFlowStartApiResponse", description = "다음 주 흐름 생성 시작 공통 응답")
+    static final class NextWeekFlowStartApiResponse extends ApiResponse<com.maumbujeok.backend.domain.report.dto.NextWeekFlowStartResponse> {
+        private NextWeekFlowStartApiResponse() { super(true, "200", "요청이 성공했습니다.", null); }
+    }
+
+    @Schema(name = "NextWeekFlowQueryApiResponse", description = "다음 주 흐름 결과 조회 공통 응답")
+    static final class NextWeekFlowQueryApiResponse extends ApiResponse<com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse> {
+        private NextWeekFlowQueryApiResponse() { super(true, "200", "요청이 성공했습니다.", null); }
+    }
+
+    @Schema(name = "ReportInvalidRequestApiResponse", description = "REPORT_400 오류 응답")
+    static final class ReportInvalidRequestApiResponse extends ApiResponse<Void> { private ReportInvalidRequestApiResponse() { super(false, "REPORT_400", "리포트 요청이 올바르지 않습니다.", null); } }
+    @Schema(name = "ReportNotFoundApiResponse", description = "REPORT_404 오류 응답")
+    static final class ReportNotFoundApiResponse extends ApiResponse<Void> { private ReportNotFoundApiResponse() { super(false, "REPORT_404", "리포트를 찾을 수 없습니다.", null); } }}
