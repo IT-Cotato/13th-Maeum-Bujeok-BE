@@ -29,9 +29,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(NextWeekFlowTestClockConfig.class)
 class NextWeekFlowConcurrencyTest {
     private static final String[] FIXTURE_PHONE_NUMBERS = {
             "01099990201", "01099990202", "01099990203", "01099990204"
@@ -59,7 +61,7 @@ class NextWeekFlowConcurrencyTest {
 
     @Test
     void concurrentOnDemandRequestsReturnOneFlowForTheSameReport() throws Exception {
-        LocalDate weekStart = LocalDate.of(2026, 5, 4);
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
         Member member = memberRepository.save(Member.builder()
                 .name("concurrent-flow-user")
                 .phoneNumber("01099990201")
@@ -107,7 +109,7 @@ class NextWeekFlowConcurrencyTest {
 
     @Test
     void automaticRefreshAndOnDemandRequestKeepTheSameCurrentFlow() throws Exception {
-        LocalDate weekStart = LocalDate.of(2026, 5, 11);
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
         Member member = memberRepository.save(Member.builder()
                 .name("concurrent-auto-flow-user")
                 .phoneNumber("01099990202")
@@ -160,7 +162,7 @@ class NextWeekFlowConcurrencyTest {
 
     @Test
     void automaticRefreshAndOnDemandRequestReplaceOneStaleFlowUnderTheSameReportLock() throws Exception {
-        LocalDate weekStart = LocalDate.of(2026, 5, 18);
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
         Member member = memberRepository.save(Member.builder()
                 .name("concurrent-stale-flow-user")
                 .phoneNumber("01099990203")
