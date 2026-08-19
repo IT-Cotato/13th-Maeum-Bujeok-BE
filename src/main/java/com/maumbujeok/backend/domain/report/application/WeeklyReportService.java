@@ -13,6 +13,7 @@ import com.maumbujeok.backend.domain.report.dto.WeeklyReportSummaryResponse;
 import com.maumbujeok.backend.domain.report.dto.WeeklyReportPeriodResponse;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.global.error.ErrorCode;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -35,6 +36,7 @@ public class WeeklyReportService {
     private final DiaryRepository diaryRepository;
     private final EmotionReportRepository emotionReportRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock serviceClock;
 
     @Transactional
     public GenerateWeeklyReportResponse generate(String memberPhoneNumber, GenerateWeeklyReportRequest request) {
@@ -50,7 +52,15 @@ public class WeeklyReportService {
             return;
         }
 
-        GenerateWeeklyReportResponse response = generateForWeek(memberPhoneNumber, normalizeWeekStart(diaryDate));
+        LocalDate weekStart = normalizeWeekStart(diaryDate);
+        LocalDate currentWeekStart = LocalDate.now(serviceClock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        if (weekStart.isBefore(currentWeekStart)) {
+            log.info("Weekly report auto-refresh skipped for past week memberPhoneSuffix={} diaryDate={} weekStart={} currentWeekStart={}",
+                    maskPhoneNumber(memberPhoneNumber), diaryDate, weekStart, currentWeekStart);
+            return;
+        }
+
+        GenerateWeeklyReportResponse response = generateForWeek(memberPhoneNumber, weekStart);
         log.info("Weekly report auto refresh requested emotionReportId={} generationStatus={} memberPhoneSuffix={}",
                 response.emotionReportId(), response.generationStatus(), maskPhoneNumber(memberPhoneNumber));
     }
@@ -151,7 +161,7 @@ public class WeeklyReportService {
 
     private boolean hasDiarySource(String memberPhoneNumber, LocalDate periodStart, LocalDate periodEnd) {
         LocalDate endedAtExclusive = periodEnd.plusDays(1);
-        return diaryRepository.existsByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
+        return diaryRepository.existsByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
                 memberPhoneNumber,
                 periodStart,
                 endedAtExclusive

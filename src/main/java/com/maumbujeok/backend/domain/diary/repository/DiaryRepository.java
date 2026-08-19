@@ -39,6 +39,12 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             LocalDate endedAtExclusive
     );
 
+    boolean existsByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
+            String phoneNumber,
+            LocalDate recordedDate,
+            LocalDate endedAtExclusive
+    );
+
     long countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThan(
             String phoneNumber,
             LocalDate recordedDate,
@@ -52,6 +58,12 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     );
 
     List<Diary> findAllByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanOrderByRecordedDateAscIdAsc(
+            String phoneNumber,
+            LocalDate recordedDate,
+            LocalDate endedAtExclusive
+    );
+
+    List<Diary> findAllByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNullOrderByRecordedDateAscIdAsc(
             String phoneNumber,
             LocalDate recordedDate,
             LocalDate endedAtExclusive

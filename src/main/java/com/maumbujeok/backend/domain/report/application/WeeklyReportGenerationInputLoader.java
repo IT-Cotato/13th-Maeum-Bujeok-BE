@@ -39,7 +39,7 @@ public class WeeklyReportGenerationInputLoader {
         LocalDate periodStart = report.getPeriodStart();
         LocalDate periodEndExclusive = report.getPeriodEnd().plusDays(1);
         List<Diary> diaries = diaryRepository
-                .findAllByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanOrderByRecordedDateAscIdAsc(
+                .findAllByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNullOrderByRecordedDateAscIdAsc(
                         report.getMember().getPhoneNumber(),
                         periodStart,
                         periodEndExclusive

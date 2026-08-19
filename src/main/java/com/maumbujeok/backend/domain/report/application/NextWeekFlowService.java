@@ -1,6 +1,5 @@
 package com.maumbujeok.backend.domain.report.application;
 
-import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
@@ -15,6 +14,7 @@ import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -32,26 +32,16 @@ public class NextWeekFlowService {
     private static final String START_MESSAGE = "다음 주 흐름 생성을 비동기로 시작했습니다.";
 
     private final MemberRepository memberRepository;
-    private final DiaryRepository diaryRepository;
     private final EmotionReportRepository emotionReportRepository;
     private final NextWeekFlowRepository nextWeekFlowRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock serviceClock;
     @Transactional
     public NextWeekFlowStartResponse generate(String memberPhoneNumber, NextWeekFlowRequest request) {
         if (request == null || request.weekStart() == null) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
         LocalDate weekStart = normalizeWeekStart(request.parsedWeekStart());
-
-        // 1. 소각되지 않은 일기 최소 3개 작성 여부 검증
-        long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
-                        memberPhoneNumber,
-                        weekStart,
-                        weekStart.plusDays(7));
-        if (diaryCount < 3) {
-            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
-        }
 
         EmotionReport weeklyReport = emotionReportRepository.findByMemberPhoneNumberAndReportTypeAndPeriodStart(
                 memberPhoneNumber,
@@ -89,13 +79,6 @@ public class NextWeekFlowService {
             throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
         }
         if (!isEligibleReportStatus(lockedReport)) {
-            throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
-        }
-
-        long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
-                        memberPhoneNumber, weekStart, weekStart.plusDays(7));
-        if (diaryCount < 3) {
             throw new CustomException(ErrorCode.INVALID_REPORT_REQUEST);
         }
 
@@ -174,12 +157,10 @@ public class NextWeekFlowService {
             return;
         }
 
-        long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
-                        phone, weekStart, weekStart.plusDays(7));
-        if (diaryCount < 3) {
-            log.info("Next week flow auto-generation skipped memberPhoneSuffix={} weekStart={} diaryCount={} reason=insufficient_diaries",
-                    maskPhoneNumber(phone), weekStart, diaryCount);
+        LocalDate currentWeekStart = LocalDate.now(serviceClock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        if (weekStart.isBefore(currentWeekStart)) {
+            log.info("Next week flow auto-refresh skipped for past week memberPhoneSuffix={} weekStart={} currentWeekStart={}",
+                    maskPhoneNumber(phone), weekStart, currentWeekStart);
             return;
         }
 
