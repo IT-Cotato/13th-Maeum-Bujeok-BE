@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maumbujeok.backend.domain.burn.application.BurningService;
 import com.maumbujeok.backend.domain.burn.domain.BurningSourceType;
 import com.maumbujeok.backend.domain.burn.dto.CreateBurningRequest;
@@ -21,39 +20,77 @@ import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
 import com.maumbujeok.backend.domain.report.application.NextWeekFlowTestClockConfig;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+
+import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
+import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
+import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
+import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
+import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
+import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
+import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
+import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
+import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
+import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
+import com.maumbujeok.backend.domain.upload.repository.DiaryUploadRepository;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.Executor;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
-@Import(NextWeekFlowTestClockConfig.class)
+@Import({NextWeekFlowTestClockConfig.class, HomeIntegrationTest.SyncExecutorConfig.class})
 class HomeIntegrationTest {
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class SyncExecutorConfig {
+        @Bean(name = "diaryAnalysisExecutor")
+        Executor diaryAnalysisExecutor() {
+            return new SyncTaskExecutor();
+        }
+
+        @Bean(name = "weeklyReportExecutor")
+        Executor weeklyReportExecutor() {
+            return new SyncTaskExecutor();
+        }
+    }
 
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
     @Autowired MemberSajuProfileRepository memberSajuProfileRepository;
     @Autowired DiaryRepository diaryRepository;
+    @Autowired DiaryAnalysisRepository diaryAnalysisRepository;
+    @Autowired DiaryUploadRepository diaryUploadRepository;
+    @Autowired BurningRepository burningRepository;
+    @Autowired BurningAnalysisRepository burningAnalysisRepository;
+    @Autowired TalismanRepository talismanRepository;
+    @Autowired EmotionReportRepository emotionReportRepository;
+    @Autowired NextWeekFlowRepository nextWeekFlowRepository;
+    @Autowired SajuAnalysisRepository sajuAnalysisRepository;
+    @Autowired MemberNotificationSettingRepository notificationSettingRepository;
+    @Autowired RefreshTokenRepository refreshTokenRepository;
+    @Autowired SmsAuthCodeRepository smsAuthCodeRepository;
     @Autowired HomeSummaryRepository homeSummaryRepository;
     @Autowired DiaryService diaryService;
     @Autowired BurningService burningService;
     @Autowired JwtTokenProvider jwtTokenProvider;
     @Autowired Clock serviceClock;
-    @Autowired ObjectMapper objectMapper;
 
     private Member member;
     private String token;
@@ -61,6 +98,8 @@ class HomeIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        cleanup();
+
         today = LocalDate.now(serviceClock); // 2026-07-15 from NextWeekFlowTestClockConfig
         String phone = "01099998888";
         member = memberRepository.save(Member.builder()
@@ -80,6 +119,29 @@ class HomeIntegrationTest {
                 .build());
 
         token = jwtTokenProvider.createToken(phone, member.getRole().name());
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanup();
+    }
+
+    private void cleanup() {
+        sajuAnalysisRepository.deleteAllInBatch();
+        nextWeekFlowRepository.deleteAllInBatch();
+        emotionReportRepository.deleteAllInBatch();
+        talismanRepository.deleteAllInBatch();
+        burningAnalysisRepository.deleteAllInBatch();
+        burningRepository.deleteAllInBatch();
+        diaryUploadRepository.deleteAllInBatch();
+        diaryAnalysisRepository.deleteAllInBatch();
+        diaryRepository.deleteAllInBatch();
+        homeSummaryRepository.deleteAllInBatch();
+        notificationSettingRepository.deleteAllInBatch();
+        memberSajuProfileRepository.deleteAllInBatch();
+        refreshTokenRepository.deleteAllInBatch();
+        smsAuthCodeRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
     }
 
     @Test
