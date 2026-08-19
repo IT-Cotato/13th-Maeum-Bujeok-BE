@@ -30,7 +30,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,7 +52,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import({NextWeekFlowTestClockConfig.class, HomeIntegrationTest.SyncExecutorConfig.class})
@@ -62,13 +61,11 @@ class HomeIntegrationTest {
     @TestConfiguration(proxyBeanMethods = false)
     static class SyncExecutorConfig {
         @Bean(name = "diaryAnalysisExecutor")
-        @Primary
         Executor diaryAnalysisExecutor() {
             return new SyncTaskExecutor();
         }
 
         @Bean(name = "weeklyReportExecutor")
-        @Primary
         Executor weeklyReportExecutor() {
             return new SyncTaskExecutor();
         }
