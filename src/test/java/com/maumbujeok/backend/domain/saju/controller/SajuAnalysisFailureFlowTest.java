@@ -18,6 +18,7 @@ import com.maumbujeok.backend.domain.saju.ai.SajuAiProvider;
 import com.maumbujeok.backend.domain.saju.domain.SajuAnalysis;
 import com.maumbujeok.backend.domain.saju.domain.SajuAnalysisStatus;
 import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
+import com.maumbujeok.backend.domain.home.repository.HomeSummaryRepository;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
 import java.time.LocalTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,11 +43,13 @@ class SajuAnalysisFailureFlowTest {
     @Autowired MemberRepository memberRepository;
     @Autowired MemberSajuProfileRepository sajuProfileRepository;
     @Autowired SajuAnalysisRepository sajuAnalysisRepository;
+    @Autowired HomeSummaryRepository homeSummaryRepository;
     @Autowired JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach
     void setUp() {
         sajuAnalysisRepository.deleteAllInBatch();
+        homeSummaryRepository.deleteAllInBatch();
         sajuProfileRepository.deleteAllInBatch();
         memberRepository.deleteAllInBatch();
     }
