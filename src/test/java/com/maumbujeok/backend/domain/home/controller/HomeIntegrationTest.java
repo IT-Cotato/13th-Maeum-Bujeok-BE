@@ -71,11 +71,6 @@ class HomeIntegrationTest {
         Executor weeklyReportExecutor() {
             return new SyncTaskExecutor();
         }
-
-        @Bean(name = "sajuAnalysisExecutor")
-        Executor sajuAnalysisExecutor() {
-            return new SyncTaskExecutor();
-        }
     }
 
     @Autowired MockMvc mockMvc;
