@@ -17,6 +17,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
+import com.maumbujeok.backend.domain.home.application.HomeSummaryRefreshRequestedEvent;
+import java.time.Clock;
+import java.time.LocalDate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -32,6 +35,7 @@ public class BurningService {
     private final BurningAnalysisRepository analysisRepository;
     private final TalismanRepository talismanRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock serviceClock;
 
     @Transactional
     public CreateBurningResponse create(String phone, CreateBurningRequest request) {
@@ -59,6 +63,10 @@ public class BurningService {
         }
         BurningAnalysis analysis = analysisRepository.save(new BurningAnalysis(burning));
         eventPublisher.publishEvent(new BurningAnalysisRequestedEvent(analysis.getId(), analysis.getInputRevision()));
+        if (request.sourceType() == BurningSourceType.DIARY && diary != null
+                && diary.getRecordedDate().equals(LocalDate.now(serviceClock))) {
+            eventPublisher.publishEvent(new HomeSummaryRefreshRequestedEvent(phone));
+        }
         return new CreateBurningResponse(burning.getId(), burning.getSourceType(), com.maumbujeok.backend.global.util.TimeUtils.toSeoulOffset(burning.getBurnedAt()), analysis.getStatus());
     }
 

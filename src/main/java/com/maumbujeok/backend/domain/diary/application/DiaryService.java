@@ -18,6 +18,7 @@ import com.maumbujeok.backend.domain.diary.dto.UpdateDiaryResponse;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryEmotionCountProjection;
 import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
+import com.maumbujeok.backend.domain.home.application.HomeSummaryRefreshRequestedEvent;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.upload.application.UploadService;
@@ -75,6 +76,9 @@ public class DiaryService {
                 new DiaryAnalysisRequestedEvent(analysis.getId(), analysis.getInputRevision()));
         eventPublisher.publishEvent(
                 new DiaryWeeklyReportRefreshRequestedEvent(phoneNumber, diary.getRecordedDate()));
+        if (diary.getRecordedDate().equals(LocalDate.now(serviceClock))) {
+            eventPublisher.publishEvent(new HomeSummaryRefreshRequestedEvent(phoneNumber));
+        }
         log.info("Diary analysis and weekly report refresh events published diaryId={} analysisId={}",
                 diary.getId(), analysis.getId());
         return new CreateDiaryResponse(diary.getId(), diary.getRecordedDate(), analysis.getStatus());
@@ -156,6 +160,9 @@ public class DiaryService {
         eventPublisher.publishEvent(new DiaryAnalysisRequestedEvent(analysis.getId(), revision));
         eventPublisher.publishEvent(
                 new DiaryWeeklyReportRefreshRequestedEvent(phoneNumber, diary.getRecordedDate()));
+        if (diary.getRecordedDate().equals(LocalDate.now(serviceClock))) {
+            eventPublisher.publishEvent(new HomeSummaryRefreshRequestedEvent(phoneNumber));
+        }
         return UpdateDiaryResponse.from(diary, analysis.getStatus(), true);
     }
 
