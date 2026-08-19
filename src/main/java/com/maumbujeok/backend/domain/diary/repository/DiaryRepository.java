@@ -74,6 +74,11 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             LocalDate recordedDate
     );
 
+    List<Diary> findAllByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNullOrderByIdDesc(
+            String phoneNumber,
+            LocalDate recordedDate
+    );
+
     boolean existsByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNull(
             String phoneNumber,
             LocalDate recordedDate
