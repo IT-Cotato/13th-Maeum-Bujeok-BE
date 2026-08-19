@@ -55,6 +55,7 @@ class NextWeekFlowAndTalismanTest {
     @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowAsyncService nextWeekFlowAsyncService;
     @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowService nextWeekFlowService;
     @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowGenerationStateService nextWeekFlowGenerationStateService;
+    @Autowired com.maumbujeok.backend.domain.report.application.WeeklyReportGenerationInputLoader weeklyReportGenerationInputLoader;
     @Autowired BurningService burningService;
 
     @Test
@@ -89,11 +90,11 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void generatePastNextWeekFlowFailsIfLessThan3Diaries() throws Exception {
+    void generateNextWeekFlowStartsSuccessfullyWithTwoDiaries() throws Exception {
         Member member = saveMember("user1_few", "01099990011");
         LocalDate weekStart = LocalDate.of(2026, 7, 6);
-        saveCompletedReport(member, weekStart);
-        // Only 2 diaries
+        EmotionReport report = saveCompletedReport(member, weekStart);
+        // 2 diaries with completed report is valid under PM policy
         saveDiaries(member, weekStart, 2);
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
@@ -101,8 +102,10 @@ class NextWeekFlowAndTalismanTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"weekStart\":\"2026-07-06\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("REPORT_400"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.emotionReportId").value(report.getId()))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
     }
 
     @Test
@@ -124,10 +127,10 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void generateNextWeekFlowFailsWhenOneOfThreeDiariesIsBurned() throws Exception {
+    void generateNextWeekFlowSucceedsWhenOneOfThreeDiariesIsBurned() throws Exception {
         Member member = saveMember("user2_burn", "01099990021");
         LocalDate weekStart = LocalDate.of(2026, 7, 13);
-        saveCompletedReport(member, weekStart);
+        EmotionReport report = saveCompletedReport(member, weekStart);
         saveDiaries(member, weekStart, 3);
         Diary burnedDiary = diaryRepository
                 .findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(
@@ -142,20 +145,18 @@ class NextWeekFlowAndTalismanTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"weekStart\":\"2026-07-13\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("REPORT_400"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.emotionReportId").value(report.getId()))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
 
-        EmotionReport report = emotionReportRepository
-                .findByMemberPhoneNumberAndReportTypeAndPeriodStart(
-                        member.getPhoneNumber(), EmotionReportType.WEEKLY, weekStart)
-                .orElseThrow();
         nextWeekFlowService.refreshIfEligible(report.getId());
         org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
-                .findByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart).isEmpty());
+                .findByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart).isPresent());
     }
 
     @Test
-    void generateNextWeekFlowFailsWithTwoDiariesAndOneDirectBurning() throws Exception {
+    void generateNextWeekFlowSucceedsWithTwoDiariesAndOneDirectBurning() throws Exception {
         Member member = saveMember("user2_direct", "01099990024");
         LocalDate weekStart = LocalDate.of(2026, 7, 13);
         EmotionReport report = saveCompletedReport(member, weekStart);
@@ -168,12 +169,14 @@ class NextWeekFlowAndTalismanTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"weekStart\":\"2026-07-13\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("REPORT_400"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.emotionReportId").value(report.getId()))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
 
         nextWeekFlowService.refreshIfEligible(report.getId());
         org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
-                .findByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart).isEmpty());
+                .findByMemberPhoneNumberAndWeekStart(member.getPhoneNumber(), weekStart).isPresent());
     }
 
     @Test
@@ -306,16 +309,17 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void getReportNextWeekFlowFailsWhenLessThan3Diaries() throws Exception {
+    void getReportNextWeekFlowSucceedsWhenReportCompletedWithTwoDiaries() throws Exception {
         Member member = saveMember("user_ondemand_few", "01099990089");
         EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
-        saveDiaries(member, LocalDate.of(2026, 7, 13), 2); // only 2 diaries
+        saveDiaries(member, LocalDate.of(2026, 7, 13), 2); // 2 diaries
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", report.getId())
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("FLOW_001"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
     }
 
     @Test
@@ -345,19 +349,21 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void getReportNextWeekFlowReturnsFlowNotFoundAfterOneOfThreeDiariesIsBurned() throws Exception {
+    void getReportNextWeekFlowReturnsExistingFlowEvenAfterDiaryIsBurned() throws Exception {
         Member member = saveMember("user_burned_existing_flow", "01099990091");
         LocalDate weekStart = LocalDate.of(2026, 7, 13);
         EmotionReport report = saveCompletedReport(member, weekStart);
         saveDiaries(member, weekStart, 3);
-        NextWeekFlow flow = nextWeekFlowRepository.saveAndFlush(NextWeekFlow.builder()
+        NextWeekFlow flow = NextWeekFlow.builder()
                 .member(member)
                 .emotionReport(report)
                 .weekStart(weekStart)
                 .periodStart(weekStart.plusDays(7))
                 .periodEnd(weekStart.plusDays(13))
-                .generationStatus(NextWeekFlowGenerationStatus.COMPLETED)
-                .build());
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        flow.complete("소각 전 생성된 조언", "openai", "v1");
+        nextWeekFlowRepository.saveAndFlush(flow);
         Diary burnedDiary = diaryRepository
                 .findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(
                         member.getPhoneNumber(), weekStart)
@@ -368,8 +374,10 @@ class NextWeekFlowAndTalismanTest {
 
         mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", report.getId())
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("FLOW_001"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").value(flow.getId()))
+                .andExpect(jsonPath("$.data.generationStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.adviceText").value("소각 전 생성된 조언"));
 
         org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository.findById(flow.getId()).isPresent());
     }
@@ -463,7 +471,7 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void refreshIfEligibleDoesNotCreateFlowWithOneOrTwoDiaries() {
+    void refreshIfEligibleCreatesFlowWithOneOrTwoDiaries() {
         Member oneDiaryMember = saveMember("one_diary", "01099990101");
         EmotionReport oneDiaryReport = saveCompletedReport(oneDiaryMember, LocalDate.of(2026, 7, 13));
         saveDiaries(oneDiaryMember, LocalDate.of(2026, 7, 13), 1);
@@ -477,10 +485,10 @@ class NextWeekFlowAndTalismanTest {
 
         org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
                 .findByMemberPhoneNumberAndWeekStart(oneDiaryMember.getPhoneNumber(), LocalDate.of(2026, 7, 13))
-                .isEmpty());
+                .isPresent());
         org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
                 .findByMemberPhoneNumberAndWeekStart(twoDiaryMember.getPhoneNumber(), LocalDate.of(2026, 7, 13))
-                .isEmpty());
+                .isPresent());
     }
 
     @Test
@@ -524,6 +532,51 @@ class NextWeekFlowAndTalismanTest {
                 EmotionReportGenerationStatus.PROCESSING);
         assertNoFlowForStatus("failed", "01099990107", LocalDate.of(2026, 7, 13),
                 EmotionReportGenerationStatus.FAILED);
+    }
+
+    @Test
+    void weeklyReportExcludesBurnedDiariesOnRegeneration() {
+        Member member = saveMember("burn_loader_user", "01099990111");
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
+        Diary diary1 = diaryRepository.save(new Diary(member, "힘든 하루였다", DiaryEmotion.SAD, weekStart));
+        diaryRepository.flush();
+
+        burningService.create(member.getPhoneNumber(),
+                new CreateBurningRequest(BurningSourceType.DIARY, null, diary1.getId()));
+
+        Diary diary2 = diaryRepository.save(new Diary(member, "기쁜 하루였다", DiaryEmotion.HAPPY, weekStart.plusDays(1)));
+        diaryRepository.flush();
+
+        EmotionReport report = saveCompletedReport(member, weekStart);
+        var input = weeklyReportGenerationInputLoader.load(report.getId());
+
+        org.junit.jupiter.api.Assertions.assertEquals(1, input.diaryEntries().size());
+        org.junit.jupiter.api.Assertions.assertEquals("기쁜 하루였다", input.diaryEntries().get(0).content());
+        org.junit.jupiter.api.Assertions.assertEquals("HAPPY", input.diaryEntries().get(0).selectedEmotionCode());
+    }
+
+    @Test
+    void pastWeekNextWeekFlowNotRefreshedOnPastDiaryCreationOrUpdate() {
+        Member member = saveMember("past_freeze_user", "01099990112");
+        LocalDate pastWeekStart = LocalDate.of(2026, 7, 6); // past week (current is 2026-07-13)
+        EmotionReport pastReport = saveCompletedReport(member, pastWeekStart);
+        NextWeekFlow pastFlow = NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(pastReport)
+                .weekStart(pastWeekStart)
+                .periodStart(pastWeekStart.plusDays(7))
+                .periodEnd(pastWeekStart.plusDays(13))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        pastFlow.complete("보존되어야 하는 과거 조언", "openai", "v1");
+        nextWeekFlowRepository.saveAndFlush(pastFlow);
+
+        // Even when refreshIfEligible is called for pastReport, it must be skipped and preserved
+        nextWeekFlowService.refreshIfEligible(pastReport.getId());
+
+        NextWeekFlow stored = nextWeekFlowRepository.findById(pastFlow.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("보존되어야 하는 과거 조언", stored.getAdviceText());
+        org.junit.jupiter.api.Assertions.assertEquals(NextWeekFlowGenerationStatus.COMPLETED, stored.getGenerationStatus());
     }
 
     @Test

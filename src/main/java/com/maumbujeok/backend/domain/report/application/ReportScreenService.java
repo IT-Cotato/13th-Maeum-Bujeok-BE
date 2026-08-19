@@ -4,7 +4,6 @@ import com.maumbujeok.backend.domain.burn.domain.Burning;
 import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.application.DiaryService;
-import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.report.domain.EmotionReport;
 import com.maumbujeok.backend.domain.report.domain.EmotionReportType;
 import com.maumbujeok.backend.domain.report.dto.NextWeekFlowQueryResponse;
@@ -29,7 +28,6 @@ public class ReportScreenService {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private final EmotionReportRepository reportRepository;
     private final DiaryService diaryService;
-    private final DiaryRepository diaryRepository;
     private final BurningRepository burningRepository;
     private final BurningAnalysisRepository burningAnalysisRepository;
     private final TalismanRepository talismanRepository;
@@ -67,18 +65,6 @@ public class ReportScreenService {
     @Transactional
     public NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
         EmotionReport report = ownedWeekly(phone, reportId);
-
-        long diaryCount = diaryRepository
-                .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
-                        phone, report.getPeriodStart(), report.getPeriodEnd().plusDays(1));
-
-        // 해당 주차의 활성 일기가 3개 미만이면 기존처럼 404를 반환한다.
-        if (diaryCount < 3) {
-            throw new ReportRequestException(ErrorCode.FLOW_NOT_FOUND,
-                    "Next week flow not found or insufficient diaries (less than 3)");
-        }
-
-        // report lock 경로에서 기존 flow를 판정하거나 On-Demand 생성한다.
         return nextWeekFlowService.getOrGenerateFlowForWeeklyReport(phone, report);
     }
 

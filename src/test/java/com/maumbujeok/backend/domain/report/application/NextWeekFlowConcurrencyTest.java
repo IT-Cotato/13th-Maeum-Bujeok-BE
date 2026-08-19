@@ -236,7 +236,7 @@ class NextWeekFlowConcurrencyTest {
 
     @Test
     void concurrentInitialGenerateAndRefreshCreateOneWeeklyReport() throws Exception {
-        LocalDate weekStart = LocalDate.of(2026, 5, 25);
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
         Member member = memberRepository.save(Member.builder()
                 .name("concurrent-weekly-create-user")
                 .phoneNumber("01099990204")
