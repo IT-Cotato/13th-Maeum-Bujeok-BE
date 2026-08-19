@@ -12,7 +12,6 @@ import com.maumbujeok.backend.domain.report.dto.ReportBurningItemResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportEmotionStatsResponse;
 import com.maumbujeok.backend.domain.report.dto.ReportTalismansResponse;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
-import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.domain.talisman.dto.TalismanItemResponse;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
 import com.maumbujeok.backend.global.error.ErrorCode;
@@ -34,7 +33,6 @@ public class ReportScreenService {
     private final BurningRepository burningRepository;
     private final BurningAnalysisRepository burningAnalysisRepository;
     private final TalismanRepository talismanRepository;
-    private final NextWeekFlowRepository nextWeekFlowRepository;
     private final NextWeekFlowService nextWeekFlowService;
 
     public EmotionReport ownedWeekly(String phone, Long reportId) {
@@ -70,26 +68,17 @@ public class ReportScreenService {
     public NextWeekFlowQueryResponse nextWeekFlow(String phone, Long reportId) {
         EmotionReport report = ownedWeekly(phone, reportId);
 
-        if (!nextWeekFlowService.isCurrentWeek(report.getPeriodStart())) {
-            return nextWeekFlowRepository
-                    .findByMemberPhoneNumberAndWeekStart(phone, report.getPeriodStart())
-                    .map(flow -> nextWeekFlowService.getFlow(phone, flow.getId()))
-                    .orElseThrow(() -> new ReportRequestException(
-                            ErrorCode.FLOW_NOT_FOUND,
-                            "Next week flow not found for a non-current week"));
-        }
-
         long diaryCount = diaryRepository
                 .countByMemberPhoneNumberAndRecordedDateGreaterThanEqualAndRecordedDateLessThanAndBurnedAtIsNull(
                         phone, report.getPeriodStart(), report.getPeriodEnd().plusDays(1));
 
-        // 현재 주차의 활성 일기가 3개 미만이면 기존처럼 404를 반환한다.
+        // 해당 주차의 활성 일기가 3개 미만이면 기존처럼 404를 반환한다.
         if (diaryCount < 3) {
             throw new ReportRequestException(ErrorCode.FLOW_NOT_FOUND,
                     "Next week flow not found or insufficient diaries (less than 3)");
         }
 
-        // 현재 주차만 report lock 경로에서 기존 flow를 판정하거나 On-Demand 생성한다.
+        // report lock 경로에서 기존 flow를 판정하거나 On-Demand 생성한다.
         return nextWeekFlowService.getOrGenerateFlowForWeeklyReport(phone, report);
     }
 

@@ -89,17 +89,18 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void generateNextWeekFlowFailsIfLessThan3Diaries() throws Exception {
+    void generatePastNextWeekFlowFailsIfLessThan3Diaries() throws Exception {
         Member member = saveMember("user1_few", "01099990011");
-        EmotionReport report = saveCompletedReport(member, LocalDate.of(2026, 7, 13));
+        LocalDate weekStart = LocalDate.of(2026, 7, 6);
+        saveCompletedReport(member, weekStart);
         // Only 2 diaries
-        saveDiaries(member, LocalDate.of(2026, 7, 13), 2);
+        saveDiaries(member, weekStart, 2);
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
         mockMvc.perform(post("/api/reports/next-week-flow")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"weekStart\":\"2026-07-13\"}"))
+                        .content("{\"weekStart\":\"2026-07-06\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("REPORT_400"));
     }
@@ -378,6 +379,7 @@ class NextWeekFlowAndTalismanTest {
         Member member = saveMember("past_existing_flow", "01099990094");
         LocalDate weekStart = LocalDate.of(2026, 7, 6);
         EmotionReport report = saveCompletedReport(member, weekStart);
+        saveDiaries(member, weekStart, 3);
         NextWeekFlow flow = NextWeekFlow.builder()
                 .member(member)
                 .emotionReport(report)
@@ -398,7 +400,7 @@ class NextWeekFlowAndTalismanTest {
     }
 
     @Test
-    void getReportNextWeekFlowDoesNotGenerateForPastOrFutureWeek() throws Exception {
+    void getReportNextWeekFlowAutoGeneratesForPastAndFutureWeeks() throws Exception {
         Member pastMember = saveMember("past_without_flow", "01099990095");
         LocalDate pastWeekStart = LocalDate.of(2026, 7, 6);
         EmotionReport pastReport = saveCompletedReport(pastMember, pastWeekStart);
@@ -413,28 +415,30 @@ class NextWeekFlowAndTalismanTest {
 
         mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", pastReport.getId())
                         .header("Authorization", "Bearer " + pastToken))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("FLOW_001"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.periodStart").value("2026-07-13"))
+                .andExpect(jsonPath("$.data.periodEnd").value("2026-07-19"))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
         mockMvc.perform(get("/api/reports/weekly/{reportId}/next-week-flow", futureReport.getId())
                         .header("Authorization", "Bearer " + futureToken))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("FLOW_001"));
-        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
-                .findByMemberPhoneNumberAndWeekStart(pastMember.getPhoneNumber(), pastWeekStart).isEmpty());
-        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
-                .findByMemberPhoneNumberAndWeekStart(futureMember.getPhoneNumber(), futureWeekStart).isEmpty());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.periodStart").value("2026-07-27"))
+                .andExpect(jsonPath("$.data.periodEnd").value("2026-08-02"))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
     }
 
     @Test
-    void postDoesNotGenerateForPastOrFutureWeek() throws Exception {
-        assertPostGenerationRejectedForNonCurrentWeek(
+    void postGeneratesForPastAndFutureWeeks() throws Exception {
+        assertPostGenerationStartsForAnyWeek(
                 "past_post", "01099990097", LocalDate.of(2026, 7, 6));
-        assertPostGenerationRejectedForNonCurrentWeek(
+        assertPostGenerationStartsForAnyWeek(
                 "future_post", "01099990098", LocalDate.of(2026, 7, 20));
     }
 
     @Test
-    void refreshIfEligibleDoesNotReplacePastFlow() {
+    void refreshIfEligibleReusesCurrentReportGenerationForPastFlow() {
         Member member = saveMember("past_refresh", "01099990099");
         LocalDate weekStart = LocalDate.of(2026, 7, 6);
         EmotionReport report = saveCompletedReport(member, weekStart);
@@ -708,7 +712,7 @@ class NextWeekFlowAndTalismanTest {
                 .findByMemberPhoneNumberAndWeekStart(phone, weekStart).isEmpty());
     }
 
-    private void assertPostGenerationRejectedForNonCurrentWeek(
+    private void assertPostGenerationStartsForAnyWeek(
             String name,
             String phone,
             LocalDate weekStart
@@ -722,10 +726,16 @@ class NextWeekFlowAndTalismanTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"weekStart\":\"" + weekStart + "\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("REPORT_400"));
-        org.junit.jupiter.api.Assertions.assertTrue(nextWeekFlowRepository
-                .findByMemberPhoneNumberAndWeekStart(phone, weekStart).isEmpty());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.flowId").exists())
+                .andExpect(jsonPath("$.data.weekStart").value(weekStart.toString()))
+                .andExpect(jsonPath("$.data.generationStatus").value("PROCESSING"));
+
+        NextWeekFlow flow = nextWeekFlowRepository
+                .findByMemberPhoneNumberAndWeekStart(phone, weekStart)
+                .orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(weekStart.plusDays(7), flow.getPeriodStart());
+        org.junit.jupiter.api.Assertions.assertEquals(weekStart.plusDays(13), flow.getPeriodEnd());
     }
 
     private void saveDiaries(Member member, LocalDate startDate, int count) {
