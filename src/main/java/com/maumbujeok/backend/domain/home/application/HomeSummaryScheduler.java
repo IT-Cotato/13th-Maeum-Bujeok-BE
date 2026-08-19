@@ -18,13 +18,14 @@ public class HomeSummaryScheduler {
 
     private final MemberRepository memberRepository;
     private final HomeSummaryService homeSummaryService;
+    private final java.time.Clock serviceClock;
 
     /**
      * 매일 자정(00:00:00)에 온보딩을 완료한 회원의 홈 화면 요약을 사전 생성하는 스케줄러 배치 (페이지 단위 순회)
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void generateMidnightHomeSummaries() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(serviceClock);
         log.info("Starting midnight home summary generation (date: {})", today);
 
         int pageSize = 100;

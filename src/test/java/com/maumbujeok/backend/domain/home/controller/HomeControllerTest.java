@@ -23,7 +23,8 @@ class HomeControllerTest {
         HomeSummaryService service = Mockito.mock(HomeSummaryService.class);
         com.maumbujeok.backend.domain.diary.repository.DiaryRepository diaryRepository = Mockito.mock(com.maumbujeok.backend.domain.diary.repository.DiaryRepository.class);
         com.maumbujeok.backend.domain.talisman.repository.TalismanRepository talismanRepository = Mockito.mock(com.maumbujeok.backend.domain.talisman.repository.TalismanRepository.class);
-        HomeController controller = new HomeController(service, diaryRepository, talismanRepository);
+        java.time.Clock serviceClock = java.time.Clock.fixed(java.time.Instant.parse("2026-08-19T00:00:00Z"), java.time.ZoneId.of("Asia/Seoul"));
+        HomeController controller = new HomeController(service, diaryRepository, talismanRepository, serviceClock);
         CustomUserDetails userDetails = Mockito.mock(CustomUserDetails.class);
         com.maumbujeok.backend.domain.member.domain.Member member =
                 Mockito.mock(com.maumbujeok.backend.domain.member.domain.Member.class);
