@@ -2,6 +2,7 @@ package com.maumbujeok.backend.domain.member.service;
 
 import com.maumbujeok.backend.domain.auth.domain.SmsAuthCode;
 import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
+import com.maumbujeok.backend.domain.home.application.HomeSummaryRefreshRequestedEvent;
 import com.maumbujeok.backend.domain.member.domain.Member;
 import com.maumbujeok.backend.domain.member.domain.MemberSajuProfile;
 import com.maumbujeok.backend.domain.member.dto.MemberProfileResponse;
@@ -16,10 +17,13 @@ import com.maumbujeok.backend.global.error.ErrorCode;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ public class MemberProfileService {
     private final SmsAuthCodeRepository smsAuthCodeRepository;
     private final MemberIdentityMigrationRepository memberIdentityMigrationRepository;
     private final SajuAnalysisService sajuAnalysisService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -45,14 +50,25 @@ public class MemberProfileService {
         Member member = getMember(authenticatedPhoneNumber);
         MemberSajuProfile sajuProfile = getRequiredSajuProfile(member);
 
+        String previousBirthDate = member.getBirthDate();
+        MemberSajuProfile.Gender previousGender = sajuProfile.getGender();
+        LocalTime previousBirthTime = sajuProfile.getBirthTime();
+
         String newPhoneNumber = request.normalizedPhoneNumber();
         boolean phoneNumberChanged = !member.getPhoneNumber().equals(newPhoneNumber);
 
         SmsAuthCode smsAuthCode = validatePhoneNumberChange(member.getPhoneNumber(), newPhoneNumber, phoneNumberChanged);
 
+        boolean sajuInputChanged = !Objects.equals(previousBirthDate, request.getBirthDate())
+                || previousGender != request.getGender()
+                || !Objects.equals(previousBirthTime, request.getBirthTime());
+
         if (phoneNumberChanged) {
             migrateMemberIdentity(member, request, sajuProfile, newPhoneNumber);
             smsAuthCodeRepository.delete(smsAuthCode);
+            if (sajuInputChanged) {
+                eventPublisher.publishEvent(new HomeSummaryRefreshRequestedEvent(newPhoneNumber));
+            }
             boolean reauthenticationRequired = member.getProvider() == Member.Provider.LOCAL;
             return buildResponse(newPhoneNumber, reauthenticationRequired);
         }
@@ -60,6 +76,10 @@ public class MemberProfileService {
         member.updateProfile(request.trimmedName(), request.getBirthDate());
         sajuProfile.update(request.getGender(), sajuProfile.getCalendarType(), request.getBirthTime());
         sajuAnalysisService.refreshLatestAnalysis(member, sajuProfile);
+
+        if (sajuInputChanged) {
+            eventPublisher.publishEvent(new HomeSummaryRefreshRequestedEvent(member.getPhoneNumber()));
+        }
 
         return MemberProfileUpdateResponse.of(
                 MemberProfileResponse.from(member, sajuProfile),
