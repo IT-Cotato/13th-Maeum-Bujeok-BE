@@ -72,6 +72,32 @@ class WeeklyReportServiceIntegrationTest {
                         member.getPhoneNumber(), EmotionReportType.WEEKLY, weekStart));
     }
 
+    @Test
+    void refreshForDiaryEntrySkipsPastWeekAndPreservesSequence() {
+        Member member = memberRepository.save(Member.builder()
+                .name("past-weekly-user")
+                .phoneNumber("01010000004")
+                .passwordHash("encoded-password")
+                .role(Member.Role.ROLE_USER)
+                .build());
+        LocalDate pastWeekStart = currentWeekStart().minusWeeks(1);
+        diaryService.create(member.getPhoneNumber(), new CreateDiaryRequest(
+                "과거 기록", "HAPPY", pastWeekStart));
+
+        GenerateWeeklyReportResponse pastReport = weeklyReportService.generate(
+                member.getPhoneNumber(),
+                new GenerateWeeklyReportRequest(pastWeekStart));
+        assertEquals(1, emotionReportRepository.findById(pastReport.emotionReportId()).orElseThrow()
+                .getGenerationSequence());
+
+        // Past diary update/entry triggers refreshForDiaryEntry with past date
+        weeklyReportService.refreshForDiaryEntry(member.getPhoneNumber(), pastWeekStart.plusDays(1));
+
+        // Sequence must remain 1 because past week auto-refresh was skipped (Frozen)
+        assertEquals(1, emotionReportRepository.findById(pastReport.emotionReportId()).orElseThrow()
+                .getGenerationSequence());
+    }
+
     private LocalDate currentWeekStart() {
         return LocalDate.now(SERVICE_ZONE).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
