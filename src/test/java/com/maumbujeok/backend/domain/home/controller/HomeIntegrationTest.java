@@ -39,7 +39,9 @@ import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
+import com.maumbujeok.backend.domain.member.dto.MemberProfileUpdateRequest;
 import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
+import com.maumbujeok.backend.domain.member.service.MemberProfileService;
 import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
 import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
 import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
@@ -89,6 +91,7 @@ class HomeIntegrationTest {
     @Autowired HomeSummaryRepository homeSummaryRepository;
     @Autowired DiaryService diaryService;
     @Autowired BurningService burningService;
+    @Autowired MemberProfileService memberProfileService;
     @Autowired JwtTokenProvider jwtTokenProvider;
     @Autowired Clock serviceClock;
 
@@ -285,6 +288,39 @@ class HomeIntegrationTest {
                 ))
                 .andExpect(jsonPath("$.data.todaySummary.todayEnergy").value(
                         org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ANGRY"))
+                ));
+    }
+
+    @Test
+    @DisplayName("프로필의 사주 정보(생년월일/시간) 변경 시 오늘 HomeSummary가 실시간 재갱신됨")
+    void updateProfileSaju_refreshesHomeSummary() throws Exception {
+        // 1. 초기 홈 조회 -> HomeSummary 생성 (이름: "테스트유저")
+        mockMvc.perform(get("/api/home").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.memberName").value("테스트유저"))
+                .andExpect(jsonPath("$.data.todaySummary.todayEnergy").value(
+                        org.hamcrest.Matchers.containsString("테스트유저")
+                ));
+
+        // 2. 프로필 수정 (이름: "개명한테스터", 생년월일 변경: 19950515 -> 20000101, 시간: 18:00)
+        MemberProfileUpdateRequest req = new MemberProfileUpdateRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(req, "name", "개명한테스터");
+        org.springframework.test.util.ReflectionTestUtils.setField(req, "birthDate", "20000101");
+        org.springframework.test.util.ReflectionTestUtils.setField(req, "birthTime", LocalTime.of(18, 0));
+        org.springframework.test.util.ReflectionTestUtils.setField(req, "phoneNumber", member.getPhoneNumber());
+        org.springframework.test.util.ReflectionTestUtils.setField(req, "gender", MemberSajuProfile.Gender.MALE);
+
+        memberProfileService.updateMyProfile(member.getPhoneNumber(), req);
+
+        // 3. 홈 조회 -> 기존 stale HomeSummary가 아닌 새 사주/프로필 기준으로 재생성된 요약 검증
+        mockMvc.perform(get("/api/home").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.memberName").value("개명한테스터"))
+                .andExpect(jsonPath("$.data.todaySummary.todayEnergy").value(
+                        org.hamcrest.Matchers.containsString("개명한테스터")
+                ))
+                .andExpect(jsonPath("$.data.todaySummary.todayEnergy").value(
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("테스트유저"))
                 ));
     }
 }
