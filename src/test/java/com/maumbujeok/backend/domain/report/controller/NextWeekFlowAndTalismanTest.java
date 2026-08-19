@@ -57,6 +57,7 @@ class NextWeekFlowAndTalismanTest {
     @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowGenerationStateService nextWeekFlowGenerationStateService;
     @Autowired com.maumbujeok.backend.domain.report.application.WeeklyReportGenerationInputLoader weeklyReportGenerationInputLoader;
     @Autowired BurningService burningService;
+    @Autowired com.maumbujeok.backend.domain.burn.repository.BurningRepository burningRepository;
 
     @Test
     void rejectsUnauthenticatedAccessToNextWeekFlow() throws Exception {
@@ -843,9 +844,9 @@ class NextWeekFlowAndTalismanTest {
         burningService.create(member.getPhoneNumber(),
                 new CreateBurningRequest(BurningSourceType.DIARY, null, pastDiary.getId()));
 
-        // 3. Create a DIRECT burning during current week (clock fixed at 2026-07-15)
-        burningService.create(member.getPhoneNumber(),
-                new CreateBurningRequest(BurningSourceType.DIRECT, "즉시 소각 텍스트", null));
+        // 3. Create a DIRECT burning during current week (2026-07-15)
+        burningRepository.save(new com.maumbujeok.backend.domain.burn.domain.Burning(
+                member, BurningSourceType.DIRECT, null, "즉시 소각 텍스트", currentWeekStart.atTime(12, 0)));
 
         String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
 
