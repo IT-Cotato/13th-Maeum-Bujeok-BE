@@ -26,8 +26,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -47,12 +51,28 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(NextWeekFlowTestClockConfig.class)
+@Import({NextWeekFlowTestClockConfig.class, HomeIntegrationTest.SyncExecutorConfig.class})
 class HomeIntegrationTest {
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class SyncExecutorConfig {
+        @Bean(name = "diaryAnalysisExecutor")
+        @Primary
+        Executor diaryAnalysisExecutor() {
+            return new SyncTaskExecutor();
+        }
+
+        @Bean(name = "weeklyReportExecutor")
+        @Primary
+        Executor weeklyReportExecutor() {
+            return new SyncTaskExecutor();
+        }
+    }
 
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
