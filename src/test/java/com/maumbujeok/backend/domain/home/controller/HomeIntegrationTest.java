@@ -29,9 +29,13 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
+import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
+import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
+import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -39,7 +43,6 @@ import java.util.List;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
 @Import(NextWeekFlowTestClockConfig.class)
 class HomeIntegrationTest {
 
@@ -47,6 +50,10 @@ class HomeIntegrationTest {
     @Autowired MemberRepository memberRepository;
     @Autowired MemberSajuProfileRepository memberSajuProfileRepository;
     @Autowired DiaryRepository diaryRepository;
+    @Autowired DiaryAnalysisRepository diaryAnalysisRepository;
+    @Autowired BurningRepository burningRepository;
+    @Autowired BurningAnalysisRepository burningAnalysisRepository;
+    @Autowired TalismanRepository talismanRepository;
     @Autowired HomeSummaryRepository homeSummaryRepository;
     @Autowired DiaryService diaryService;
     @Autowired BurningService burningService;
@@ -59,6 +66,15 @@ class HomeIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        homeSummaryRepository.deleteAllInBatch();
+        talismanRepository.deleteAllInBatch();
+        burningAnalysisRepository.deleteAllInBatch();
+        burningRepository.deleteAllInBatch();
+        diaryAnalysisRepository.deleteAllInBatch();
+        diaryRepository.deleteAllInBatch();
+        memberSajuProfileRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
+
         today = LocalDate.now(serviceClock); // 2026-07-15 from NextWeekFlowTestClockConfig
         String phone = "01099998888";
         member = memberRepository.save(Member.builder()
