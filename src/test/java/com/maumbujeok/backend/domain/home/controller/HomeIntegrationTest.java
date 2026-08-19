@@ -30,12 +30,19 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Clock;
+import com.maumbujeok.backend.domain.auth.repository.RefreshTokenRepository;
+import com.maumbujeok.backend.domain.auth.repository.SmsAuthCodeRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningAnalysisRepository;
 import com.maumbujeok.backend.domain.burn.repository.BurningRepository;
 import com.maumbujeok.backend.domain.diary.repository.DiaryAnalysisRepository;
+import com.maumbujeok.backend.domain.member.repository.MemberNotificationSettingRepository;
+import com.maumbujeok.backend.domain.report.repository.EmotionReportRepository;
+import com.maumbujeok.backend.domain.report.repository.NextWeekFlowRepository;
+import com.maumbujeok.backend.domain.saju.repository.SajuAnalysisRepository;
 import com.maumbujeok.backend.domain.talisman.repository.TalismanRepository;
+import com.maumbujeok.backend.domain.upload.repository.DiaryUploadRepository;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -51,9 +58,16 @@ class HomeIntegrationTest {
     @Autowired MemberSajuProfileRepository memberSajuProfileRepository;
     @Autowired DiaryRepository diaryRepository;
     @Autowired DiaryAnalysisRepository diaryAnalysisRepository;
+    @Autowired DiaryUploadRepository diaryUploadRepository;
     @Autowired BurningRepository burningRepository;
     @Autowired BurningAnalysisRepository burningAnalysisRepository;
     @Autowired TalismanRepository talismanRepository;
+    @Autowired EmotionReportRepository emotionReportRepository;
+    @Autowired NextWeekFlowRepository nextWeekFlowRepository;
+    @Autowired SajuAnalysisRepository sajuAnalysisRepository;
+    @Autowired MemberNotificationSettingRepository notificationSettingRepository;
+    @Autowired RefreshTokenRepository refreshTokenRepository;
+    @Autowired SmsAuthCodeRepository smsAuthCodeRepository;
     @Autowired HomeSummaryRepository homeSummaryRepository;
     @Autowired DiaryService diaryService;
     @Autowired BurningService burningService;
@@ -66,13 +80,20 @@ class HomeIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        homeSummaryRepository.deleteAllInBatch();
+        sajuAnalysisRepository.deleteAllInBatch();
+        nextWeekFlowRepository.deleteAllInBatch();
+        emotionReportRepository.deleteAllInBatch();
         talismanRepository.deleteAllInBatch();
         burningAnalysisRepository.deleteAllInBatch();
         burningRepository.deleteAllInBatch();
+        diaryUploadRepository.deleteAllInBatch();
         diaryAnalysisRepository.deleteAllInBatch();
         diaryRepository.deleteAllInBatch();
+        homeSummaryRepository.deleteAllInBatch();
+        notificationSettingRepository.deleteAllInBatch();
         memberSajuProfileRepository.deleteAllInBatch();
+        refreshTokenRepository.deleteAllInBatch();
+        smsAuthCodeRepository.deleteAllInBatch();
         memberRepository.deleteAllInBatch();
 
         today = LocalDate.now(serviceClock); // 2026-07-15 from NextWeekFlowTestClockConfig
