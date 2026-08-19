@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -31,6 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class DiaryServiceEventTest {
@@ -45,6 +47,12 @@ class DiaryServiceEventTest {
 
     @Captor ArgumentCaptor<Object> eventCaptor;
 
+    @BeforeEach
+    void setUp() {
+        lenient().when(serviceClock.instant()).thenReturn(Instant.parse("2026-07-27T00:00:00Z"));
+        lenient().when(serviceClock.getZone()).thenReturn(ZoneId.of("Asia/Seoul"));
+    }
+
     @Test
     void publishesWeeklyReportRefreshEventWhenDiaryIsCreated() {
         Member member = Member.builder()
@@ -55,8 +63,6 @@ class DiaryServiceEventTest {
         LocalDate recordedDate = LocalDate.of(2026, 7, 20);
         Diary savedDiary = new Diary(member, "오늘은 괜찮았다", DiaryEmotion.HAPPY, recordedDate);
         DiaryAnalysis savedAnalysis = new DiaryAnalysis(savedDiary, DiaryService.PROMPT_VERSION, DiaryService.POLICY_VERSION);
-        when(serviceClock.instant()).thenReturn(Instant.parse("2026-07-27T00:00:00Z"));
-        when(serviceClock.getZone()).thenReturn(ZoneId.of("Asia/Seoul"));
         when(memberRepository.getReferenceById(member.getPhoneNumber())).thenReturn(member);
         when(diaryRepository.saveAndFlush(any(Diary.class))).thenReturn(savedDiary);
         when(analysisRepository.save(any(DiaryAnalysis.class))).thenReturn(savedAnalysis);
