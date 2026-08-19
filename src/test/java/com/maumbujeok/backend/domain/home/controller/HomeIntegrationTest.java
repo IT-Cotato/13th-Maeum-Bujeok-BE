@@ -252,4 +252,39 @@ class HomeIntegrationTest {
                         org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ANXIOUS"))
                 ));
     }
+
+    @Test
+    @DisplayName("오늘 일기를 6개 작성했을 때 가장 오래된 일기는 제외되고 최신 5개만 HomeSummary에 반영됨")
+    void createSixDiariesToday_onlyLatestFiveIncludedInHomeSummary() throws Exception {
+        // 1번째 (가장 오래된 일기): ANGRY
+        diaryService.create(
+                member.getPhoneNumber(),
+                new CreateDiaryRequest("1번째 오래된 일기입니다.", "ANGRY", today, List.of())
+        );
+
+        // 2~5번째 일기: SAD
+        for (int i = 2; i <= 5; i++) {
+            diaryService.create(
+                    member.getPhoneNumber(),
+                    new CreateDiaryRequest(i + "번째 일기입니다.", "SAD", today, List.of())
+            );
+        }
+
+        // 6번째 (가장 최신 일기): HAPPY
+        diaryService.create(
+                member.getPhoneNumber(),
+                new CreateDiaryRequest("6번째 최신 일기입니다.", "HAPPY", today, List.of())
+        );
+
+        // 최신 5개는 2~6번째(SAD, HAPPY)이며 1번째(ANGRY)는 제외되어야 함
+        mockMvc.perform(get("/api/home").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isDiaryWrittenToday").value(true))
+                .andExpect(jsonPath("$.data.todaySummary.todayEnergy").value(
+                        org.hamcrest.Matchers.containsString("HAPPY")
+                ))
+                .andExpect(jsonPath("$.data.todaySummary.todayEnergy").value(
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ANGRY"))
+                ));
+    }
 }

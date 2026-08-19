@@ -18,7 +18,7 @@ public class HomeSummaryComposer {
         String name = (memberName != null && !memberName.isBlank()) ? memberName : "사용자";
 
         if (todayDiaries != null && !todayDiaries.isEmpty()) {
-            TodayDiaryInput latestDiary = todayDiaries.get(0);
+            TodayDiaryInput latestDiary = todayDiaries.get(todayDiaries.size() - 1);
             String emotionHint = latestDiary.emotion() != null ? latestDiary.emotion() : "기록된 감정";
             return new HomeSummaryAiResponse(
                     element,

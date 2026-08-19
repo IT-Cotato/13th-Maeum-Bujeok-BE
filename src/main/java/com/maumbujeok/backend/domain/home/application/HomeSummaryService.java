@@ -61,10 +61,11 @@ public class HomeSummaryService {
         String birthTime = sajuProfile.getBirthTime() != null ? sajuProfile.getBirthTime().toString() : null;
 
         List<Diary> activeDiaries = diaryRepository
-                .findAllByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNullOrderByRecordedDateAscIdAsc(phoneNumber, today);
+                .findAllByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNullOrderByIdDesc(phoneNumber, today);
 
         List<TodayDiaryInput> diaryInputs = activeDiaries.stream()
                 .limit(5)
+                .sorted(java.util.Comparator.comparing(Diary::getId))
                 .map(d -> new TodayDiaryInput(
                         d.getSelectedEmotion() != null ? d.getSelectedEmotion().name() : "NONE",
                         truncate(d.getContent(), 200)
