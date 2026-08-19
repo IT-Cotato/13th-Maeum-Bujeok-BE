@@ -1,4 +1,4 @@
 package com.maumbujeok.backend.domain.report.ai;
 
-public record NextWeekFlowAiResponse(String adviceText) {
+public record NextWeekFlowAiResponse(String title, String adviceText) {
 }

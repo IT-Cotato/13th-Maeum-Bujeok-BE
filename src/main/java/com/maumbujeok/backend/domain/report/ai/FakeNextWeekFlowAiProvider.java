@@ -11,7 +11,7 @@ public class FakeNextWeekFlowAiProvider implements NextWeekFlowAiProvider {
     private final NextWeekFlowComposer composer;
 
     @Override
-    public String generate(String memberName, String gender, String calendarType, String birthDate, String birthTime, String weeklyInsight) {
+    public NextWeekFlowAiResponse generate(String memberName, String gender, String calendarType, String birthDate, String birthTime, String weeklyInsight) {
         return composer.compose(memberName, gender, calendarType, birthDate, birthTime, weeklyInsight);
     }
 }
