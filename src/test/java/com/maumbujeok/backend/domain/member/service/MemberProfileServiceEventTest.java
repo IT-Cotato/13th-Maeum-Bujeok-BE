@@ -55,6 +55,8 @@ class MemberProfileServiceEventTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(memberProfileService, "entityManager", entityManager);
+
         member = Member.builder()
                 .phoneNumber("01011112222")
                 .name("테스터")
