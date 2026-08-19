@@ -20,6 +20,7 @@ import com.maumbujeok.backend.domain.member.repository.MemberRepository;
 import com.maumbujeok.backend.domain.member.repository.MemberSajuProfileRepository;
 import com.maumbujeok.backend.domain.report.application.NextWeekFlowTestClockConfig;
 import com.maumbujeok.backend.global.security.JwtTokenProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,21 +81,7 @@ class HomeIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        sajuAnalysisRepository.deleteAllInBatch();
-        nextWeekFlowRepository.deleteAllInBatch();
-        emotionReportRepository.deleteAllInBatch();
-        talismanRepository.deleteAllInBatch();
-        burningAnalysisRepository.deleteAllInBatch();
-        burningRepository.deleteAllInBatch();
-        diaryUploadRepository.deleteAllInBatch();
-        diaryAnalysisRepository.deleteAllInBatch();
-        diaryRepository.deleteAllInBatch();
-        homeSummaryRepository.deleteAllInBatch();
-        notificationSettingRepository.deleteAllInBatch();
-        memberSajuProfileRepository.deleteAllInBatch();
-        refreshTokenRepository.deleteAllInBatch();
-        smsAuthCodeRepository.deleteAllInBatch();
-        memberRepository.deleteAllInBatch();
+        cleanup();
 
         today = LocalDate.now(serviceClock); // 2026-07-15 from NextWeekFlowTestClockConfig
         String phone = "01099998888";
@@ -115,6 +102,29 @@ class HomeIntegrationTest {
                 .build());
 
         token = jwtTokenProvider.createToken(phone, member.getRole().name());
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanup();
+    }
+
+    private void cleanup() {
+        sajuAnalysisRepository.deleteAllInBatch();
+        nextWeekFlowRepository.deleteAllInBatch();
+        emotionReportRepository.deleteAllInBatch();
+        talismanRepository.deleteAllInBatch();
+        burningAnalysisRepository.deleteAllInBatch();
+        burningRepository.deleteAllInBatch();
+        diaryUploadRepository.deleteAllInBatch();
+        diaryAnalysisRepository.deleteAllInBatch();
+        diaryRepository.deleteAllInBatch();
+        homeSummaryRepository.deleteAllInBatch();
+        notificationSettingRepository.deleteAllInBatch();
+        memberSajuProfileRepository.deleteAllInBatch();
+        refreshTokenRepository.deleteAllInBatch();
+        smsAuthCodeRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
     }
 
     @Test
