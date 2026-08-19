@@ -15,6 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Map;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "ai.provider", havingValue = "openai")
@@ -25,7 +27,8 @@ public class OpenAiHomeSummaryAiProvider implements HomeSummaryAiProvider {
 
     @Override
     public HomeSummaryAiResponse generate(String memberName, String gender, String calendarType,
-                                          String birthDate, String birthTime, LocalDate summaryDate) {
+                                          String birthDate, String birthTime, LocalDate summaryDate,
+                                          List<TodayDiaryInput> todayDiaries) {
         String instructions;
         try {
             instructions = new ClassPathResource("prompts/home-summary-v1.txt")
@@ -42,7 +45,8 @@ public class OpenAiHomeSummaryAiProvider implements HomeSummaryAiProvider {
                     "calendarType", calendarType != null ? calendarType : "SOLAR",
                     "birthDate", birthDate != null ? birthDate : "19950101",
                     "birthTime", birthTime != null ? birthTime : "12:00",
-                    "todayDate", summaryDate.toString()
+                    "todayDate", summaryDate.toString(),
+                    "todayDiaries", todayDiaries != null ? todayDiaries : List.of()
             ));
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to serialize home summary AI input", e);

@@ -68,4 +68,14 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             LocalDate recordedDate,
             LocalDate endedAtExclusive
     );
+
+    List<Diary> findAllByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNullOrderByRecordedDateAscIdAsc(
+            String phoneNumber,
+            LocalDate recordedDate
+    );
+
+    boolean existsByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNull(
+            String phoneNumber,
+            LocalDate recordedDate
+    );
 }

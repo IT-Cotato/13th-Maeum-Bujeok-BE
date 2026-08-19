@@ -35,6 +35,7 @@ public class HomeController {
     private final HomeSummaryService homeSummaryService;
     private final DiaryRepository diaryRepository;
     private final TalismanRepository talismanRepository;
+    private final java.time.Clock serviceClock;
 
     @Operation(
             summary = "통합 홈 화면 데이터 조회",
@@ -51,13 +52,14 @@ public class HomeController {
     ) {
         Member member = userDetails.getMember();
         String phoneNumber = member.getPhoneNumber();
+        LocalDate today = LocalDate.now(serviceClock);
 
         // 1. HomeSummaryService 호출 (온보딩 안 된 경우 예외 발생)
         HomeSummaryResponse summary = homeSummaryService.getTodaySummary(phoneNumber);
 
-        // 2. 오늘 일기 작성 여부
-        boolean isDiaryWritten = !diaryRepository.findAllByMemberPhoneNumberAndRecordedDateOrderByCreatedAtDescIdDesc(
-                phoneNumber, LocalDate.now()).isEmpty();
+        // 2. 오늘 활성 일기 작성 여부 (소각된 일기는 제외)
+        boolean isDiaryWritten = diaryRepository.existsByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNull(
+                phoneNumber, today);
 
         // 3. 가장 최근 부적
         List<Talisman> talismans = talismanRepository.findAllByMemberPhoneNumberOrderByCreatedAtDesc(phoneNumber);

@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -15,7 +16,8 @@ public class FakeHomeSummaryAiProvider implements HomeSummaryAiProvider {
 
     @Override
     public HomeSummaryAiResponse generate(String memberName, String gender, String calendarType,
-                                          String birthDate, String birthTime, LocalDate summaryDate) {
-        return composer.compose(memberName, gender, calendarType, birthDate, birthTime, summaryDate);
+                                          String birthDate, String birthTime, LocalDate summaryDate,
+                                          List<TodayDiaryInput> todayDiaries) {
+        return composer.compose(memberName, gender, calendarType, birthDate, birthTime, summaryDate, todayDiaries);
     }
 }

@@ -60,4 +60,12 @@ public class HomeSummary extends BaseTimeEntity {
         this.modelName = modelName;
         this.reportVersion = reportVersion;
     }
+
+    public void update(PrimaryElement primaryElement, String todayLuck, String todayEnergy, String modelName, String reportVersion) {
+        this.primaryElement = primaryElement;
+        this.todayLuck = todayLuck;
+        this.todayEnergy = todayEnergy;
+        this.modelName = modelName;
+        this.reportVersion = reportVersion;
+    }
 }

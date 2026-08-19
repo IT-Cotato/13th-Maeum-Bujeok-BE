@@ -1,8 +1,11 @@
 package com.maumbujeok.backend.domain.home.application;
 
+import com.maumbujeok.backend.domain.diary.domain.Diary;
+import com.maumbujeok.backend.domain.diary.repository.DiaryRepository;
 import com.maumbujeok.backend.domain.home.ai.HomeSummaryAiProvider;
 import com.maumbujeok.backend.domain.home.ai.HomeSummaryAiResponse;
 import com.maumbujeok.backend.domain.home.ai.HomeSummaryComposer;
+import com.maumbujeok.backend.domain.home.ai.TodayDiaryInput;
 import com.maumbujeok.backend.domain.home.domain.HomeSummary;
 import com.maumbujeok.backend.domain.home.dto.HomeSummaryResponse;
 import com.maumbujeok.backend.domain.home.repository.HomeSummaryRepository;
@@ -14,11 +17,11 @@ import com.maumbujeok.backend.global.error.CustomException;
 import com.maumbujeok.backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,28 +31,26 @@ public class HomeSummaryService {
     private final HomeSummaryRepository homeSummaryRepository;
     private final MemberRepository memberRepository;
     private final MemberSajuProfileRepository sajuProfileRepository;
+    private final DiaryRepository diaryRepository;
     private final HomeSummaryAiProvider aiProvider;
     private final HomeSummaryComposer fallbackComposer;
+    private final HomeSummaryWriteService homeSummaryWriteService;
+    private final Clock serviceClock;
 
-    @Transactional
     public HomeSummaryResponse getTodaySummary(String phoneNumber) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(serviceClock);
         return homeSummaryRepository.findByMemberPhoneNumberAndSummaryDate(phoneNumber, today)
                 .map(HomeSummaryResponse::from)
                 .orElseGet(() -> {
-                    Member member = memberRepository.findByPhoneNumber(phoneNumber)
-                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-                    HomeSummary saved = generateAndSaveForMember(member, today);
+                    HomeSummary saved = refreshForToday(phoneNumber);
                     return HomeSummaryResponse.from(saved);
                 });
     }
 
-    @Transactional
-    public HomeSummary generateAndSaveForMember(Member member, LocalDate date) {
-        if (homeSummaryRepository.existsByMemberPhoneNumberAndSummaryDate(member.getPhoneNumber(), date)) {
-            return homeSummaryRepository.findByMemberPhoneNumberAndSummaryDate(member.getPhoneNumber(), date)
-                    .orElseThrow();
-        }
+    public HomeSummary refreshForToday(String phoneNumber) {
+        LocalDate today = LocalDate.now(serviceClock);
+        Member member = memberRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         MemberSajuProfile sajuProfile = sajuProfileRepository.findByMember(member)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_SAJU_PROFILE_NOT_FOUND));
@@ -59,6 +60,17 @@ public class HomeSummaryService {
         String birthDate = member.getBirthDate() != null ? member.getBirthDate() : "19950101";
         String birthTime = sajuProfile.getBirthTime() != null ? sajuProfile.getBirthTime().toString() : null;
 
+        List<Diary> activeDiaries = diaryRepository
+                .findAllByMemberPhoneNumberAndRecordedDateAndBurnedAtIsNullOrderByRecordedDateAscIdAsc(phoneNumber, today);
+
+        List<TodayDiaryInput> diaryInputs = activeDiaries.stream()
+                .limit(5)
+                .map(d -> new TodayDiaryInput(
+                        d.getSelectedEmotion() != null ? d.getSelectedEmotion().name() : "NONE",
+                        truncate(d.getContent(), 200)
+                ))
+                .toList();
+
         HomeSummaryAiResponse aiResponse;
         try {
             aiResponse = aiProvider.generate(
@@ -67,37 +79,33 @@ public class HomeSummaryService {
                     calendarType,
                     birthDate,
                     birthTime,
-                    date
+                    today,
+                    diaryInputs
             );
         } catch (Exception e) {
             log.warn("Home summary AI generation failed for member={}. Using fallback composer. Error: {}",
-                    member.getPhoneNumber(), e.getMessage());
+                    phoneNumber, e.getMessage());
             aiResponse = fallbackComposer.compose(
                     member.getName(),
                     gender,
                     calendarType,
                     birthDate,
                     birthTime,
-                    date
+                    today,
+                    diaryInputs
             );
         }
 
-        HomeSummary homeSummary = HomeSummary.builder()
-                .member(member)
-                .summaryDate(date)
-                .primaryElement(aiResponse.primaryElement())
-                .todayLuck(aiResponse.todayLuck())
-                .todayEnergy(aiResponse.todayEnergy())
-                .modelName("gpt-4o-mini")
-                .reportVersion("v1")
-                .build();
+        return homeSummaryWriteService.saveOrUpdate(phoneNumber, today, aiResponse);
+    }
 
-        try {
-            return homeSummaryRepository.save(homeSummary);
-        } catch (DataIntegrityViolationException e) {
-            log.info("Concurrent home summary creation detected for member={}. Re-querying existing summary.", member.getPhoneNumber());
-            return homeSummaryRepository.findByMemberPhoneNumberAndSummaryDate(member.getPhoneNumber(), date)
-                    .orElseThrow(() -> e);
-        }
+    public HomeSummary generateAndSaveForMember(Member member, LocalDate date) {
+        return refreshForToday(member.getPhoneNumber());
+    }
+
+    private String truncate(String content, int maxLen) {
+        if (content == null) return "";
+        String trimmed = content.trim();
+        return trimmed.length() <= maxLen ? trimmed : trimmed.substring(0, maxLen);
     }
 }

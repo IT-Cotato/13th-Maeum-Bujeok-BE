@@ -4,16 +4,29 @@ import com.maumbujeok.backend.domain.home.domain.PrimaryElement;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 public class HomeSummaryComposer {
 
     public HomeSummaryAiResponse compose(String memberName, String gender, String calendarType,
-                                         String birthDate, String birthTime, LocalDate summaryDate) {
+                                         String birthDate, String birthTime, LocalDate summaryDate,
+                                         List<TodayDiaryInput> todayDiaries) {
         int day = summaryDate != null ? summaryDate.getDayOfMonth() : 1;
         PrimaryElement element = PrimaryElement.values()[Math.abs(day) % PrimaryElement.values().length];
 
         String name = (memberName != null && !memberName.isBlank()) ? memberName : "사용자";
+
+        if (todayDiaries != null && !todayDiaries.isEmpty()) {
+            TodayDiaryInput latestDiary = todayDiaries.get(0);
+            String emotionHint = latestDiary.emotion() != null ? latestDiary.emotion() : "기록된 감정";
+            return new HomeSummaryAiResponse(
+                    element,
+                    "오늘 남겨주신 소중한 마음 기록을 바탕으로 차분히 내면을 정리해 보세요.",
+                    String.format("오늘 %s님께서 남겨주신 %s의 감정은 %s 기운과 조화를 이루며 마음의 균형을 찾아가고 있습니다. 스스로의 감정을 솔직하게 마주한 오늘 하루에 따뜻한 격려를 보내주세요.",
+                            name, emotionHint, element.getTitle())
+            );
+        }
 
         return switch (element) {
             case WOOD -> new HomeSummaryAiResponse(
