@@ -26,6 +26,9 @@ public record NextWeekFlowQueryResponse(
         @Schema(description = "생성 진행 상태", example = "COMPLETED")
         NextWeekFlowGenerationStatus generationStatus,
 
+        @Schema(description = "다음 주 흐름 제목", example = "새로운 활기를 맞이할 마음의 준비")
+        String title,
+
         @Schema(description = "AI 조언 및 흐름 분석 텍스트", example = "다음 주는 목(木) 기운이 다가와 새로운 시도를 시작하기 좋은 시기입니다.")
         String adviceText,
 

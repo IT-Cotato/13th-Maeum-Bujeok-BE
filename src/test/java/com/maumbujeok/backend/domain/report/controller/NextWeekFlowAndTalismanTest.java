@@ -57,6 +57,7 @@ class NextWeekFlowAndTalismanTest {
     @Autowired com.maumbujeok.backend.domain.report.application.NextWeekFlowGenerationStateService nextWeekFlowGenerationStateService;
     @Autowired com.maumbujeok.backend.domain.report.application.WeeklyReportGenerationInputLoader weeklyReportGenerationInputLoader;
     @Autowired BurningService burningService;
+    @Autowired com.maumbujeok.backend.domain.burn.repository.BurningRepository burningRepository;
 
     @Test
     void rejectsUnauthenticatedAccessToNextWeekFlow() throws Exception {
@@ -789,6 +790,79 @@ class NextWeekFlowAndTalismanTest {
                 .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals(weekStart.plusDays(7), flow.getPeriodStart());
         org.junit.jupiter.api.Assertions.assertEquals(weekStart.plusDays(13), flow.getPeriodEnd());
+    }
+
+    @Test
+    void getFlowReturnsAiTitleWhenPresentAndFallbackWhenNull() throws Exception {
+        Member member = saveMember("title-user", "01099990888");
+        LocalDate weekStart = LocalDate.of(2026, 7, 13);
+        EmotionReport report = saveCompletedReport(member, weekStart);
+        NextWeekFlow flowWithTitle = NextWeekFlow.builder()
+                .member(member)
+                .emotionReport(report)
+                .weekStart(weekStart)
+                .periodStart(weekStart.plusDays(7))
+                .periodEnd(weekStart.plusDays(13))
+                .generationStatus(NextWeekFlowGenerationStatus.PROCESSING)
+                .build();
+        flowWithTitle.complete("새로운 활기를 맞이할 마음의 준비", "다음 주 조언 본문", "gpt-4o-mini", "v1");
+        flowWithTitle = nextWeekFlowRepository.save(flowWithTitle);
+
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        mockMvc.perform(get("/api/reports/next-week-flow/" + flowWithTitle.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("새로운 활기를 맞이할 마음의 준비"))
+                .andExpect(jsonPath("$.data.adviceText").value("다음 주 조언 본문"));
+
+        // Test fallback when title is null
+        flowWithTitle.complete(null, "조언 본문만 있음", "gpt-4o-mini", "v1");
+        nextWeekFlowRepository.save(flowWithTitle);
+
+        mockMvc.perform(get("/api/reports/next-week-flow/" + flowWithTitle.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("다음 주를 위한 마음가짐"))
+                .andExpect(jsonPath("$.data.adviceText").value("조언 본문만 있음"));
+    }
+
+    @Test
+    void getReportBurningsAttributesDiaryBurningToRecordedWeekAndDirectBurningToBurnedWeek() throws Exception {
+        Member member = saveMember("burning-week-user", "01099990889");
+        LocalDate pastWeekStart = LocalDate.of(2026, 7, 6);
+        LocalDate currentWeekStart = LocalDate.of(2026, 7, 13);
+
+        EmotionReport pastReport = saveCompletedReport(member, pastWeekStart);
+        EmotionReport currentReport = saveCompletedReport(member, currentWeekStart);
+
+        // 1. Diary recorded in past week (2026-07-08)
+        Diary pastDiary = diaryRepository.save(new Diary(
+                member, "과거 주차 일기", DiaryEmotion.SAD, LocalDate.of(2026, 7, 8)));
+
+        // 2. Burn the past diary during current week (clock fixed at 2026-07-15)
+        burningService.create(member.getPhoneNumber(),
+                new CreateBurningRequest(BurningSourceType.DIARY, null, pastDiary.getId()));
+
+        // 3. Create a DIRECT burning during current week (2026-07-15)
+        burningRepository.save(new com.maumbujeok.backend.domain.burn.domain.Burning(
+                member, BurningSourceType.DIRECT, null, "즉시 소각 텍스트", currentWeekStart.atTime(12, 0)));
+
+        String token = jwtTokenProvider.createToken(member.getPhoneNumber(), member.getRole().name());
+
+        // Past week report should include the DIARY burning (because recordedDate was in past week)
+        mockMvc.perform(get("/api/reports/weekly/" + pastReport.getId() + "/burnings")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].sourceType").value("DIARY"));
+
+        // Current week report should include the DIRECT burning (because burnedAt was in current week)
+        mockMvc.perform(get("/api/reports/weekly/" + currentReport.getId() + "/burnings")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].sourceType").value("DIRECT"));
     }
 
     private void saveDiaries(Member member, LocalDate startDate, int count) {

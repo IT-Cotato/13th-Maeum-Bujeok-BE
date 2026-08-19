@@ -48,8 +48,10 @@ public class ReportScreenService {
         EmotionReport report = ownedWeekly(phone, reportId);
         LocalDateTime from = report.getPeriodStart().atStartOfDay(SEOUL).toLocalDateTime();
         LocalDateTime to = report.getPeriodEnd().plusDays(1).atStartOfDay(SEOUL).toLocalDateTime();
-        return burningRepository.findAllByMemberPhoneNumberAndBurnedAtBetween(phone, from, to).stream()
-                .map(burning -> toBurningItem(burning))
+        return burningRepository.findAllForWeeklyReport(
+                phone, report.getPeriodStart(), report.getPeriodEnd(), from, to
+        ).stream()
+                .map(this::toBurningItem)
                 .toList();
     }
 

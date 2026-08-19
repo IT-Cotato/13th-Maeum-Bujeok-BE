@@ -51,6 +51,9 @@ public class NextWeekFlow extends BaseTimeEntity {
     @Column(name = "generation_status", nullable = false, length = 30)
     private NextWeekFlowGenerationStatus generationStatus;
 
+    @Column(name = "title", length = 150)
+    private String title;
+
     @Column(name = "advice_text", length = 3000)
     private String adviceText;
 
@@ -64,21 +67,27 @@ public class NextWeekFlow extends BaseTimeEntity {
     private LocalDateTime generatedAt;
 
     @Builder
-    public NextWeekFlow(Member member, EmotionReport emotionReport, LocalDate weekStart, LocalDate periodStart, LocalDate periodEnd, NextWeekFlowGenerationStatus generationStatus) {
+    public NextWeekFlow(Member member, EmotionReport emotionReport, LocalDate weekStart, LocalDate periodStart, LocalDate periodEnd, NextWeekFlowGenerationStatus generationStatus, String title) {
         this.member = member;
         this.emotionReport = emotionReport;
         this.weekStart = weekStart;
         this.periodStart = periodStart;
         this.periodEnd = periodEnd;
         this.generationStatus = generationStatus != null ? generationStatus : NextWeekFlowGenerationStatus.PROCESSING;
+        this.title = title;
     }
 
-    public void complete(String adviceText, String modelName, String reportVersion) {
+    public void complete(String title, String adviceText, String modelName, String reportVersion) {
+        this.title = title;
         this.adviceText = adviceText;
         this.modelName = modelName;
         this.reportVersion = reportVersion;
         this.generationStatus = NextWeekFlowGenerationStatus.COMPLETED;
         this.generatedAt = LocalDateTime.now();
+    }
+
+    public void complete(String adviceText, String modelName, String reportVersion) {
+        complete(null, adviceText, modelName, reportVersion);
     }
 
     public void fail() {

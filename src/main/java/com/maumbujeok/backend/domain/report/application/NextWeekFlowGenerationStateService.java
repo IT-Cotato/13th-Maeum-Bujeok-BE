@@ -59,6 +59,7 @@ public class NextWeekFlowGenerationStateService {
             Long flowId,
             Long expectedReportId,
             int expectedReportGenerationSequence,
+            String title,
             String adviceText
     ) {
         EmotionReport report = emotionReportRepository.findByIdForUpdate(expectedReportId).orElse(null);
@@ -68,8 +69,18 @@ public class NextWeekFlowGenerationStateService {
             return false;
         }
 
-        flow.complete(adviceText, "openai", "v1");
+        flow.complete(title, adviceText, "openai", "v1");
         return true;
+    }
+
+    @Transactional
+    public boolean completeIfCurrent(
+            Long flowId,
+            Long expectedReportId,
+            int expectedReportGenerationSequence,
+            String adviceText
+    ) {
+        return completeIfCurrent(flowId, expectedReportId, expectedReportGenerationSequence, null, adviceText);
     }
 
     @Transactional

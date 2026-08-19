@@ -27,7 +27,7 @@ public class NextWeekFlowAsyncService {
                 flowId, expectedReportId, expectedReportGenerationSequence);
 
         try {
-            String adviceText = aiProvider.generate(
+            com.maumbujeok.backend.domain.report.ai.NextWeekFlowAiResponse aiResponse = aiProvider.generate(
                     input.memberName(),
                     input.gender(),
                     input.calendarType(),
@@ -37,7 +37,7 @@ public class NextWeekFlowAsyncService {
             );
 
             boolean completed = stateService.completeIfCurrent(
-                    flowId, expectedReportId, expectedReportGenerationSequence, adviceText);
+                    flowId, expectedReportId, expectedReportGenerationSequence, aiResponse.title(), aiResponse.adviceText());
             if (completed) {
                 log.info("Async next week flow generation completed flowId={} reportId={} generationSequence={}",
                         flowId, expectedReportId, expectedReportGenerationSequence);

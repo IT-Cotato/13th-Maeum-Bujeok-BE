@@ -132,12 +132,18 @@ public class NextWeekFlowService {
             adviceText = DEFAULT_FAILED_ADVICE;
         }
 
+        String title = flow.getTitle();
+        if ((title == null || title.isBlank()) && flow.getGenerationStatus() == NextWeekFlowGenerationStatus.COMPLETED) {
+            title = "다음 주를 위한 마음가짐";
+        }
+
         return new NextWeekFlowQueryResponse(
                 flow.getId(),
                 flow.getEmotionReport() != null ? flow.getEmotionReport().getId() : null,
                 flow.getPeriodStart(),
                 flow.getPeriodEnd(),
                 flow.getGenerationStatus(),
+                title,
                 adviceText,
                 flow.getModelName(),
                 flow.getReportVersion(),

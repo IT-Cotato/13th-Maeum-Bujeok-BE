@@ -21,7 +21,7 @@ public class OpenAiNextWeekFlowAiProvider implements NextWeekFlowAiProvider {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String generate(String memberName, String gender, String calendarType, String birthDate, String birthTime, String weeklyInsight) {
+    public NextWeekFlowAiResponse generate(String memberName, String gender, String calendarType, String birthDate, String birthTime, String weeklyInsight) {
         String instructions;
         try {
             instructions = new ClassPathResource("prompts/next-week-flow-v1.txt")
@@ -58,7 +58,7 @@ public class OpenAiNextWeekFlowAiProvider implements NextWeekFlowAiProvider {
                     ),
                     NextWeekFlowAiResponse.class
             );
-            return execution.output().adviceText();
+            return execution.output();
         } catch (AiClientException exception) {
             throw new WeeklyReportAiException(
                     exception.getFailureCode().name(),
