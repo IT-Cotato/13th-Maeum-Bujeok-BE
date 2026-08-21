@@ -59,6 +59,10 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     // Solapi SDK (SMS 발송)
     implementation 'com.solapi:sdk:1.0.3'
+
+    // Actuator & Micrometer Prometheus
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {

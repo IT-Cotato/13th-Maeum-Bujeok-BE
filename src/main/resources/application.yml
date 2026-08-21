@@ -71,3 +71,18 @@ coolsms:
   api-key: ${COOLSMS_API_KEY:}
   api-secret: ${COOLSMS_API_SECRET:}
   sender-number: ${COOLSMS_SENDER_NUMBER:}
+
+# Actuator & Metrics 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
