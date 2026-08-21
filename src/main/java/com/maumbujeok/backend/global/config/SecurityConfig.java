@@ -59,7 +59,9 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
-                    "/webjars/**"
+                    "/webjars/**",
+                    "/actuator/health",
+                    "/actuator/prometheus"
                 ).permitAll()
                 // 2. ?몄쬆 ?꾩닔 (authenticated) ?붾뱶?ъ씤??
                 .requestMatchers(
